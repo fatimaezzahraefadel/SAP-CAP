@@ -91,10 +91,10 @@ export const MyCertifications: React.FC = () => {
       status: form.status,
     };
     try {
-      const updated = await UsersAPI.update(profile.id, {
+      await UsersAPI.update(profile.id, {
         certifications: [...profile.certifications, cert],
       });
-      setProfile(updated);
+      await loadProfile();
       setForm(EMPTY_FORM);
       setShowAdd(false);
       toast.success(t('consultantTech.certifications.toasts.addSuccess'));
@@ -106,10 +106,10 @@ export const MyCertifications: React.FC = () => {
   const removeCertification = async (certId: string) => {
     if (!profile) return;
     try {
-      const updated = await UsersAPI.update(profile.id, {
+      await UsersAPI.update(profile.id, {
         certifications: profile.certifications.filter((c) => c.id !== certId),
       });
-      setProfile(updated);
+      await loadProfile();
       toast.success(t('consultantTech.certifications.toasts.deleteSuccess'));
     } catch {
       toast.error(t('consultantTech.certifications.toasts.deleteFailed'));
