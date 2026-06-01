@@ -12,10 +12,11 @@ function registerCleanupJob() {
     try {
       const domain = new DocumentationDomainService();
       const mockReq = { _authClaims: { role: 'ADMIN', sub: 'system' } };
-      const deleted = await domain.cleanupOrphanAttachments(mockReq);
-      console.info(`[cleanup-job] removed ${deleted} orphan DocAttachedFiles`);
+      const deleted = await domain.purgeDeletedAttachments(mockReq);
+      const duplicatesDeleted = await domain.cleanupDuplicateAttachments(mockReq);
+      console.info(`[cleanup-job] purged ${deleted} deleted/orphan DocAttachedFiles and ${duplicatesDeleted} duplicate DocAttachedFiles`);
     } catch (err) {
-      console.error('[cleanup-job] failed to run cleanupOrphanAttachments', err);
+      console.error('[cleanup-job] failed to run purgeDeletedAttachments or cleanupDuplicateAttachments', err);
     }
   }, { scheduled: true });
 }

@@ -229,11 +229,11 @@ export const AdminDashboard: React.FC = () => {
                       if (isCleaning) return;
                       setIsCleaning(true);
                       try {
-                        const result = await odataFetch<number>('core', '/cleanupOrphanAttachments', { method: 'POST' });
+                        const result = await odataFetch<number>('core', '/purgeDeletedAttachments', { method: 'POST' });
                         // CAP may return primitive or wrapper; attempt to read `.value` otherwise treat as number
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const deleted = (result as any)?.value ?? (result as any) ?? 0;
-                        toast.success(t('admin.dashboard.toasts.cleanupSuccess', { count: deleted }) || `Deleted ${deleted} orphan attachments`);
+                        toast.success(t('admin.dashboard.toasts.cleanupSuccess', { count: deleted }) || `Purged ${deleted} deleted/orphan attachments`);
                       } catch (err) {
                         toast.error(t('admin.dashboard.toasts.cleanupFailed') || 'Cleanup failed');
                       } finally {
