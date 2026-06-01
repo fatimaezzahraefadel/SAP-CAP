@@ -1107,3 +1107,66 @@ describe('Validation and state-machine guards', () => {
     }
   });
 });
+
+describe('Documentation cleanup', () => {
+  test('cleanupOrphanAttachments deletes DocAttachedFiles without a valid DocumentationObjects reference', async () => {
+    await ensureAdminAuth();
+
+    const docTitle = `Orphan cleanup ${Math.random().toString(36).slice(2, 8)}`;
+    const { status: createDocStatus, data: createdDoc } = await POST(
+      '/odata/v4/core/DocumentationObjects',
+      {
+        title: docTitle,
+        description: 'Cleanup test object',
+        projectId: requireSeedId('project1Id'),
+      },
+      withAdminAuth()
+    );
+    expect(createDocStatus).toBe(201);
+    expect(createdDoc.ID).toBeTruthy();
+
+    const entries = [
+      {
+        docObject_ID: createdDoc.ID,
+        fileName: 'cleanup-valid.pdf',
+        fileUrl: 'https://example.com/cleanup-valid.pdf',
+      },
+      {
+        docObject_ID: null,
+        fileName: 'cleanup-orphan-null.pdf',
+        fileUrl: 'https://example.com/cleanup-orphan-null.pdf',
+      },
+      {
+        docObject_ID: '00000000-0000-0000-0000-000000000000',
+        fileName: 'cleanup-orphan-bad-ref.pdf',
+        fileUrl: 'https://example.com/cleanup-orphan-bad-ref.pdf',
+      },
+    ];
+
+    await cds.db.run(INSERT.into('sap.performance.dashboard.db.DocAttachedFiles').entries(entries));
+
+    const beforeRows = await cds.db.run(
+      SELECT.from('sap.performance.dashboard.db.DocAttachedFiles').columns(['ID', 'fileName', 'docObject_ID']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
+    );
+    expect(beforeRows.length).toBe(3);
+
+    const { status: cleanupStatus, data: cleanupData } = await POST(
+      '/odata/v4/core/cleanupOrphanAttachments',
+      {},
+      withAdminAuth()
+    );
+    expect(cleanupStatus).toBe(200);
+
+    const deletedCount = Number(
+      cleanupData?.value ?? cleanupData?.cleanupOrphanAttachments ?? cleanupData ?? 0
+    );
+    expect(deletedCount).toBe(2);
+
+    const afterRows = await cds.db.run(
+      SELECT.from('sap.performance.dashboard.db.DocAttachedFiles').columns(['ID', 'fileName', 'docObject_ID']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
+    );
+    expect(afterRows.length).toBe(1);
+    expect(afterRows[0].fileName).toBe('cleanup-valid.pdf');
+    expect(afterRows[0].docObject_ID).toBe(createdDoc.ID);
+  });
+});

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Activity, Database, ServerCog, Users } from 'lucide-react';
 import { PageHeader } from '../../components/common/PageHeader';
+import { Button } from '../../components/ui/button';
 import { KPICard } from '../../components/common/KPICard';
 import { AuditLogsAPI } from '../../services/odata/auditLogsApi';
 import { ProjectsAPI } from '../../services/odata/projectsApi';
@@ -9,6 +10,8 @@ import { TicketsAPI } from '../../services/odata/ticketsApi';
 import { UsersAPI } from '../../services/odata/usersApi';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
+import { toast } from 'sonner';
+import { odataFetch } from '../../services/odata/core';
 import { AuditLog } from '../../types/entities';
 
 export const AdminDashboard: React.FC = () => {
@@ -20,6 +23,7 @@ export const AdminDashboard: React.FC = () => {
   const [activeUsers, setActiveUsers] = useState(0);
   const [auditEvents, setAuditEvents] = useState<Array<AuditLog & { userName: string }>>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isCleaning, setIsCleaning] = useState(false);
 
   // Helper function to translate entity names
   const translateEntityName = (entityName: string): string => {
@@ -211,6 +215,35 @@ export const AdminDashboard: React.FC = () => {
                     </span>
                     <span className="font-semibold text-foreground">{auditEvents.length}</span>
                   </div>
+                </div>
+              </div>
+              <div className="rounded-xl border border-border/70 bg-surface-2 p-4">
+                <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">
+                  {t('admin.dashboard.systemStatus.maintenance')}
+                </p>
+                <div className="mt-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      if (isCleaning) return;
+                      setIsCleaning(true);
+                      try {
+                        const result = await odataFetch<number>('core', '/cleanupOrphanAttachments', { method: 'POST' });
+                        // CAP may return primitive or wrapper; attempt to read `.value` otherwise treat as number
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const deleted = (result as any)?.value ?? (result as any) ?? 0;
+                        toast.success(t('admin.dashboard.toasts.cleanupSuccess', { count: deleted }) || `Deleted ${deleted} orphan attachments`);
+                      } catch (err) {
+                        toast.error(t('admin.dashboard.toasts.cleanupFailed') || 'Cleanup failed');
+                      } finally {
+                        setIsCleaning(false);
+                      }
+                    }}
+                    disabled={isCleaning}
+                  >
+                    {isCleaning ? t('admin.dashboard.systemStatus.running') : t('admin.dashboard.systemStatus.runCleanup')}
+                  </Button>
                 </div>
               </div>
             </CardContent>
