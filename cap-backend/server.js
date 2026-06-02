@@ -17,6 +17,15 @@ cds.on('bootstrap', (app) => {
 cds.on('served', () => {
 	if (!fs.existsSync(webAppIndex) || !cds.app) return;
 
+	// Register scheduled background jobs after the server is served
+	try {
+		const { registerCleanupJob } = require('./srv/documentation/cleanup-job');
+		registerCleanupJob();
+	} catch (e) {
+		// non-fatal if job cannot be registered
+		console.warn('cleanup job registration skipped:', e.message);
+	}
+
 	cds.app.use((req, res, next) => {
 		if (req.method !== 'GET' && req.method !== 'HEAD') return next();
 		if (req.path.startsWith('/odata/v4') || req.path.startsWith('/-/')) return next();

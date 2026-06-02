@@ -27,6 +27,7 @@ import {
   DOCUMENTATION_OBJECT_TYPE_LABELS,
   Ticket,
 } from '../../types/entities';
+import { sanitizeFileName } from '../../utils/file';
 
 interface DocumentationObjectModalProps {
   open: boolean;
@@ -91,7 +92,7 @@ export const DocumentationObjectModal: React.FC<DocumentationObjectModalProps> =
       const url = URL.createObjectURL(file);
       objectUrlsRef.current.push(url);
       return {
-        filename: file.name,
+        filename: sanitizeFileName(file.name),
         size: file.size,
         url,
       };
