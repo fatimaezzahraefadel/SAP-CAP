@@ -33,8 +33,10 @@ import {
 } from '../../components/ui/table';
 import { Textarea } from '../../components/ui/textarea';
 import { Checkbox } from '../../components/ui/checkbox';
-import { useAuth } from '../../context/AuthContext';import { DocumentationAPI } from '../../services/odata/documentationApi';
+import { useAuth } from '../../context/AuthContext';
+import { DocumentationAPI } from '../../services/odata/documentationApi';
 import { ProjectsAPI } from '../../services/odata/projectsApi';
+import { sanitizeFileName } from '../../utils/file';
 import { TicketsAPI } from '../../services/odata/ticketsApi';
 import { UsersAPI } from '../../services/odata/usersApi';
 import {
@@ -222,7 +224,7 @@ export const DocumentationObjectsPage: React.FC = () => {
     try {
       const additions: DocumentationAttachment[] = await Promise.all(
         acceptedFiles.map(async (file) => ({
-          filename: file.name,
+          filename: sanitizeFileName(file.name),
           size: file.size,
           url: await fileToDataUrl(file),
         }))

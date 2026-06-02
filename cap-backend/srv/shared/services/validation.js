@@ -22,6 +22,7 @@ const ENTITIES = Object.freeze({
   Notifications: 'sap.performance.dashboard.db.Notifications',
   ProjectFeedback: 'sap.performance.dashboard.db.ProjectFeedback',
   ReferenceData: 'sap.performance.dashboard.db.ReferenceData',
+  TicketHistory: 'sap.performance.dashboard.db.TicketHistory',
 });
 
 // ---- Generic existence check ---------------------------------------------

@@ -776,6 +776,16 @@ describe('appendFilesAsDocumentationAttachments', () => {
     const result = appendFilesAsDocumentationAttachments(makeFileList([fileB, fileA]), []);
     expect(result.map((item) => item.filename)).toEqual(['Guide_Utilisateur_FI_v1.docx', 'SFD_Module_FI_v2.pdf']);
   });
+
+  it('sanitizes file names when appending attachments', () => {
+    const fileWithPath = new File(['document'], 'C:\\temp\\bad<name>.pdf', {
+      type: 'application/pdf',
+      lastModified: 1739318400000,
+    });
+
+    const result = appendFilesAsDocumentationAttachments(makeFileList([fileWithPath]), []);
+    expect(result[0].filename).toBe('badname.pdf');
+  });
 });
 
 describe('formatBytes', () => {
