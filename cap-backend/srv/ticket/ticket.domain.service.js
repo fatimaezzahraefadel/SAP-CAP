@@ -8,6 +8,14 @@ const TicketRepo = require('./ticket.repo');
 const { generateTicketCode } = require('../shared/utils/id');
 const { nowIso } = require('../shared/utils/timestamp');
 const { assertEntityExists, assertInEnum, ENTITIES, MANAGER_ROLES, requireRole } = require('../shared/services/validation');
+const {
+  toHistoryRows,
+  toTagRows,
+  toDocumentationRows,
+  normalizeHistory,
+  normalizeTags,
+  normalizeDocumentationObjectIds,
+} = require('./tickets.mapper');
 const { TICKET_STATUS, TICKET_PRIORITY, TICKET_NATURE, TICKET_COMPLEXITY } = require('../shared/constants/enums');
 const cds = require('@sap/cds');
 
@@ -112,13 +120,13 @@ class TicketDomainService {
     // createdAt is auto-set by the `managed` mixin; no need to set it here
 
     if (data.history !== undefined) {
-      data.history = this._coerceHistoryRows(data.history);
+      data.history = toHistoryRows(data.history);
     }
     if (data.tags !== undefined) {
-      data.tags = this._coerceTagRows(data.tags);
+      data.tags = toTagRows(data.tags);
     }
     if (data.documentationObjectIds !== undefined) {
-      data.documentationObjectIds = this._coerceDocumentationRows(data.documentationObjectIds);
+      data.documentationObjectIds = toDocumentationRows(data.documentationObjectIds);
     }
   }
 
@@ -151,10 +159,7 @@ class TicketDomainService {
     if (data.status !== undefined && id) {
       const current = await this.repo.findById(id);
       if (current && data.status !== current.status) {
-        const allowed = TICKET_STATUS_TRANSITIONS[current.status] || new Set();
-        if (!allowed.has(data.status)) {
-          req.reject(409, `Invalid ticket status transition: ${current.status} -> ${data.status}`);
-        }
+        this._assertAllowedStatusTransition(current.status, data.status, req);
       }
     }
 
@@ -168,13 +173,13 @@ class TicketDomainService {
     }
 
     if (data.history !== undefined) {
-      data.history = this._coerceHistoryRows(data.history);
+      data.history = toHistoryRows(data.history);
     }
     if (data.tags !== undefined) {
-      data.tags = this._coerceTagRows(data.tags);
+      data.tags = toTagRows(data.tags);
     }
     if (data.documentationObjectIds !== undefined) {
-      data.documentationObjectIds = this._coerceDocumentationRows(data.documentationObjectIds);
+      data.documentationObjectIds = toDocumentationRows(data.documentationObjectIds);
     }
   }
 
@@ -187,9 +192,9 @@ class TicketDomainService {
     const rows = Array.isArray(data) ? data : [data];
     for (const row of rows) {
       if (!row || typeof row !== 'object') continue;
-      row.history                = this._deserializeArray(row.history);
-      row.tags                   = this._deserializeArray(row.tags);
-      row.documentationObjectIds = this._deserializeArray(row.documentationObjectIds);
+      row.history                = normalizeHistory(row.history);
+      row.tags                   = normalizeTags(row.tags);
+      row.documentationObjectIds = normalizeDocumentationObjectIds(row.documentationObjectIds);
     }
   }
 
@@ -212,11 +217,12 @@ class TicketDomainService {
       const ticket = await tx.run(SELECT.one.from(ENTITIES.Tickets).where({ ID: id }));
       if (!ticket) { req.reject(404, 'Ticket not found'); return; }
 
-      const allowedFrom = TICKET_STATUS_TRANSITIONS[ticket.status] || new Set();
-      if (!allowedFrom.has(TICKET_STATUS.APPROVED)) {
-        req.reject(409, `Cannot approve ticket in status '${ticket.status}'; expected PENDING_APPROVAL`);
-        return;
-      }
+      this._assertAllowedStatusTransition(
+        ticket.status,
+        TICKET_STATUS.APPROVED,
+        req,
+        `Cannot approve ticket in status '${ticket.status}'; expected PENDING_APPROVAL`
+      );
 
       const techConsultant = await this._getActiveTechnicalConsultant(techConsultantId);
       if (!techConsultant) {
@@ -230,6 +236,14 @@ class TicketDomainService {
         allocatedHours: Number(allocatedHours),
         updatedAt: nowIso(),
       }));
+
+      await this._recordTicketHistory(
+        tx,
+        id,
+        'APPROVED',
+        `Approved by ${req._authClaims?.sub ?? 'manager'} and assigned to ${techConsultantId} with ${Number(allocatedHours)}h allocated.`,
+        req
+      );
 
       // Create notification for the assigned consultant (atomic part of the transaction)
       await tx.run(INSERT.into(ENTITIES.Notifications).entries({
@@ -259,18 +273,20 @@ class TicketDomainService {
       const ticket = await tx.run(SELECT.one.from(ENTITIES.Tickets).where({ ID: id }));
       if (!ticket) { req.reject(404, 'Ticket not found'); return; }
 
-      const allowedFromRej = TICKET_STATUS_TRANSITIONS[ticket.status] || new Set();
-      if (!allowedFromRej.has(TICKET_STATUS.REJECTED)) {
-        req.reject(409, `Cannot reject ticket in status '${ticket.status}'; transition to REJECTED not allowed`);
-        return;
-      }
+      this._assertAllowedStatusTransition(
+        ticket.status,
+        TICKET_STATUS.REJECTED,
+        req,
+        `Cannot reject ticket in status '${ticket.status}'; transition to REJECTED not allowed`
+      );
 
-      // Record rejection reason in history
-      await tx.run(INSERT.into('sap.performance.dashboard.db.TicketHistory').entries({
-        ticket_ID: id,
-        event: 'REJECTED',
-        details: reason || 'Rejected by manager',
-      }));
+      await this._recordTicketHistory(
+        tx,
+        id,
+        'REJECTED',
+        reason?.trim() || 'Rejected by manager',
+        req
+      );
 
       await tx.run(UPDATE(ENTITIES.Tickets).where({ ID: id }).with({
         status: TICKET_STATUS.REJECTED,
@@ -297,66 +313,23 @@ class TicketDomainService {
 
   // ---- Private helpers ---------------------------------------------------
 
-  _toArray(value) {
-    if (Array.isArray(value)) return value;
-    if (typeof value === 'string' && value.trim().startsWith('[')) {
-      try { return JSON.parse(value); } catch { return []; }
+  _assertAllowedStatusTransition(currentStatus, desiredStatus, req, message) {
+    const allowed = TICKET_STATUS_TRANSITIONS[currentStatus] || new Set();
+    if (!allowed.has(desiredStatus)) {
+      req.reject(409, message || `Invalid ticket status transition: ${currentStatus} -> ${desiredStatus}`);
     }
-    return [];
   }
 
-  _coerceTagRows(value) {
-    const rows = this._toArray(value);
-    return rows
-      .map((row) => {
-        if (row && typeof row === 'object') {
-          const tag = String(row.tag ?? '').trim();
-          return tag ? { tag } : null;
-        }
-        const tag = String(row ?? '').trim();
-        return tag ? { tag } : null;
-      })
-      .filter(Boolean);
-  }
-
-  _coerceDocumentationRows(value) {
-    const rows = this._toArray(value);
-    return rows
-      .map((row) => {
-        if (row && typeof row === 'object') {
-          const docObjectId = String(row.docObjectId ?? '').trim();
-          return docObjectId ? { docObjectId } : null;
-        }
-        const docObjectId = String(row ?? '').trim();
-        return docObjectId ? { docObjectId } : null;
-      })
-      .filter(Boolean);
-  }
-
-  _coerceHistoryRows(value) {
-    const rows = this._toArray(value);
-    return rows
-      .map((row) => {
-        if (!row || typeof row !== 'object') {
-          const details = String(row ?? '').trim();
-          return details ? { event: 'LEGACY', details } : null;
-        }
-        const event = String(row.event ?? row.action ?? 'UPDATE').trim();
-        const details = row.details !== undefined ? row.details : JSON.stringify(row);
-        return {
-          event: event || 'UPDATE',
-          details: String(details ?? ''),
-        };
-      })
-      .filter(Boolean);
-  }
-
-  _deserializeArray(value) {
-    if (Array.isArray(value)) return value;
-    if (typeof value === 'string' && value.trim().startsWith('[')) {
-      try { return JSON.parse(value); } catch { return []; }
+  async _recordTicketHistory(tx, ticketId, event, details, req) {
+    const entry = {
+      ticket_ID: ticketId,
+      event,
+      details: String(details ?? '').trim(),
+    };
+    if (req?._authClaims?.sub) {
+      entry.createdBy = String(req._authClaims.sub).trim();
     }
-    return [];
+    await tx.run(INSERT.into(ENTITIES.TicketHistory).entries(entry));
   }
 
   async _allocateTicketCode(year) {

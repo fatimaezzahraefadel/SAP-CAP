@@ -11,6 +11,7 @@ import {
   WricefType,
 } from '../../types/entities';
 import { ParsedWricefResult } from '../../utils/wricefExcel';
+import { sanitizeFileName } from '../../utils/file';
 import { ProjectTabDefinition } from './components/ProjectTabs';
 import { ReactNode } from 'react';
 
@@ -401,7 +402,7 @@ export const appendFilesAsDocumentationAttachments = (
   previous: DocumentationAttachment[]
 ): DocumentationAttachment[] => {
   const next = Array.from(files).map((file) => ({
-    filename: file.name,
+    filename: sanitizeFileName(file.name),
     size: file.size,
     url: URL.createObjectURL(file),
   }));

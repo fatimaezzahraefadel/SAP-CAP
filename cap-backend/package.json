@@ -16,7 +16,8 @@
   "dependencies": {
     "@cap-js/mcp-server": "^0.0.5",
     "@cap-js/sqlite": "^1",
-    "@sap/cds": "^8"
+    "@sap/cds": "^8",
+    "node-cron": "^3.0.2"
   },
   "devDependencies": {
     "@sap/cds-dk": "^8",
