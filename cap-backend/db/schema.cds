@@ -380,6 +380,7 @@ entity DocAttachedFiles : cuid {
   docObject : Association to DocumentationObjects;
   fileName  : String(200);
   fileUrl   : String(500);
+  fileSize  : Integer;
 }
 
 entity DocRelatedTickets : cuid {
