@@ -78,6 +78,10 @@ export const ManagerTicketsView: React.FC = () => {
           onUpdateTicketDueDate={(ticketId, dueDate) => {
             void vm.updateTicketDueDate(ticketId, dueDate);
           }}
+          onDeleteTicket={(ticketId) => {
+            void vm.deleteTicketById(ticketId);
+          }}
+          canDeleteTicket={vm.canDeleteTicket}
           resolveProjectName={vm.resolveProjectName}
           resolveUserName={vm.resolveUserName}
         />
@@ -116,11 +120,16 @@ export const ManagerTicketsView: React.FC = () => {
         currentUserId={vm.currentUserId}
         selectedTicket={vm.selectedTicket}
         isViewOnly={vm.isViewOnly}
+        canDeleteTicket={vm.canDeleteTicket}
         onOpenChange={(open) => {
           if (!open) vm.setSelectedTicket(null);
         }}
         onChangeStatus={(ticket, status) => {
           void vm.changeStatus(ticket, status);
+        }}
+        onDeleteTicket={(ticketId) => {
+          void vm.deleteTicketById(ticketId);
+          vm.setSelectedTicket(null);
         }}
         resolveProjectName={vm.resolveProjectName}
         resolveUserName={vm.resolveUserName}

@@ -4,7 +4,7 @@
  * NO direct DB calls; delegate to TicketRepo.
  * NO HTTP/CDS request handling; called by ticket.impl.js.
  */
-const TicketRepo = require('./ticket.repo');
+const TicketRepo = require('./tickets.repo');
 const { generateTicketCode } = require('../shared/utils/id');
 const { nowIso } = require('../shared/utils/timestamp');
 const { assertEntityExists, assertInEnum, ENTITIES, MANAGER_ROLES, requireRole } = require('../shared/services/validation');
@@ -22,11 +22,11 @@ const cds = require('@sap/cds');
 const CONSULTANT_ROLES = new Set(['CONSULTANT_TECHNIQUE', 'CONSULTANT_FONCTIONNEL']);
 
 const TICKET_STATUS_TRANSITIONS = {
-  PENDING_APPROVAL: new Set(['APPROVED', 'REJECTED']),
+  PENDING_APPROVAL: new Set(['NEW', 'REJECTED']),
   APPROVED: new Set(['NEW', 'IN_PROGRESS', 'REJECTED']),
   NEW: new Set(['IN_PROGRESS', 'BLOCKED', 'REJECTED']),
   IN_PROGRESS: new Set(['IN_TEST', 'BLOCKED', 'DONE', 'REJECTED']),
-  IN_TEST: new Set(['IN_PROGRESS', 'DONE', 'REJECTED']),
+  IN_TEST: new Set(['DONE', 'IN_PROGRESS', 'REJECTED']),
   BLOCKED: new Set(['IN_PROGRESS', 'REJECTED']),
   DONE: new Set([]),
   REJECTED: new Set(['NEW', 'PENDING_APPROVAL']),
@@ -104,13 +104,18 @@ class TicketDomainService {
     data.ticketCode = await this._allocateTicketCode(year);
 
     // Defaults
-    // FuncConsultant creates tickets as PENDING_APPROVAL (Feature 2 workflow)
     const creatorRole = claims?.role;
     if (creatorRole === 'CONSULTANT_FONCTIONNEL') {
       data.status = 'PENDING_APPROVAL';
-      // Functional consultants cannot assign – manager assigns after approval
-      data.assignedTo = null;
-      data.assignedToRole = null;
+      if (data.assignedTo && data.assignedTo !== userId) {
+        req.reject(403, 'Functional consultants can only self-assign tickets to themselves');
+      }
+      data.assignedTo = userId;
+      data.assignedToRole = 'CONSULTANT_FONCTIONNEL';
+      if (data.functionalTesterId) {
+        req.reject(403, 'Functional consultants cannot assign functional testers directly');
+      }
+      data.functionalTesterId = null;
     } else {
       data.status = data.status || 'NEW';
     }
@@ -159,7 +164,10 @@ class TicketDomainService {
     if (data.status !== undefined && id) {
       const current = await this.repo.findById(id);
       if (current && data.status !== current.status) {
-        this._assertAllowedStatusTransition(current.status, data.status, req);
+        const allowed = TICKET_STATUS_TRANSITIONS[current.status] || new Set();
+        if (!allowed.has(data.status)) {
+          req.reject(409, `Invalid ticket status transition: ${current.status} -> ${data.status}`);
+        }
       }
     }
 
@@ -198,6 +206,79 @@ class TicketDomainService {
     }
   }
 
+  async loadTicket(id) {
+    if (!id) return null;
+    return this.repo.findById(id);
+  }
+
+  ensureStatusTransitionAllowed(currentStatus, requestedStatus, req) {
+    const allowed = TICKET_STATUS_TRANSITIONS[currentStatus] || new Set();
+    if (!allowed.has(requestedStatus)) {
+      if (req) {
+        req.reject(409, `Invalid ticket status transition: ${currentStatus} -> ${requestedStatus}`);
+        return;
+      }
+      throw new Error(`Invalid ticket status transition: ${currentStatus} -> ${requestedStatus}`);
+    }
+  }
+
+  async startTicket(req) {
+    const id = req.params?.[0]?.ID ?? req.params?.[0];
+    const ticket = await this.repo.findById(id);
+    if (!ticket) {
+      req.reject(404, 'Ticket not found');
+      return;
+    }
+    if (ticket.status !== 'NEW') {
+      req.reject(409, 'Ticket must be NEW to start working on it');
+      return;
+    }
+    const updated = await this.repo.update(id, {
+      status: 'IN_PROGRESS',
+      updatedAt: nowIso(),
+    });
+    this.afterRead(updated);
+    return updated;
+  }
+
+  async startTesting(req) {
+    const id = req.params?.[0]?.ID ?? req.params?.[0];
+    const ticket = await this.repo.findById(id);
+    if (!ticket) {
+      req.reject(404, 'Ticket not found');
+      return;
+    }
+    if (ticket.status !== 'IN_PROGRESS') {
+      req.reject(409, 'Ticket must be IN_PROGRESS to start testing');
+      return;
+    }
+    const updated = await this.repo.update(id, {
+      status: 'IN_TEST',
+      updatedAt: nowIso(),
+    });
+    this.afterRead(updated);
+    return updated;
+  }
+
+  async completeTicket(req) {
+    const id = req.params?.[0]?.ID ?? req.params?.[0];
+    const ticket = await this.repo.findById(id);
+    if (!ticket) {
+      req.reject(404, 'Ticket not found');
+      return;
+    }
+    if (ticket.status !== 'IN_TEST') {
+      req.reject(409, 'Ticket must be IN_TEST to complete it');
+      return;
+    }
+    const updated = await this.repo.update(id, {
+      status: 'DONE',
+      updatedAt: nowIso(),
+    });
+    this.afterRead(updated);
+    return updated;
+  }
+
   // ---- Approval workflow (Feature 2) ------------------------------------
 
   /**
@@ -208,31 +289,42 @@ class TicketDomainService {
     const id = req.params?.[0]?.ID ?? req.params?.[0];
     const { techConsultantId, allocatedHours } = req.data ?? {};
 
-    if (!techConsultantId) req.reject(400, 'techConsultantId is required for approval');
+    if (!techConsultantId) { req.reject(400, 'techConsultantId is required for approval'); return; }
     if (allocatedHours === undefined || allocatedHours === null || Number(allocatedHours) <= 0) {
       req.reject(400, 'allocatedHours must be greater than 0');
+      return;
     }
 
     return await cds.tx(req).run(async (tx) => {
       const ticket = await tx.run(SELECT.one.from(ENTITIES.Tickets).where({ ID: id }));
       if (!ticket) { req.reject(404, 'Ticket not found'); return; }
 
-      this._assertAllowedStatusTransition(
-        ticket.status,
-        TICKET_STATUS.APPROVED,
-        req,
-        `Cannot approve ticket in status '${ticket.status}'; expected PENDING_APPROVAL`
-      );
+      const allowedFrom = TICKET_STATUS_TRANSITIONS[ticket.status] || new Set();
+      if (!allowedFrom.has(TICKET_STATUS.APPROVED)) {
+        req.reject(409, `Cannot approve ticket in status '${ticket.status}'; expected PENDING_APPROVAL`);
+        return;
+      }
 
       const techConsultant = await this._getActiveTechnicalConsultant(techConsultantId);
       if (!techConsultant) {
         req.reject(400, 'techConsultantId must reference an active technical consultant');
+        return;
+      }
+
+      let functionalTester = null;
+      if (req.data.functionalTesterId) {
+        functionalTester = await this._getActiveFunctionalTester(req.data.functionalTesterId);
+        if (!functionalTester) {
+          req.reject(400, 'functionalTesterId must reference an active functional consultant');
+          return;
+        }
       }
 
       await tx.run(UPDATE(ENTITIES.Tickets).where({ ID: id }).with({
-        status: TICKET_STATUS.APPROVED,
+        status: TICKET_STATUS.NEW,
         assignedTo: techConsultantId,
         assignedToRole: 'CONSULTANT_TECHNIQUE',
+        functionalTesterId: functionalTester ? req.data.functionalTesterId : null,
         allocatedHours: Number(allocatedHours),
         updatedAt: nowIso(),
       }));
@@ -350,6 +442,16 @@ class TicketDomainService {
         .from(ENTITIES.Users)
         .columns('ID')
         .where({ ID: userId, active: true, role: 'CONSULTANT_TECHNIQUE' })
+    );
+  }
+
+  async _getActiveFunctionalTester(userId) {
+    if (!userId) return null;
+    return cds.db.run(
+      SELECT.one
+        .from(ENTITIES.Users)
+        .columns('ID')
+        .where({ ID: userId, active: true, role: 'CONSULTANT_FONCTIONNEL' })
     );
   }
 }

@@ -1,6 +1,6 @@
 import type { Ticket } from './core';
 import type { ODataQueryOptions, ODataRequestOptions } from './core';
-import { listEntities, getEntityById, createEntity, updateEntity, quoteLiteral, odataFetch, entityPath, normalizeEntityRecord } from './core';
+import { listEntities, getEntityById, createEntity, updateEntity, deleteEntity, quoteLiteral, odataFetch, entityPath, normalizeEntityRecord } from './core';
 import type { TicketEvent, TicketStatus } from '../../types/entities';
 
 interface TicketRaw extends Omit<Ticket, 'history' | 'tags' | 'documentationObjectIds'> {
@@ -236,6 +236,13 @@ export const TicketsAPI = {
       requestOptions
     );
     return normalizeTicket(updated);
+  },
+
+  async delete(
+    id: string,
+    requestOptions?: ODataRequestOptions
+  ): Promise<void> {
+    await deleteEntity('ticket', 'Tickets', id, requestOptions);
   },
 
   async approveTicket(

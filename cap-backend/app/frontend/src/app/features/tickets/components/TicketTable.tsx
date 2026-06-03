@@ -27,6 +27,8 @@ interface TicketTableProps {
   onCreateTicket: () => void;
   onChangeStatus: (ticket: Ticket, newStatus: TicketStatus) => void;
   onUpdateTicketDueDate: (ticketId: string, dueDate: string) => void;
+  onDeleteTicket: (ticketId: string) => void;
+  canDeleteTicket: boolean;
   resolveProjectName: (projectId: string) => string;
   resolveUserName: (userId?: string) => string;
 }
@@ -45,6 +47,8 @@ export const TicketTable: React.FC<TicketTableProps> = ({
   onCreateTicket,
   onChangeStatus,
   onUpdateTicketDueDate,
+  onDeleteTicket,
+  canDeleteTicket,
   resolveProjectName,
   resolveUserName,
 }) => {
@@ -56,10 +60,12 @@ export const TicketTable: React.FC<TicketTableProps> = ({
     return (
       <TicketListView
         isViewOnly={isViewOnly}
+        canDeleteTicket={canDeleteTicket}
         filteredTickets={filteredTickets}
         onOpenTicketDetails={onOpenTicketDetails}
         onCreateTicket={onCreateTicket}
         onChangeStatus={onChangeStatus}
+        onDeleteTicket={onDeleteTicket}
         resolveProjectName={resolveProjectName}
         resolveUserName={resolveUserName}
       />
@@ -84,9 +90,11 @@ export const TicketTable: React.FC<TicketTableProps> = ({
   return (
     <TicketKanbanView
       isViewOnly={isViewOnly}
+      canDelete={canDeleteTicket}
       filteredTickets={filteredTickets}
       onOpenTicketDetails={onOpenTicketDetails}
       onChangeStatus={onChangeStatus}
+      onDeleteTicket={onDeleteTicket}
       resolveUserName={resolveUserName}
     />
   );

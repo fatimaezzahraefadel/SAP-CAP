@@ -86,6 +86,7 @@ export const useManagerTicketsBootstrap = () => {
 export const useManagerTicketsMutations = () => {
   return {
     updateTicket: ManagerTicketsAPI.updateTicket,
+    deleteTicket: ManagerTicketsAPI.deleteTicket,
     createNotification: ManagerTicketsAPI.createNotification,
   };
 };
@@ -144,10 +145,12 @@ export interface ManagerTicketsViewModel {
   submitTicket: (event: React.FormEvent) => Promise<void>;
   changeStatus: (ticket: Ticket, newStatus: TicketStatus) => Promise<void>;
   updateTicketDueDate: (ticketId: string, dueDate: string) => Promise<void>;
+  deleteTicketById: (ticketId: string) => Promise<void>;
   openTicketDetails: (ticketId: string) => void;
   prevMonth: () => void;
   nextMonth: () => void;
   clearAllFilters: () => void;
+  canDeleteTicket: boolean;
   resolveProjectName: (id: string) => string;
   resolveUserName: (id?: string) => string;
   handleDocumentationChanged: (ticketId: string, documentationIds: string[]) => void;
@@ -157,9 +160,10 @@ export const useManagerTicketsViewModel = (): ManagerTicketsViewModel => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const { projects, setProjects, users, tickets, setTickets, loading, error } = useManagerTicketsBootstrap();
-  const { updateTicket } = useManagerTicketsMutations();
+  const { updateTicket, deleteTicket } = useManagerTicketsMutations();
 
   const isViewOnly = currentUser?.role === 'CONSULTANT_TECHNIQUE';
+  const canDeleteTicket = currentUser?.role === 'MANAGER' || currentUser?.role === 'PROJECT_MANAGER';
   const [form, setForm] = useState<TicketForm>(EMPTY_FORM);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<Ticket['status'] | 'ALL'>('ALL');
@@ -302,7 +306,7 @@ export const useManagerTicketsViewModel = (): ManagerTicketsViewModel => {
 
       // Functional Consultants cannot assign — ticket goes to PENDING_APPROVAL
       const isFuncConsultant = currentUser.role === 'CONSULTANT_FONCTIONNEL';
-      const assignedTo = isFuncConsultant ? undefined : (form.assignedTo || undefined);
+      const assignedTo = isFuncConsultant ? currentUser.id : (form.assignedTo || undefined);
       const assignedUser = assignedTo
         ? users.find((user) => user.id === assignedTo)
         : undefined;
@@ -313,7 +317,7 @@ export const useManagerTicketsViewModel = (): ManagerTicketsViewModel => {
         existingProjectTickets: tickets.filter((ticket) => ticket.projectId === project.id),
         createdBy: currentUser.id,
         assignedTo,
-        assignedToRole: assignedUser?.role,
+        assignedToRole: isFuncConsultant ? currentUser.role : assignedUser?.role,
         priority: form.priority,
         nature: form.nature,
         title: form.title.trim(),
@@ -384,6 +388,19 @@ export const useManagerTicketsViewModel = (): ManagerTicketsViewModel => {
       toast.success(`Due date -> ${dueDate}`);
     } catch {
       toast.error('Failed to update due date');
+    }
+  };
+
+  const deleteTicketById = async (ticketId: string) => {
+    try {
+      await deleteTicket(ticketId);
+      setTickets((previous) => previous.filter((item) => item.id !== ticketId));
+      if (selectedTicket?.id === ticketId) {
+        setSelectedTicket(null);
+      }
+      toast.success('Ticket deleted successfully');
+    } catch {
+      toast.error('Failed to delete ticket');
     }
   };
 
@@ -483,5 +500,7 @@ export const useManagerTicketsViewModel = (): ManagerTicketsViewModel => {
     resolveProjectName,
     resolveUserName,
     handleDocumentationChanged,
+    deleteTicketById,
+    canDeleteTicket,
   };
 };

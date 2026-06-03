@@ -41,6 +41,10 @@ export const ManagerTicketsAPI = {
     return await ODataTicketsAPI.update(id, payload);
   },
 
+  async deleteTicket(id: string): Promise<void> {
+    return await ODataTicketsAPI.delete(id);
+  },
+
   async createNotification(
     payload: Omit<Notification, 'id' | 'createdAt'> & { createdAt?: string }
   ): Promise<Notification> {
