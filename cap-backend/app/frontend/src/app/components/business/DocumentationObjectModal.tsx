@@ -19,7 +19,9 @@ import {
   SelectValue,
 } from '../ui/select';
 import { Textarea } from '../ui/textarea';
-import { Badge } from '../ui/badge';import { DocumentationAPI } from '../../services/odata/documentationApi';
+import { Badge } from '../ui/badge';
+import { DocumentationAPI } from '../../services/odata/documentationApi';
+import { odataFetch } from '../../services/odata/core';
 import {
   DocumentationAttachment,
   DocumentationObject,
@@ -58,7 +60,7 @@ export const DocumentationObjectModal: React.FC<DocumentationObjectModalProps> =
   const [description, setDescription] = useState('');
   const [type, setType] = useState<DocumentationObjectType>('SFD');
   const [content, setContent] = useState('');
-  const [attachedFiles, setAttachedFiles] = useState<DocumentationAttachment[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<Array<DocumentationAttachment & { file?: File }>>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const objectUrlsRef = useRef<string[]>([]);
 
@@ -88,14 +90,15 @@ export const DocumentationObjectModal: React.FC<DocumentationObjectModalProps> =
     const fileList = event.target.files;
     if (!fileList || fileList.length === 0) return;
 
-    const additions: DocumentationAttachment[] = Array.from(fileList).map((file) => {
+    const additions = Array.from(fileList).map((file) => {
       const url = URL.createObjectURL(file);
       objectUrlsRef.current.push(url);
       return {
         filename: sanitizeFileName(file.name),
         size: file.size,
         url,
-      };
+        file,
+      } as DocumentationAttachment & { file?: File };
     });
 
     setAttachedFiles((prev) => [...prev, ...additions]);
@@ -130,16 +133,65 @@ export const DocumentationObjectModal: React.FC<DocumentationObjectModalProps> =
 
     try {
       setIsSubmitting(true);
-      const created = await DocumentationAPI.create({
+        const created = await DocumentationAPI.create({
         title: title.trim(),
         description: description.trim(),
         type,
         content: content.trim(),
-        attachedFiles,
+          attachedFiles: [], // attachments will be uploaded separately
         relatedTicketIds: [ticket.id],
         projectId: ticket.projectId,
         authorId: currentUserId,
       });
+
+        // Upload files to attachments service and update documentation object
+        if (attachedFiles.length > 0) {
+          const uploadedRows: DocumentationAttachment[] = [];
+          for (const f of attachedFiles) {
+            if (!f.file) continue; // skip already persisted entries
+            const base64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const result = reader.result as string;
+                const comma = result.indexOf(',');
+                resolve(comma >= 0 ? result.slice(comma + 1) : result);
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(f.file as File);
+            });
+
+            // Route through odataFetch so the Bearer token is attached; a raw
+            // fetch sends no Authorization header and CAP's mocked auth then
+            // challenges the browser with a native Basic-auth login popup.
+            let json: { ID?: string; id?: string; value?: { ID?: string; id?: string } } | undefined;
+            try {
+              json = await odataFetch('core', '/uploadAttachment', {
+                method: 'POST',
+                body: JSON.stringify({
+                  parentType: 'DOCUMENT',
+                  parentId: created.id,
+                  fileName: f.filename,
+                  mimeType: f.file.type || 'application/octet-stream',
+                  contentBase64: base64,
+                }),
+              });
+            } catch {
+              // continue but notify
+              toast.error(`Failed to upload ${f.filename}`);
+              continue;
+            }
+
+            // The action returns the created attachment; accept either direct object or OData 'value'
+            const attachment = json?.value ?? json;
+            if (!attachment) continue;
+            const url = `/attachments/${attachment.ID || attachment.id}`;
+            uploadedRows.push({ filename: f.filename, size: f.size, url });
+          }
+
+          if (uploadedRows.length > 0) {
+            await DocumentationAPI.update(created.id, { attachedFiles: uploadedRows });
+          }
+        }
 
       if (onCreated) {
         await onCreated(created);

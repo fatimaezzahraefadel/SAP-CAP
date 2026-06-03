@@ -19,6 +19,7 @@ const ENTITIES = Object.freeze({
   LeaveRequests: 'sap.performance.dashboard.db.LeaveRequests',
   Evaluations: 'sap.performance.dashboard.db.Evaluations',
   DocumentationObjects: 'sap.performance.dashboard.db.DocumentationObjects',
+  Attachments: 'sap.performance.dashboard.db.Attachments',
   Notifications: 'sap.performance.dashboard.db.Notifications',
   ProjectFeedback: 'sap.performance.dashboard.db.ProjectFeedback',
   ReferenceData: 'sap.performance.dashboard.db.ReferenceData',
