@@ -6,14 +6,20 @@ import {
   Download,
   FileText,
   Link2,
+  Pencil,
+  Save,
+  Trash2,
   UserRound,
+  X,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import { PageHeader } from '../../components/common/PageHeader';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { getBaseRouteForRole } from '../../context/roleRouting';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Textarea } from '../../components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -22,11 +28,24 @@ import {
   TableHeader,
   TableRow,
 } from '../../components/ui/table';
-import { useAuth } from '../../context/AuthContext';import { DocumentationAPI } from '../../services/odata/documentationApi';
+import { useAuth } from '../../context/AuthContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../components/ui/alert-dialog';
+import { DocumentationAPI } from '../../services/odata/documentationApi';
+import { odataFetch } from '../../services/odata/core';
 import { ProjectsAPI } from '../../services/odata/projectsApi';
 import { TicketsAPI } from '../../services/odata/ticketsApi';
 import { UsersAPI } from '../../services/odata/usersApi';
 import {
+  DocumentationAttachment,
   DocumentationObject,
   Ticket,
   UserRole,
@@ -155,6 +174,13 @@ export const DocumentationDetails: React.FC = () => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [attachmentPendingDelete, setAttachmentPendingDelete] = useState<
+    { file: DocumentationAttachment; index: number } | null
+  >(null);
+  const [isDeletingAttachment, setIsDeletingAttachment] = useState(false);
+  const [isEditingContent, setIsEditingContent] = useState(false);
+  const [editContent, setEditContent] = useState('');
+  const [isSavingContent, setIsSavingContent] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -187,6 +213,75 @@ export const DocumentationDetails: React.FC = () => {
   const projectName = documentation
     ? projects.find((project) => project.id === documentation.projectId)?.name ?? documentation.projectId
     : '-';
+
+  const canManageDocument =
+    !!currentUser &&
+    !!documentation &&
+    (currentUser.id === documentation.authorId ||
+      ['ADMIN', 'MANAGER', 'PROJECT_MANAGER'].includes(currentUser.role));
+
+  const startEditingContent = () => {
+    if (!documentation) return;
+    setEditContent(documentation.content);
+    setIsEditingContent(true);
+  };
+
+  const cancelEditingContent = () => {
+    setIsEditingContent(false);
+    setEditContent('');
+  };
+
+  const saveContent = async () => {
+    if (!documentation) return;
+    try {
+      setIsSavingContent(true);
+      await DocumentationAPI.update(documentation.id, { content: editContent });
+      const refreshed = await DocumentationAPI.getById(documentation.id);
+      if (refreshed) setDocumentation(refreshed);
+      toast.success('Documentation updated');
+      setIsEditingContent(false);
+    } catch {
+      toast.error('Failed to update documentation');
+    } finally {
+      setIsSavingContent(false);
+    }
+  };
+
+  const extractAttachmentId = (url: string): string | null => {
+    const match = /\/attachments\/([^/?#]+)/.exec(url);
+    return match ? match[1] : null;
+  };
+
+  const removeAttachment = async (file: DocumentationAttachment, index: number) => {
+    if (!documentation) return;
+    try {
+      setIsDeletingAttachment(true);
+
+      const attachmentId = extractAttachmentId(file.url);
+      if (attachmentId) {
+        try {
+          await odataFetch('core', '/deleteAttachment', {
+            method: 'POST',
+            body: JSON.stringify({ id: attachmentId }),
+          });
+        } catch {
+          // Row may already be gone — still detach it from the document below.
+        }
+      }
+
+      const remaining = documentation.attachedFiles.filter((_, i) => i !== index);
+      await DocumentationAPI.update(documentation.id, { attachedFiles: remaining });
+      const refreshed = await DocumentationAPI.getById(documentation.id);
+      if (refreshed) setDocumentation(refreshed);
+
+      toast.success('Attachment deleted');
+      setAttachmentPendingDelete(null);
+    } catch {
+      toast.error('Failed to delete attachment');
+    } finally {
+      setIsDeletingAttachment(false);
+    }
+  };
 
   const relatedTickets = useMemo(() => {
     if (!documentation) return [];
@@ -235,24 +330,54 @@ export const DocumentationDetails: React.FC = () => {
           <>
             <Card className="lg:col-span-2">
               <CardHeader className="pb-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline">
-                    {t(`documentation.types.${documentation.type}`, documentation.type)}
-                  </Badge>
-                  <Badge variant="secondary">
-                    <Link2 className="mr-1 h-3 w-3" />
-                    {documentation.relatedTicketIds.length} {t(`documentation.details.ticket${documentation.relatedTicketIds.length > 1 ? 's' : ''}`)}
-                  </Badge>
-                  <Badge variant="secondary">
-                    <FileText className="mr-1 h-3 w-3" />
-                    {documentation.attachedFiles.length} {t(`documentation.details.file${documentation.attachedFiles.length > 1 ? 's' : ''}`)}
-                  </Badge>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline">
+                      {t(`documentation.types.${documentation.type}`, documentation.type)}
+                    </Badge>
+                    <Badge variant="secondary">
+                      <Link2 className="mr-1 h-3 w-3" />
+                      {documentation.relatedTicketIds.length} {t(`documentation.details.ticket${documentation.relatedTicketIds.length > 1 ? 's' : ''}`)}
+                    </Badge>
+                    <Badge variant="secondary">
+                      <FileText className="mr-1 h-3 w-3" />
+                      {documentation.attachedFiles.length} {t(`documentation.details.file${documentation.attachedFiles.length > 1 ? 's' : ''}`)}
+                    </Badge>
+                  </div>
+                  {canManageDocument && !isEditingContent && (
+                    <Button variant="outline" size="sm" onClick={startEditingContent}>
+                      <Pencil className="mr-1 h-3.5 w-3.5" />
+                      Edit
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
-                <article className="space-y-4 rounded-lg border border-border/70 bg-card p-5">
-                  {renderMarkdown(documentation.content)}
-                </article>
+                {isEditingContent ? (
+                  <div className="space-y-3">
+                    <Textarea
+                      value={editContent}
+                      onChange={(event) => setEditContent(event.target.value)}
+                      rows={18}
+                      className="font-mono text-sm"
+                      placeholder="Markdown content…"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={cancelEditingContent} disabled={isSavingContent}>
+                        <X className="mr-1 h-3.5 w-3.5" />
+                        Cancel
+                      </Button>
+                      <Button size="sm" onClick={() => void saveContent()} disabled={isSavingContent}>
+                        <Save className="mr-1 h-3.5 w-3.5" />
+                        {isSavingContent ? 'Saving…' : 'Save'}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <article className="space-y-4 rounded-lg border border-border/70 bg-card p-5">
+                    {renderMarkdown(documentation.content)}
+                  </article>
+                )}
               </CardContent>
             </Card>
 
@@ -301,18 +426,31 @@ export const DocumentationDetails: React.FC = () => {
                           <p className="truncate text-sm font-medium text-foreground">{file.filename}</p>
                           <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
                         </div>
-                        {isDownloadableAttachment(file.url) ? (
-                          <a href={file.url} download={file.filename} target="_blank" rel="noreferrer">
-                            <Button variant="outline" size="sm">
-                              <Download className="mr-1 h-3.5 w-3.5" />
-                              {t('documentation.details.download')}
+                        <div className="flex shrink-0 items-center gap-2">
+                          {isDownloadableAttachment(file.url) ? (
+                            <a href={file.url} download={file.filename} target="_blank" rel="noreferrer">
+                              <Button variant="outline" size="sm">
+                                <Download className="mr-1 h-3.5 w-3.5" />
+                                {t('documentation.details.download')}
+                              </Button>
+                            </a>
+                          ) : (
+                            <Button variant="outline" size="sm" disabled>
+                              {t('documentation.details.unavailable')}
                             </Button>
-                          </a>
-                        ) : (
-                          <Button variant="outline" size="sm" disabled>
-                            {t('documentation.details.unavailable')}
-                          </Button>
-                        )}
+                          )}
+                          {canManageDocument && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              onClick={() => setAttachmentPendingDelete({ file, index })}
+                              aria-label={`Delete ${file.filename}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     ))
                   )}
@@ -361,6 +499,37 @@ export const DocumentationDetails: React.FC = () => {
           </>
         )}
       </div>
+
+      <AlertDialog
+        open={attachmentPendingDelete !== null}
+        onOpenChange={(open) => !open && !isDeletingAttachment && setAttachmentPendingDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete attachment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {attachmentPendingDelete
+                ? `"${attachmentPendingDelete.file.filename}" will be permanently removed from this document. This action cannot be undone.`
+                : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingAttachment}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeletingAttachment}
+              onClick={(event) => {
+                event.preventDefault();
+                if (attachmentPendingDelete) {
+                  void removeAttachment(attachmentPendingDelete.file, attachmentPendingDelete.index);
+                }
+              }}
+            >
+              {isDeletingAttachment ? 'Deleting…' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

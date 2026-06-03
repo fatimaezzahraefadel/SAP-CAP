@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BookOpenText, ExternalLink, Link2, Paperclip, Plus } from 'lucide-react';
+import { BookOpenText, ExternalLink, Link2, Paperclip, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router';
 import { DocumentationObjectModal } from './DocumentationObjectModal';
@@ -20,7 +20,18 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../ui/select';import { DocumentationAPI } from '../../services/odata/documentationApi';
+} from '../ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
+import { DocumentationAPI } from '../../services/odata/documentationApi';
 import {
   DocumentationObject,
   DOCUMENTATION_OBJECT_TYPE_LABELS,
@@ -55,6 +66,8 @@ export const TicketDocumentationSection: React.FC<TicketDocumentationSectionProp
   const [isAttaching, setIsAttaching] = useState(false);
   const [relatedDocs, setRelatedDocs] = useState<DocumentationObject[]>([]);
   const [attachableDocs, setAttachableDocs] = useState<DocumentationObject[]>([]);
+  const [docPendingDelete, setDocPendingDelete] = useState<DocumentationObject | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadDocumentation = useCallback(async () => {
     setLoading(true);
@@ -83,6 +96,20 @@ export const TicketDocumentationSection: React.FC<TicketDocumentationSectionProp
   useEffect(() => {
     void loadDocumentation();
   }, [loadDocumentation]);
+
+  const removeDocumentation = async (doc: DocumentationObject) => {
+    try {
+      setIsDeleting(true);
+      await DocumentationAPI.delete(doc.id);
+      toast.success('Documentation deleted');
+      setDocPendingDelete(null);
+      await loadDocumentation();
+    } catch {
+      toast.error('Failed to delete documentation');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const selectedAttachDoc = useMemo(
     () => attachableDocs.find((doc) => doc.id === selectedAttachDocId),
@@ -178,14 +205,27 @@ export const TicketDocumentationSection: React.FC<TicketDocumentationSectionProp
                     </div>
                   </div>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate(`/shared/documentation/${doc.id}`)}
-                  >
-                    <ExternalLink className="mr-1 h-3.5 w-3.5" />
-                    Open
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/shared/documentation/${doc.id}`)}
+                    >
+                      <ExternalLink className="mr-1 h-3.5 w-3.5" />
+                      Open
+                    </Button>
+                    {canEdit && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => setDocPendingDelete(doc)}
+                        aria-label={`Delete ${doc.title}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -257,6 +297,41 @@ export const TicketDocumentationSection: React.FC<TicketDocumentationSectionProp
           await loadDocumentation();
         }}
       />
+
+      <AlertDialog
+        open={docPendingDelete !== null}
+        onOpenChange={(open) => !open && !isDeleting && setDocPendingDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete documentation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {docPendingDelete ? (
+                <>
+                  &ldquo;{docPendingDelete.title}&rdquo; will be permanently deleted
+                  {docPendingDelete.relatedTicketIds.length > 1
+                    ? `, including its links to ${docPendingDelete.relatedTicketIds.length} tickets`
+                    : ''}
+                  . This action cannot be undone.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeleting}
+              onClick={(event) => {
+                event.preventDefault();
+                if (docPendingDelete) void removeDocumentation(docPendingDelete);
+              }}
+            >
+              {isDeleting ? 'Deleting…' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

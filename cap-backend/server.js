@@ -29,6 +29,7 @@ cds.on('served', () => {
 	cds.app.use((req, res, next) => {
 		if (req.method !== 'GET' && req.method !== 'HEAD') return next();
 		if (req.path.startsWith('/odata/v4') || req.path.startsWith('/-/')) return next();
+		if (req.path.startsWith('/attachments/')) return next();
 		if (path.extname(req.path)) return next();
 
 		res.sendFile(webAppIndex);

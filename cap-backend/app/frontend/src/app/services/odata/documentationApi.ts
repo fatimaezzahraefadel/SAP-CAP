@@ -51,7 +51,7 @@ export const normalizeAttachments = (value: unknown): DocumentationObject['attac
           ''
       );
       const url = normalizeAttachmentUrl(candidate.url ?? candidate.fileUrl ?? '');
-      const size = Number(candidate.size ?? 0);
+      const size = Number(candidate.size ?? candidate.fileSize ?? 0);
       return {
         filename: filename || 'Attachment',
         url: url || '#',
@@ -85,7 +85,9 @@ const normalizeDocumentationObject = (doc: DocumentationObjectRaw): Documentatio
   relatedTicketIds: normalizeRelatedTicketIds(doc.relatedTicketIds),
 });
 
-export const toAttachmentRows = (value: unknown): Array<{ fileName: string; fileUrl: string }> => {
+export const toAttachmentRows = (
+  value: unknown
+): Array<{ fileName: string; fileUrl: string; fileSize: number }> => {
   const parsed = parseJsonIfString(value);
   if (!Array.isArray(parsed)) return [];
 
@@ -96,12 +98,14 @@ export const toAttachmentRows = (value: unknown): Array<{ fileName: string; file
       const fileName = sanitizeFileName(candidate.fileName ?? candidate.filename ?? candidate.name ?? '');
       const fileUrl = normalizeAttachmentUrl(candidate.fileUrl ?? candidate.url ?? '');
       if (!fileName && !fileUrl) return null;
+      const fileSize = Number(candidate.fileSize ?? candidate.size ?? 0);
       return {
         fileName: fileName || 'Attachment',
         fileUrl: fileUrl || '#',
+        fileSize: Number.isFinite(fileSize) && fileSize >= 0 ? fileSize : 0,
       };
     })
-    .filter((entry): entry is { fileName: string; fileUrl: string } => Boolean(entry));
+    .filter((entry): entry is { fileName: string; fileUrl: string; fileSize: number } => Boolean(entry));
 };
 
 const toRelatedTicketRows = (value: unknown): Array<{ ticketId: string }> => {
