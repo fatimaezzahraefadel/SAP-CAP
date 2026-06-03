@@ -51,6 +51,8 @@ const NATURE_SKILL_MAP: Record<TicketNature, string[]> = {
   REPORT: ['ABAP', 'CDS Views', 'SAP Analytics Cloud', 'BW/4HANA', 'report', 'ALV'],
 };
 
+const ACTIVE_TICKET_STATUSES = new Set(['NEW', 'IN_PROGRESS', 'IN_TEST', 'BLOCKED']);
+
 // ---------------------------------------------------------------------------
 // Deterministic recommender
 // ---------------------------------------------------------------------------
@@ -64,79 +66,107 @@ export class HeuristicAssigneeRecommender implements IAssigneeRecommender {
   ): AssigneeRecommendation[] {
     const candidates = allUsers.filter((user) => user.active && user.role !== 'ADMIN' && user.role !== 'MANAGER');
 
-    const scored = candidates.map((user) => {
-      const availability = this.scoreAvailability(user, allTickets);
-      const skills = this.scoreSkillsMatch(user, ticket);
-      const performance = this.scorePerformance(user, allTickets);
-      const similar = this.scoreSimilarTickets(user, ticket, allTickets);
+    const scored = candidates
+      .map((user) => {
+        const availability = this.scoreAvailability(user, allTickets);
+        const skills = this.scoreSkillsMatch(user, ticket);
+        const performance = this.scorePerformance(user, allTickets);
+        const similar = this.scoreSimilarTickets(user, ticket, allTickets);
 
-      const totalScore =
-        availability * weights.availability +
-        skills * weights.skillsMatch +
-        performance * weights.performance +
-        similar * weights.similarTickets;
+        const totalScore =
+          availability * weights.availability +
+          skills * weights.skillsMatch +
+          performance * weights.performance +
+          similar * weights.similarTickets;
 
-      const explanationParts: string[] = [];
-      if (availability > 70) explanationParts.push('high availability');
-      if (skills > 60) explanationParts.push('strong skills match');
-      if (performance > 60) explanationParts.push('good track record');
-      if (similar > 50) explanationParts.push('experience with similar tickets');
-      if (explanationParts.length === 0) explanationParts.push('general compatibility');
+        const explanationParts: string[] = [];
+        if (availability > 70) explanationParts.push('high availability');
+        if (skills > 60) explanationParts.push('strong skills match');
+        if (performance > 60) explanationParts.push('good track record');
+        if (similar > 50) explanationParts.push('experience with similar tickets');
+        if (explanationParts.length === 0) explanationParts.push('general compatibility');
 
-      return {
-        userId: user.id,
-        userName: user.name,
-        userRole: user.role,
-        score: Math.round(totalScore * 10) / 10,
-        factors: {
-          availabilityScore: Math.round(availability),
-          skillsMatchScore: Math.round(skills),
-          performanceScore: Math.round(performance),
-          similarTicketsScore: Math.round(similar),
-        },
-        explanation: `Recommended due to ${explanationParts.join(', ')}. Overall score: ${Math.round(totalScore)}%.`,
-      } satisfies AssigneeRecommendation;
-    });
+        return {
+          userId: user.id,
+          userName: user.name,
+          userRole: user.role,
+          score: Math.round(totalScore * 10) / 10,
+          factors: {
+            availabilityScore: Math.round(availability),
+            skillsMatchScore: Math.round(skills),
+            performanceScore: Math.round(performance),
+            similarTicketsScore: Math.round(similar),
+          },
+          explanation: `Recommended due to ${explanationParts.join(', ')}. Overall score: ${Math.round(totalScore)}%.`,
+        } satisfies AssigneeRecommendation;
+      })
+      .filter((recommendation) => recommendation.factors.availabilityScore >= 10);
 
-    return scored.sort((a, b) => b.score - a.score).slice(0, 5);
+    return scored
+      .sort((a, b) => {
+        const scoreDelta = b.score - a.score;
+        if (Math.abs(scoreDelta) > 0.1) return scoreDelta;
+        return b.factors.availabilityScore - a.factors.availabilityScore;
+      })
+      .slice(0, 5);
   }
 
   private scoreAvailability(user: User, allTickets: Ticket[]): number {
-    const openTickets = allTickets.filter(
-      (ticket) =>
-        ticket.assignedTo === user.id &&
-        (ticket.status === 'NEW' || ticket.status === 'IN_PROGRESS' || ticket.status === 'IN_TEST'),
-    ).length;
+    const assignedOpenTickets = allTickets.filter(
+      (ticket) => ticket.assignedTo === user.id && ACTIVE_TICKET_STATUSES.has(ticket.status),
+    );
 
-    const penalty = Math.min(openTickets * 12, 60);
-    return Math.max(0, user.availabilityPercent - penalty);
+    const assignedHours = assignedOpenTickets.reduce((sum, ticket) => {
+      return sum + (ticket.allocatedHours ?? ticket.effortHours ?? 4);
+    }, 0);
+
+    const loadPercent = Math.min(100, (assignedHours / 40) * 100);
+    const availability = Math.max(0, Math.min(100, user.availabilityPercent ?? 100));
+
+    return Math.max(0, Math.min(100, availability - loadPercent * 0.7));
   }
 
   private scoreSkillsMatch(user: User, ticket: Partial<Ticket>): number {
-    const ticketSkills: string[] = [];
+    const ticketSkills = new Set<string>();
 
     if (ticket.nature) {
-      ticketSkills.push(...(NATURE_SKILL_MAP[ticket.nature] || []));
+      for (const skill of NATURE_SKILL_MAP[ticket.nature] ?? []) {
+        this.addNormalizedSkill(ticketSkills, skill);
+      }
     }
+
     if (ticket.tags) {
-      ticketSkills.push(...ticket.tags);
+      ticket.tags.forEach((tag) => this.addNormalizedSkill(ticketSkills, tag));
     }
 
-    if (ticketSkills.length === 0) return 50;
+    if (ticketSkills.size === 0) {
+      return 50;
+    }
 
-    const userSkillsLower = user.skills.map((skill) => skill.toLowerCase());
-    const matches = ticketSkills.filter((skill) =>
-      userSkillsLower.some((userSkill) => userSkill.includes(skill.toLowerCase()) || skill.toLowerCase().includes(userSkill)),
-    ).length;
+    const normalizedUserSkills = new Set(user.skills.map((skill) => this.normalizeSkill(skill)));
+    let score = 0;
 
-    return Math.min(100, (matches / ticketSkills.length) * 100);
+    ticketSkills.forEach((ticketSkill) => {
+      if (normalizedUserSkills.has(ticketSkill)) {
+        score += 1;
+      } else if ([...normalizedUserSkills].some((userSkill) => userSkill.includes(ticketSkill) || ticketSkill.includes(userSkill))) {
+        score += 0.75;
+      }
+    });
+
+    return Math.min(100, Math.round((score / ticketSkills.size) * 100));
   }
 
   private scorePerformance(user: User, allTickets: Ticket[]): number {
-    const doneTickets = allTickets.filter((ticket) => ticket.assignedTo === user.id && ticket.status === 'DONE');
-    if (doneTickets.length === 0) return 40;
+    const assigned = allTickets.filter((ticket) => ticket.assignedTo === user.id);
+    if (assigned.length === 0) {
+      return 55;
+    }
 
-    return Math.min(100, 40 + (doneTickets.length / 20) * 60);
+    const completed = assigned.filter((ticket) => ticket.status === 'DONE').length;
+    const completionRate = completed / assigned.length;
+    const experienceBonus = Math.min(20, completed * 2);
+    return Math.min(100, Math.round(40 + completionRate * 50 + experienceBonus));
   }
 
   private scoreSimilarTickets(
@@ -144,19 +174,40 @@ export class HeuristicAssigneeRecommender implements IAssigneeRecommender {
     ticket: Partial<Ticket>,
     allTickets: Ticket[],
   ): number {
-    if (!ticket.nature) return 30;
+    if (!ticket.nature && !ticket.tags?.length) {
+      return 30;
+    }
 
-    const sameNatureDone = allTickets.filter(
-      (entry) =>
-        entry.assignedTo === user.id &&
-        entry.nature === ticket.nature &&
-        entry.status === 'DONE',
-    ).length;
+    const sameNatureDone = ticket.nature
+      ? allTickets.filter(
+          (entry) =>
+            entry.assignedTo === user.id &&
+            entry.status === 'DONE' &&
+            entry.nature === ticket.nature,
+        ).length
+      : 0;
 
-    if (sameNatureDone === 0) return 20;
-    if (sameNatureDone === 1) return 50;
-    if (sameNatureDone === 2) return 70;
-    return Math.min(100, 85 + sameNatureDone);
+    const sameTagsDone = ticket.tags?.length
+      ? allTickets.filter(
+          (entry) =>
+            entry.assignedTo === user.id &&
+            entry.status === 'DONE' &&
+            entry.tags?.some((tag) => ticket.tags?.includes(tag)),
+        ).length
+      : 0;
+
+    return Math.min(100, 30 + sameNatureDone * 20 + sameTagsDone * 10);
+  }
+
+  private normalizeSkill(skill: string): string {
+    return skill.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ');
+  }
+
+  private addNormalizedSkill(set: Set<string>, skill: string): void {
+    const normalized = this.normalizeSkill(skill);
+    if (normalized) {
+      set.add(normalized);
+    }
   }
 }
 

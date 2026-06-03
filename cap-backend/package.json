@@ -15,8 +15,10 @@
   },
   "dependencies": {
     "@cap-js/mcp-server": "^0.0.5",
-    "@cap-js/sqlite": "^1",
-    "@sap/cds": "^8"
+    "@sap/cds": "^8",
+    "@sap/cds-sqlite": "^1.24.1",
+    "sql.js": "^1.14.1",
+    "sqlite3": "^6.0.1"
   },
   "devDependencies": {
     "@sap/cds-dk": "^8",

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertOctagon, MessageSquare, Plus, Ticket as TicketIcon } from 'lucide-react';
+import { AlertOctagon, MessageSquare, Plus, Ticket as TicketIcon, Trash2 } from 'lucide-react';
 import { EmptyState } from '@/app/components/common/EmptyState';
 import { Badge } from '@/app/components/ui/badge';
 import { Button } from '@/app/components/ui/button';
@@ -21,10 +21,12 @@ import { priorityColor, statusColor } from '../../ticketView.constants';
 
 interface TicketListViewProps {
   isViewOnly: boolean;
+  canDeleteTicket: boolean;
   filteredTickets: Ticket[];
   onOpenTicketDetails: (ticketId: string) => void;
   onCreateTicket: () => void;
   onChangeStatus: (ticket: Ticket, newStatus: TicketStatus) => void;
+  onDeleteTicket: (ticketId: string) => void;
   resolveProjectName: (projectId: string) => string;
   resolveUserName: (userId?: string) => string;
 }
@@ -38,10 +40,12 @@ const getAssignedBy = (ticket: Ticket, resolveUserName: (userId?: string) => str
 
 export const TicketListView: React.FC<TicketListViewProps> = ({
   isViewOnly,
+  canDeleteTicket,
   filteredTickets,
   onOpenTicketDetails,
   onCreateTicket,
   onChangeStatus,
+  onDeleteTicket,
   resolveProjectName,
   resolveUserName,
 }) => {
@@ -67,8 +71,9 @@ export const TicketListView: React.FC<TicketListViewProps> = ({
 
           return (
             <div key={ticket.id} className="rounded-lg border bg-card p-4 shadow-sm">
-              <button
-                type="button"
+              <div
+                role="button"
+                tabIndex={0}
                 onClick={() => onOpenTicketDetails(ticket.id)}
                 onKeyDown={(event) => openTicketFromKeyboard(event, ticket.id)}
                 className="w-full rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -149,15 +154,30 @@ export const TicketListView: React.FC<TicketListViewProps> = ({
                     )}
                   </div>
                 )}
-              </button>
+              </div>
 
-              <div className="mt-3 border-t border-border/60 pt-3">
-                <TicketActions
-                  mode="quick-complete"
-                  ticket={ticket}
-                  isViewOnly={isViewOnly}
-                  onChangeStatus={onChangeStatus}
-                />
+              <div className="mt-3 border-t border-border/60 pt-3" onClick={(event) => event.stopPropagation()}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <TicketActions
+                    mode="quick-complete"
+                    ticket={ticket}
+                    isViewOnly={isViewOnly}
+                    onChangeStatus={onChangeStatus}
+                  />
+                  {canDeleteTicket && !isViewOnly && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDeleteTicket(ticket.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {t('common.delete')}
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -251,7 +271,21 @@ export const TicketListView: React.FC<TicketListViewProps> = ({
                     </div>
                   </TableCell>
                   <TableCell className="px-4 py-3" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
-                    <TicketActions mode="quick-complete" ticket={ticket} isViewOnly={isViewOnly} onChangeStatus={onChangeStatus} />
+                    <div className="flex items-center justify-end gap-2">
+                      <TicketActions mode="quick-complete" ticket={ticket} isViewOnly={isViewOnly} onChangeStatus={onChangeStatus} />
+                      {canDeleteTicket && !isViewOnly && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onDeleteTicket(ticket.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               );
