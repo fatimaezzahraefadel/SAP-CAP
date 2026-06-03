@@ -1107,3 +1107,176 @@ describe('Validation and state-machine guards', () => {
     }
   });
 });
+
+describe('Allocations CRUD', () => {
+  beforeAll(async () => {
+    await ensureAuth();
+    await ensureConsultantAuth();
+  });
+
+  let createdAllocationId;
+
+  test('Manager can create an allocation', async () => {
+    const { status, data } = await POST(
+      '/odata/v4/user/Allocations',
+      {
+        userId: requireSeedId('techId'),
+        projectId: requireSeedId('project1Id'),
+        allocationPercent: 50,
+        startDate: '2026-05-01',
+        endDate: '2026-06-01',
+      },
+      withAuth() // Auth is manager
+    );
+    expect(status).toBe(201);
+    expect(data.ID).toBeTruthy();
+    createdAllocationId = data.ID;
+  });
+
+  test('Manager can update an allocation', async () => {
+    const { status, data } = await PATCH(
+      `/odata/v4/user/Allocations('${createdAllocationId}')`,
+      { allocationPercent: 75 },
+      withAuth()
+    );
+    expect(status).toBe(200);
+    expect(data.allocationPercent).toBe(75);
+  });
+
+  test('Consultant cannot create an allocation', async () => {
+    try {
+      await POST(
+        '/odata/v4/user/Allocations',
+        {
+          userId: requireSeedId('techId'),
+          projectId: requireSeedId('project1Id'),
+          allocationPercent: 30,
+          startDate: '2026-05-01',
+          endDate: '2026-06-01',
+        },
+        withConsultantAuth()
+      );
+      fail('Should have thrown');
+    } catch (err) {
+      expect(err.response?.status ?? err.status).toBe(403);
+    }
+  });
+
+  test('Consultant cannot update an allocation', async () => {
+    try {
+      await PATCH(
+        `/odata/v4/user/Allocations('${createdAllocationId}')`,
+        { allocationPercent: 10 },
+        withConsultantAuth()
+      );
+      fail('Should have thrown');
+    } catch (err) {
+      expect(err.response?.status ?? err.status).toBe(403);
+    }
+  });
+
+  test('Consultant cannot delete an allocation', async () => {
+    try {
+      await DELETE(`/odata/v4/user/Allocations('${createdAllocationId}')`, withConsultantAuth());
+      fail('Should have thrown');
+    } catch (err) {
+      expect(err.response?.status ?? err.status).toBe(403);
+    }
+  });
+
+  test('Manager can delete an allocation', async () => {
+    const { status } = await DELETE(`/odata/v4/user/Allocations('${createdAllocationId}')`, withAuth());
+    expect(status).toBe(204);
+  });
+});
+
+describe('Evaluations CRUD', () => {
+  beforeAll(async () => {
+    await ensureAuth();
+    await ensureConsultantAuth();
+  });
+
+  let createdEvaluationId;
+
+  test('Manager can create an evaluation', async () => {
+    const { status, data } = await POST(
+      '/odata/v4/time/Evaluations',
+      {
+        userId: requireSeedId('techId'),
+        evaluatorId: requireSeedId('managerId'),
+        projectId: requireSeedId('project1Id'),
+        score: 4,
+        feedback: 'Good job',
+      },
+      withAuth()
+    );
+    expect(status).toBe(201);
+    expect(data.ID).toBeTruthy();
+    createdEvaluationId = data.ID;
+  });
+
+  test('Consultant cannot read evaluations', async () => {
+    try {
+      await GET('/odata/v4/time/Evaluations', withConsultantAuth());
+      fail('Should have thrown');
+    } catch (err) {
+      expect(err.response?.status ?? err.status).toBe(403);
+    }
+  });
+
+  test('Consultant cannot create an evaluation', async () => {
+    try {
+      await POST(
+        '/odata/v4/time/Evaluations',
+        {
+          userId: requireSeedId('techId'),
+          evaluatorId: requireSeedId('managerId'),
+          projectId: requireSeedId('project1Id'),
+          score: 5,
+        },
+        withConsultantAuth()
+      );
+      fail('Should have thrown');
+    } catch (err) {
+      expect(err.response?.status ?? err.status).toBe(403);
+    }
+  });
+
+  test('Consultant cannot update an evaluation', async () => {
+    try {
+      await PATCH(
+        `/odata/v4/time/Evaluations('${createdEvaluationId}')`,
+        { score: 5 },
+        withConsultantAuth()
+      );
+      fail('Should have thrown');
+    } catch (err) {
+      expect(err.response?.status ?? err.status).toBe(403);
+    }
+  });
+
+  test('Consultant cannot delete an evaluation', async () => {
+    try {
+      await DELETE(`/odata/v4/time/Evaluations('${createdEvaluationId}')`, withConsultantAuth());
+      fail('Should have thrown');
+    } catch (err) {
+      expect(err.response?.status ?? err.status).toBe(403);
+    }
+  });
+
+  test('Manager can update an evaluation', async () => {
+    const { status, data } = await PATCH(
+      `/odata/v4/time/Evaluations('${createdEvaluationId}')`,
+      { score: 5, feedback: 'Excellent' },
+      withAuth()
+    );
+    expect(status).toBe(200);
+    expect(data.score).toBe(5);
+  });
+
+  test('Manager can delete an evaluation', async () => {
+    const { status } = await DELETE(`/odata/v4/time/Evaluations('${createdEvaluationId}')`, withAuth());
+    expect(status).toBe(204);
+  });
+});
+

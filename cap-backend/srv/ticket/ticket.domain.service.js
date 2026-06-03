@@ -10,6 +10,9 @@ const { nowIso } = require('../shared/utils/timestamp');
 const { assertEntityExists, assertInEnum, ENTITIES, MANAGER_ROLES, requireRole } = require('../shared/services/validation');
 const { TICKET_STATUS, TICKET_PRIORITY, TICKET_NATURE, TICKET_COMPLEXITY } = require('../shared/constants/enums');
 const cds = require('@sap/cds');
+const { getLogger } = require('../shared/logging/logger');
+
+const logger = getLogger('TicketDomain');
 
 const CONSULTANT_ROLES = new Set(['CONSULTANT_TECHNIQUE', 'CONSULTANT_FONCTIONNEL']);
 
@@ -23,6 +26,9 @@ const TICKET_STATUS_TRANSITIONS = {
   DONE: new Set([]),
   REJECTED: new Set(['NEW', 'PENDING_APPROVAL']),
 };
+
+const StateMachine = require('../shared/workflow/state-machine');
+const ticketStateMachine = new StateMachine(TICKET_STATUS_TRANSITIONS);
 
 class TicketDomainService {
   constructor(_srv) {
@@ -151,9 +157,10 @@ class TicketDomainService {
     if (data.status !== undefined && id) {
       const current = await this.repo.findById(id);
       if (current && data.status !== current.status) {
-        const allowed = TICKET_STATUS_TRANSITIONS[current.status] || new Set();
-        if (!allowed.has(data.status)) {
-          req.reject(409, `Invalid ticket status transition: ${current.status} -> ${data.status}`);
+        try {
+          ticketStateMachine.assertTransition(current.status, data.status, 'ticket');
+        } catch (err) {
+          req.reject(err.code || 400, err.message);
         }
       }
     }
@@ -212,8 +219,9 @@ class TicketDomainService {
       const ticket = await tx.run(SELECT.one.from(ENTITIES.Tickets).where({ ID: id }));
       if (!ticket) { req.reject(404, 'Ticket not found'); return; }
 
-      const allowedFrom = TICKET_STATUS_TRANSITIONS[ticket.status] || new Set();
-      if (!allowedFrom.has(TICKET_STATUS.APPROVED)) {
+      try {
+        ticketStateMachine.assertTransition(ticket.status, TICKET_STATUS.APPROVED, 'ticket');
+      } catch (err) {
         req.reject(409, `Cannot approve ticket in status '${ticket.status}'; expected PENDING_APPROVAL`);
         return;
       }
@@ -243,6 +251,7 @@ class TicketDomainService {
 
       const updated = await tx.run(SELECT.one.from(ENTITIES.Tickets).where({ ID: id }));
       this.afterRead(updated);
+      logger.info('Ticket approved', { ticketId: id, techConsultantId, allocatedHours });
       return updated;
     });
   }
@@ -259,8 +268,9 @@ class TicketDomainService {
       const ticket = await tx.run(SELECT.one.from(ENTITIES.Tickets).where({ ID: id }));
       if (!ticket) { req.reject(404, 'Ticket not found'); return; }
 
-      const allowedFromRej = TICKET_STATUS_TRANSITIONS[ticket.status] || new Set();
-      if (!allowedFromRej.has(TICKET_STATUS.REJECTED)) {
+      try {
+        ticketStateMachine.assertTransition(ticket.status, TICKET_STATUS.REJECTED, 'ticket');
+      } catch (err) {
         req.reject(409, `Cannot reject ticket in status '${ticket.status}'; transition to REJECTED not allowed`);
         return;
       }
@@ -291,6 +301,7 @@ class TicketDomainService {
 
       const updated = await tx.run(SELECT.one.from(ENTITIES.Tickets).where({ ID: id }));
       this.afterRead(updated);
+      logger.info('Ticket rejected', { ticketId: id, reason });
       return updated;
     });
   }

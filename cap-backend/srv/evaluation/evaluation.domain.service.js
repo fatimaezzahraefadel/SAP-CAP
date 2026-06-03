@@ -27,6 +27,21 @@ class EvaluationDomainService {
 
     assertPositiveNumber(data.score, 'score', req);
   }
+
+  async beforeUpdate(req) {
+    requireRole(req, MANAGER_ROLES, 'Only managers can update evaluations');
+    const data = req.data;
+
+    if (data.userId !== undefined) await assertEntityExists(ENTITIES.Users, data.userId, 'userId', req);
+    if (data.evaluatorId !== undefined) await assertEntityExists(ENTITIES.Users, data.evaluatorId, 'evaluatorId', req);
+    if (data.projectId !== undefined) await assertEntityExists(ENTITIES.Projects, data.projectId, 'projectId', req);
+
+    if (data.score !== undefined) assertPositiveNumber(data.score, 'score', req);
+  }
+
+  async beforeDelete(req) {
+    requireRole(req, MANAGER_ROLES, 'Only managers can delete evaluations');
+  }
 }
 
 module.exports = EvaluationDomainService;
