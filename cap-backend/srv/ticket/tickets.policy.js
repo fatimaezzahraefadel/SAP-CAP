@@ -1,166 +1,197 @@
 'use strict';
 
-const { getUserId, getRole, isStaff, isConsultant } = require('../shared/services/authz');
+const cds = require('@sap/cds');
+const policies = require('../_shared/security/policies');
+const { Actions } = require('../_shared/security/actions');
+const { Roles, RoleSets } = require('../_shared/security/roles');
+const { ENTITIES } = require('../shared/services/validation');
 
-const Actions = {
-  TICKET_CREATE: 'ticket:create',
-  TICKET_READ: 'ticket:read',
-  TICKET_UPDATE: 'ticket:update',
-  TICKET_DELETE: 'ticket:delete',
-  TICKET_APPROVE: 'ticket:approve',
-  TICKET_REJECT: 'ticket:reject',
-  TICKET_START: 'ticket:start',
-  TICKET_START_TEST: 'ticket:startTest',
-  TICKET_COMPLETE: 'ticket:complete',
-  DOCUMENT_CREATE: 'document:create',
-  DOCUMENT_READ: 'document:read',
-  DOCUMENT_UPDATE: 'document:update',
-  DOCUMENT_DELETE: 'document:delete',
-  ATTACHMENT_UPLOAD: 'attachment:upload',
-  ATTACHMENT_DOWNLOAD: 'attachment:download',
-  ATTACHMENT_DELETE: 'attachment:delete',
-  AUDIT_READ: 'audit:read',
-};
+const TECH_UPDATE_FIELDS = new Set([
+  'status',
+  'effortHours',
+  'effortComment',
+  'history',
+  'tags',
+  'updatedAt',
+]);
 
-const DELETE_ROLES = new Set(['ADMIN', 'MANAGER', 'PROJECT_MANAGER']);
-const APPROVAL_ROLES = new Set(['ADMIN', 'MANAGER', 'PROJECT_MANAGER']);
-const CREATE_ROLES = new Set(['ADMIN', 'MANAGER', 'PROJECT_MANAGER', 'DEV_COORDINATOR']);
+const FUNCTIONAL_DETAIL_FIELDS = new Set([
+  'title',
+  'description',
+  'nature',
+  'priority',
+  'complexity',
+  'module',
+  'dueDate',
+  'tags',
+  'documentationObjectIds',
+  'comments',
+  'updatedAt',
+]);
 
-const requirePolicy = async (req, action, ticket = null) => {
-  switch (action) {
-    case Actions.TICKET_CREATE:
-      return requireCreate(req);
-    case Actions.TICKET_READ:
-      return requireRead(req);
-    case Actions.TICKET_UPDATE:
-      return requireUpdate(req, ticket);
-    case Actions.TICKET_DELETE:
-      return requireDelete(req, ticket);
-    case Actions.TICKET_APPROVE:
-      return requireApprove(req);
-    case Actions.TICKET_REJECT:
-      return requireReject(req);
-    case Actions.TICKET_START:
-      return requireStart(req, ticket);
-    case Actions.TICKET_START_TEST:
-      return requireStartTest(req, ticket);
-    case Actions.TICKET_COMPLETE:
-      return requireComplete(req, ticket);
-    default:
-      return;
-  }
-};
+const FUNCTIONAL_TEST_FIELDS = new Set([
+  'status',
+  'effortComment',
+  'comments',
+  'history',
+  'documentationObjectIds',
+  'updatedAt',
+]);
 
-const requireCreate = (req) => {
-  if (CREATE_ROLES.has(getRole(req))) return;
-  if (getRole(req) === 'CONSULTANT_FONCTIONNEL') return;
-  req.reject(403, 'You are not allowed to create tickets');
-};
+const EDITABLE_FUNCTIONAL_STATUSES = new Set(['PENDING_APPROVAL', 'REJECTED']);
+const FUNCTIONAL_TEST_STATUSES = new Set(['IN_TEST']);
+const FUNCTIONAL_TEST_TARGET_STATUSES = new Set(['DONE', 'IN_PROGRESS']);
+const NON_APPROVED_STATUSES = new Set(['PENDING_APPROVAL', 'NEW', 'REJECTED']);
 
-const requireRead = (req) => {
-  if (isStaff(req) || isConsultant(req)) return;
-  req.reject(403, 'You are not allowed to read tickets');
-};
+const getTicket = (resource) => resource?.current ?? resource ?? null;
+const getChanges = (resource) => resource?.changes ?? {};
+const hasOnlyFields = (changes, allowedFields) =>
+  Object.keys(changes ?? {}).every((field) => allowedFields.has(field));
 
-const requireUpdate = (req, ticket) => {
-  if (!ticket) req.reject(404, 'Ticket not found');
-  if (isStaff(req)) return;
+const isStaff = (ctx) => RoleSets.STAFF.has(ctx.role);
+const isAssignedTech = (ctx, ticket) =>
+  ctx.role === Roles.CONSULTANT_TECHNIQUE && String(ticket?.assignedTo ?? '') === ctx.userId;
+const isFunctionalOwner = (ctx, ticket) =>
+  ctx.role === Roles.CONSULTANT_FONCTIONNEL && String(ticket?.createdBy ?? '') === ctx.userId;
+const isFunctionalTester = (ctx, ticket) =>
+  ctx.role === Roles.CONSULTANT_FONCTIONNEL && String(ticket?.functionalTesterId ?? '') === ctx.userId;
 
-  const role = getRole(req);
-  const userId = getUserId(req);
+function canCreateTicket(ctx, data) {
+  if (!RoleSets.TICKET_CREATORS.has(ctx.role)) return false;
 
-  if (role === 'CONSULTANT_TECHNIQUE') {
-    if (ticket.assignedTo !== userId) {
-      req.reject(403, 'Technical consultants can only update their own assigned tickets');
+  if (ctx.role === Roles.CONSULTANT_FONCTIONNEL) {
+    if (data?.createdBy !== undefined && String(data.createdBy) !== ctx.userId) return false;
+    if (data) {
+      data.createdBy = ctx.userId;
+      data.status = 'PENDING_APPROVAL';
     }
-    return;
   }
 
-  if (role === 'CONSULTANT_FONCTIONNEL') {
-    const ownsTicket = ticket.createdBy === userId;
-    const isTester = ticket.functionalTesterId === userId;
-    if (!ownsTicket && !isTester) {
-      req.reject(403, 'Functional consultants can only update tickets they created or test');
-    }
-    return;
+  return true;
+}
+
+function canReadTicket(ctx, ticket) {
+  if (isStaff(ctx)) return true;
+  if (!ticket) {
+    return ctx.role === Roles.CONSULTANT_TECHNIQUE || ctx.role === Roles.CONSULTANT_FONCTIONNEL;
+  }
+  if (isAssignedTech(ctx, ticket)) return true;
+  if (isFunctionalOwner(ctx, ticket) || isFunctionalTester(ctx, ticket)) return true;
+  return false;
+}
+
+function canUpdateTicket(ctx, resource) {
+  const ticket = getTicket(resource);
+  if (!ticket) return false;
+  if (isStaff(ctx)) return true;
+
+  const changes = getChanges(resource);
+
+  if (isAssignedTech(ctx, ticket)) {
+    return hasOnlyFields(changes, TECH_UPDATE_FIELDS);
   }
 
-  req.reject(403, 'You are not allowed to update tickets');
-};
-
-const requireDelete = (req, ticket) => {
-  if (!ticket) req.reject(404, 'Ticket not found');
-  const role = getRole(req);
-  const userId = getUserId(req);
-
-  if (DELETE_ROLES.has(role)) return;
-
-  if (role === 'CONSULTANT_FONCTIONNEL') {
-    if (ticket.createdBy !== userId) {
-      req.reject(403, 'Functional consultants can only delete their own tickets');
+  if (isFunctionalOwner(ctx, ticket)) {
+    if (EDITABLE_FUNCTIONAL_STATUSES.has(ticket.status)) {
+      return hasOnlyFields(changes, FUNCTIONAL_DETAIL_FIELDS);
     }
-    if (ticket.status === 'APPROVED') {
-      req.reject(403, 'Approved tickets cannot be deleted');
+    if (FUNCTIONAL_TEST_STATUSES.has(ticket.status)) {
+      return isAllowedFunctionalTestChange(changes);
     }
-    if ((ticket.allocatedHours ?? 0) > 0) {
-      req.reject(403, 'Ticket with allocated hours cannot be deleted');
-    }
-    if (ticket.hasValidDeliverable) {
-      req.reject(403, 'Tickets with valid deliverables cannot be deleted');
-    }
-    if (ticket.hasLockedAttachment) {
-      req.reject(403, 'Tickets with locked attachments cannot be deleted');
-    }
-    return;
   }
 
-  req.reject(403, 'You are not allowed to delete tickets');
-};
+  if (isFunctionalTester(ctx, ticket) && FUNCTIONAL_TEST_STATUSES.has(ticket.status)) {
+    return isAllowedFunctionalTestChange(changes);
+  }
 
-const requireApprove = (req) => {
-  if (APPROVAL_ROLES.has(getRole(req))) return;
-  req.reject(403, 'Only managers or project managers can approve tickets');
-};
+  return false;
+}
 
-const requireReject = (req) => {
-  if (APPROVAL_ROLES.has(getRole(req))) return;
-  req.reject(403, 'Only managers or project managers can reject tickets');
-};
+function isAllowedFunctionalTestChange(changes) {
+  if (!hasOnlyFields(changes, FUNCTIONAL_TEST_FIELDS)) return false;
+  if (changes?.status === undefined) return true;
+  return FUNCTIONAL_TEST_TARGET_STATUSES.has(changes.status);
+}
 
-const requireStart = (req, ticket) => {
-  if (!ticket) req.reject(404, 'Ticket not found');
-  if (isStaff(req)) return;
-  const role = getRole(req);
-  const userId = getUserId(req);
+async function canDeleteTicket(ctx, ticket) {
+  if (!ticket) return false;
+  if (ctx.role === Roles.MANAGER) return true;
+  if (!isFunctionalOwner(ctx, ticket)) return false;
+  if (!NON_APPROVED_STATUSES.has(ticket.status)) return false;
 
-  if (role === 'CONSULTANT_TECHNIQUE' && ticket.assignedTo === userId) return;
+  const [hasTime, hasValidatedDeliverable, hasLockedFiles] = await Promise.all([
+    hasImputedTime(ticket.ID),
+    hasApprovedDeliverable(ticket.ID),
+    hasLockedAttachment(ticket.ID),
+  ]);
 
-  req.reject(403, 'Only the assigned technical consultant or staff can start this ticket');
-};
+  return !hasTime && !hasValidatedDeliverable && !hasLockedFiles;
+}
 
-const requireStartTest = (req, ticket) => {
-  if (!ticket) req.reject(404, 'Ticket not found');
-  if (isStaff(req)) return;
-  const role = getRole(req);
-  const userId = getUserId(req);
+function canApproveOrReject(ctx) {
+  return RoleSets.TICKET_APPROVERS.has(ctx.role);
+}
 
-  if (role === 'CONSULTANT_TECHNIQUE' && ticket.assignedTo === userId) return;
+async function hasImputedTime(ticketId) {
+  if (!ticketId) return false;
 
-  req.reject(403, 'Only the assigned technical consultant or staff can move the ticket to IN_TEST');
-};
+  const [timeLog, imputation] = await Promise.all([
+    cds.db.run(
+      SELECT.one.from(ENTITIES.TimeLogs).columns('ID').where({
+        ticketId,
+        durationMinutes: { '>': 0 },
+      })
+    ),
+    cds.db.run(
+      SELECT.one.from(ENTITIES.Imputations).columns('ID').where({
+        ticketId,
+        hours: { '>': 0 },
+      })
+    ),
+  ]);
 
-const requireComplete = (req, ticket) => {
-  if (!ticket) req.reject(404, 'Ticket not found');
-  if (isStaff(req)) return;
-  const role = getRole(req);
-  const userId = getUserId(req);
+  return Boolean(timeLog || imputation);
+}
 
-  if (role === 'CONSULTANT_FONCTIONNEL' && ticket.functionalTesterId === userId) return;
+async function hasApprovedDeliverable(ticketId) {
+  if (!ticketId) return false;
+  const deliverable = await cds.db.run(
+    SELECT.one.from(ENTITIES.Deliverables).columns('ID').where({
+      ticketId,
+      validationStatus: 'APPROVED',
+    })
+  );
+  return Boolean(deliverable);
+}
 
-  req.reject(403, 'Only the assigned functional tester or staff can complete this ticket');
-};
+async function hasLockedAttachment(ticketId) {
+  if (!ticketId) return false;
+  const attachments = await cds.db.run(
+    SELECT.from(ENTITIES.Attachments).where({
+      parentType: 'TICKET',
+      parentId: ticketId,
+    })
+  );
+
+  return attachments.some((attachment) =>
+    attachment.locked === true ||
+    attachment.isLocked === true ||
+    String(attachment.status ?? '').toUpperCase() === 'LOCKED'
+  );
+}
+
+policies.register(Actions.TICKET_CREATE, canCreateTicket);
+policies.register(Actions.TICKET_READ, canReadTicket);
+policies.register(Actions.TICKET_UPDATE, canUpdateTicket);
+policies.register(Actions.TICKET_DELETE, canDeleteTicket);
+policies.register(Actions.TICKET_APPROVE, canApproveOrReject);
+policies.register(Actions.TICKET_REJECT, canApproveOrReject);
 
 module.exports = {
   Actions,
-  require: requirePolicy,
+  canCreateTicket,
+  canReadTicket,
+  canUpdateTicket,
+  canDeleteTicket,
+  canApproveOrReject,
 };

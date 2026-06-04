@@ -116,10 +116,22 @@ const deserializeArray = (value) => {
   return [];
 };
 
+const normalizeTicketPayload = (req) => {
+  const data = req?.data;
+  if (!data || typeof data !== 'object') return;
+
+  if (data.tags !== undefined) data.tags = normalizeTags(data.tags);
+  if (data.documentationObjectIds !== undefined) {
+    data.documentationObjectIds = normalizeDocumentationObjectIds(data.documentationObjectIds);
+  }
+  if (data.history !== undefined) data.history = normalizeHistory(data.history);
+};
+
 module.exports = {
   normalizeHistory,
   normalizeTags,
   normalizeDocumentationObjectIds,
+  normalizeTicketPayload,
   toTagRows,
   toDocumentationRows,
   toHistoryRows,

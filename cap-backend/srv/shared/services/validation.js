@@ -1,6 +1,7 @@
 'use strict';
 
 const cds = require('@sap/cds');
+const { getRequestContext } = require('../../_shared/auth/request-context');
 
 // ---- Entity FQN constants (avoids typos / magic strings) -----------------
 const ENTITIES = Object.freeze({
@@ -81,16 +82,16 @@ const ALL_NON_CONSULTANT_ROLES = new Set(['ADMIN', 'MANAGER', 'PROJECT_MANAGER',
 const ALL_ROLES = new Set(['ADMIN', 'MANAGER', 'PROJECT_MANAGER', 'DEV_COORDINATOR', 'CONSULTANT_TECHNIQUE', 'CONSULTANT_FONCTIONNEL']);
 
 const requireRole = (req, allowedRoles, message) => {
-  const role = req._authClaims?.role;
+  const role = getRequestContext(req).role;
   if (!allowedRoles.has(role)) {
     req.reject(403, message || 'Forbidden: insufficient role');
   }
 };
 
 const requireOwnerOrRole = (req, ownerId, allowedRoles, message) => {
-  const claims = req._authClaims;
-  if (String(claims?.sub ?? '') === String(ownerId ?? '')) return;
-  if (!allowedRoles.has(claims?.role)) {
+  const ctx = getRequestContext(req);
+  if (ctx.userId === String(ownerId ?? '')) return;
+  if (!allowedRoles.has(ctx.role)) {
     req.reject(403, message || 'Forbidden: not owner and insufficient role');
   }
 };

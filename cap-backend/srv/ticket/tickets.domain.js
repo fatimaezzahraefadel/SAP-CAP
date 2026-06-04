@@ -7,7 +7,9 @@
 const TicketRepo = require('./tickets.repo');
 const { generateTicketCode } = require('../shared/utils/id');
 const { nowIso } = require('../shared/utils/timestamp');
-const { assertEntityExists, assertInEnum, ENTITIES, MANAGER_ROLES, requireRole } = require('../shared/services/validation');
+const { assertEntityExists, assertInEnum, ENTITIES } = require('../shared/services/validation');
+const { getRequestContext } = require('../_shared/auth/request-context');
+const { Roles } = require('../_shared/security/roles');
 const {
   toHistoryRows,
   toTagRows,
@@ -19,7 +21,7 @@ const {
 const { TICKET_STATUS, TICKET_PRIORITY, TICKET_NATURE, TICKET_COMPLEXITY } = require('../shared/constants/enums');
 const cds = require('@sap/cds');
 
-const CONSULTANT_ROLES = new Set(['CONSULTANT_TECHNIQUE', 'CONSULTANT_FONCTIONNEL']);
+const CONSULTANT_ROLES = new Set([Roles.CONSULTANT_TECHNIQUE, Roles.CONSULTANT_FONCTIONNEL]);
 
 const TICKET_STATUS_TRANSITIONS = {
   PENDING_APPROVAL: new Set(['NEW', 'REJECTED']),
@@ -42,9 +44,9 @@ class TicketDomainService {
    * Consultants only see tickets assigned to themselves.
    */
   beforeRead(req) {
-    const claims = req._authClaims;
-    const role = String(claims?.role ?? '');
-    const userId = String(claims?.sub ?? '').trim();
+    const ctx = getRequestContext(req);
+    const role = ctx.role;
+    const userId = ctx.userId;
     if (!CONSULTANT_ROLES.has(role) || !userId) return;
 
     const select = req.query?.SELECT;
@@ -74,8 +76,8 @@ class TicketDomainService {
    */
   async beforeCreate(req) {
     const data = req.data;
-    const claims = req._authClaims;
-    const userId = String(claims?.sub ?? '').trim();
+    const ctx = getRequestContext(req);
+    const userId = ctx.userId;
 
     // Guard required fields
     if (!data.projectId) req.error(400, 'projectId is required');
@@ -104,14 +106,14 @@ class TicketDomainService {
     data.ticketCode = await this._allocateTicketCode(year);
 
     // Defaults
-    const creatorRole = claims?.role;
-    if (creatorRole === 'CONSULTANT_FONCTIONNEL') {
+    const creatorRole = ctx.role;
+    if (creatorRole === Roles.CONSULTANT_FONCTIONNEL) {
       data.status = 'PENDING_APPROVAL';
       if (data.assignedTo && data.assignedTo !== userId) {
         req.reject(403, 'Functional consultants can only self-assign tickets to themselves');
       }
       data.assignedTo = userId;
-      data.assignedToRole = 'CONSULTANT_FONCTIONNEL';
+      data.assignedToRole = Roles.CONSULTANT_FONCTIONNEL;
       if (data.functionalTesterId) {
         req.reject(403, 'Functional consultants cannot assign functional testers directly');
       }
@@ -141,8 +143,8 @@ class TicketDomainService {
    */
   async beforeUpdate(req) {
     const data = req.data;
-    const claims = req._authClaims;
-    const userId = String(claims?.sub ?? '').trim();
+    const ctx = getRequestContext(req);
+    const userId = ctx.userId;
     data.updatedAt = nowIso();
     const id = req.params?.[0]?.ID ?? req.params?.[0] ?? data.ID;
 
@@ -285,7 +287,6 @@ class TicketDomainService {
    * approveTicket – Manager approves a PENDING_APPROVAL ticket, assigns tech consultant + hours.
    */
   async approveTicket(req) {
-    requireRole(req, MANAGER_ROLES, 'Only managers can approve tickets');
     const id = req.params?.[0]?.ID ?? req.params?.[0];
     const { techConsultantId, allocatedHours } = req.data ?? {};
 
@@ -299,8 +300,7 @@ class TicketDomainService {
       const ticket = await tx.run(SELECT.one.from(ENTITIES.Tickets).where({ ID: id }));
       if (!ticket) { req.reject(404, 'Ticket not found'); return; }
 
-      const allowedFrom = TICKET_STATUS_TRANSITIONS[ticket.status] || new Set();
-      if (!allowedFrom.has(TICKET_STATUS.APPROVED)) {
+      if (ticket.status !== TICKET_STATUS.PENDING_APPROVAL) {
         req.reject(409, `Cannot approve ticket in status '${ticket.status}'; expected PENDING_APPROVAL`);
         return;
       }
@@ -321,9 +321,9 @@ class TicketDomainService {
       }
 
       await tx.run(UPDATE(ENTITIES.Tickets).where({ ID: id }).with({
-        status: TICKET_STATUS.NEW,
+        status: TICKET_STATUS.APPROVED,
         assignedTo: techConsultantId,
-        assignedToRole: 'CONSULTANT_TECHNIQUE',
+        assignedToRole: Roles.CONSULTANT_TECHNIQUE,
         functionalTesterId: functionalTester ? req.data.functionalTesterId : null,
         allocatedHours: Number(allocatedHours),
         updatedAt: nowIso(),
@@ -333,7 +333,7 @@ class TicketDomainService {
         tx,
         id,
         'APPROVED',
-        `Approved by ${req._authClaims?.sub ?? 'manager'} and assigned to ${techConsultantId} with ${Number(allocatedHours)}h allocated.`,
+        `Approved by ${getRequestContext(req).userId || 'manager'} and assigned to ${techConsultantId} with ${Number(allocatedHours)}h allocated.`,
         req
       );
 
@@ -357,7 +357,6 @@ class TicketDomainService {
    * rejectTicket – Manager rejects a PENDING_APPROVAL ticket with a reason.
    */
   async rejectTicket(req) {
-    requireRole(req, MANAGER_ROLES, 'Only managers can reject tickets');
     const id = req.params?.[0]?.ID ?? req.params?.[0];
     const { reason } = req.data ?? {};
 
@@ -418,8 +417,9 @@ class TicketDomainService {
       event,
       details: String(details ?? '').trim(),
     };
-    if (req?._authClaims?.sub) {
-      entry.createdBy = String(req._authClaims.sub).trim();
+    const ctx = getRequestContext(req);
+    if (ctx.userId) {
+      entry.createdBy = ctx.userId;
     }
     await tx.run(INSERT.into(ENTITIES.TicketHistory).entries(entry));
   }
@@ -441,7 +441,7 @@ class TicketDomainService {
       SELECT.one
         .from(ENTITIES.Users)
         .columns('ID')
-        .where({ ID: userId, active: true, role: 'CONSULTANT_TECHNIQUE' })
+        .where({ ID: userId, active: true, role: Roles.CONSULTANT_TECHNIQUE })
     );
   }
 
@@ -451,7 +451,7 @@ class TicketDomainService {
       SELECT.one
         .from(ENTITIES.Users)
         .columns('ID')
-        .where({ ID: userId, active: true, role: 'CONSULTANT_FONCTIONNEL' })
+        .where({ ID: userId, active: true, role: Roles.CONSULTANT_FONCTIONNEL })
     );
   }
 }
