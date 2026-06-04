@@ -7,7 +7,10 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { TicketDocumentationSection } from '../../components/business/TicketDocumentationSection';
 import { TicketCommentThread } from '../../features/comments/components/TicketCommentThread';
 import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';import { ProjectsAPI } from '../../services/odata/projectsApi';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Textarea } from '../../components/ui/textarea';
+import { ProjectsAPI } from '../../services/odata/projectsApi';
 import { TicketsAPI } from '../../services/odata/ticketsApi';
 import { UsersAPI } from '../../services/odata/usersApi';
 import { getBaseRouteForRole } from '../../context/roleRouting';
@@ -17,6 +20,7 @@ import {
   ticketPriorityColor as priorityColor,
 } from '../../utils/ticketColors';
 import {
+  Priority,
   Project,
   SAP_MODULE_LABELS,
   Ticket,
@@ -45,8 +49,17 @@ export const TicketDetailsPage: React.FC = () => {
 
   const roleBasePath = currentUser ? getBaseRouteForRole(currentUser.role) : '';
   const ticketsPath = `${roleBasePath}/tickets`;
+  const canEditTicket = currentUser?.role === 'MANAGER' || currentUser?.role === 'PROJECT_MANAGER';
 
   const [loading, setLoading] = useState(true);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editValues, setEditValues] = useState({
+    title: '',
+    description: '',
+    dueDate: '',
+    priority: 'MEDIUM' as Priority,
+  });
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [project, setProject] = useState<Project | null>(null);
   const [users, setUsers] = useState<User[]>([]);
@@ -114,6 +127,48 @@ export const TicketDetailsPage: React.FC = () => {
       };
     });
   }, []);
+
+  useEffect(() => {
+    if (!ticket) return;
+    setEditValues({
+      title: ticket.title,
+      description: ticket.description,
+      dueDate: ticket.dueDate ? ticket.dueDate.split('T')[0] : '',
+      priority: ticket.priority,
+    });
+  }, [ticket]);
+
+  const handleSaveTicket = async () => {
+    if (!ticket) return;
+
+    setIsSaving(true);
+    try {
+      const updated = await TicketsAPI.update(ticket.id, {
+        title: editValues.title.trim(),
+        description: editValues.description.trim(),
+        dueDate: editValues.dueDate || undefined,
+        priority: editValues.priority,
+      });
+      setTicket(updated);
+      toast.success('Ticket updated successfully');
+      setIsEditMode(false);
+    } catch {
+      toast.error('Failed to update ticket');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (!ticket) return;
+    setEditValues({
+      title: ticket.title,
+      description: ticket.description,
+      dueDate: ticket.dueDate ? ticket.dueDate.split('T')[0] : '',
+      priority: ticket.priority,
+    });
+    setIsEditMode(false);
+  };
 
   useEffect(() => {
     if (!ticketId || !currentUser) return;
@@ -196,11 +251,26 @@ export const TicketDetailsPage: React.FC = () => {
       />
 
       <div className="p-6 space-y-4">
-        <div>
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => navigate(ticketsPath)}>
             <ArrowLeft className="h-4 w-4 mr-1" />
             {t('tickets.details.backToTickets')}
           </Button>
+          {canEditTicket && !isEditMode && (
+            <Button size="sm" onClick={() => setIsEditMode(true)}>
+              {t('common.edit') || 'Modifier'}
+            </Button>
+          )}
+          {isEditMode && (
+            <>
+              <Button size="sm" onClick={handleSaveTicket} disabled={isSaving}>
+                {isSaving ? t('common.saving') || 'Saving...' : t('common.save') || 'Save'}
+              </Button>
+              <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                {t('common.cancel') || 'Cancel'}
+              </Button>
+            </>
+          )}
         </div>
 
         <section className="rounded-lg border bg-card p-5 space-y-4">
@@ -212,7 +282,60 @@ export const TicketDetailsPage: React.FC = () => {
             <Badge variant="outline">{TICKET_COMPLEXITY_LABELS[ticket.complexity]}</Badge>
           </div>
 
-          <div className="text-sm text-muted-foreground">{ticket.description || '-'}</div>
+          {isEditMode ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground">
+                  {t('tickets.details.title')}
+                </label>
+                <Input
+                  value={editValues.title}
+                  onChange={(event) => setEditValues((prev) => ({ ...prev, title: event.target.value }))}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground">
+                  {t('tickets.details.description')}
+                </label>
+                <Textarea
+                  value={editValues.description}
+                  onChange={(event) => setEditValues((prev) => ({ ...prev, description: event.target.value }))}
+                  className="mt-1"
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground">
+                    {t('tickets.details.dueDate')}
+                  </label>
+                  <Input
+                    type="date"
+                    value={editValues.dueDate}
+                    onChange={(event) => setEditValues((prev) => ({ ...prev, dueDate: event.target.value }))}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground">
+                    {t('tickets.details.priority')}
+                  </label>
+                  <select
+                    value={editValues.priority}
+                    onChange={(event) => setEditValues((prev) => ({ ...prev, priority: event.target.value as Priority }))}
+                    className="mt-1 block w-full rounded-md border border-input bg-input-background px-3 py-2 text-base transition focus-visible:border-ring focus-visible:ring-ring/50"
+                  >
+                    <option value="LOW">{t('tickets.priority.LOW')}</option>
+                    <option value="MEDIUM">{t('tickets.priority.MEDIUM')}</option>
+                    <option value="HIGH">{t('tickets.priority.HIGH')}</option>
+                    <option value="CRITICAL">{t('tickets.priority.CRITICAL')}</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">{ticket.description || '-'}</div>
+          )}
 
           <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
             <div><span className="text-muted-foreground">{t('tickets.details.project')}</span> {project?.name ?? ticket.projectId}</div>

@@ -380,11 +380,31 @@ entity DocAttachedFiles : cuid {
   docObject : Association to DocumentationObjects;
   fileName  : String(200);
   fileUrl   : String(500);
+  fileSize  : Integer;
 }
 
 entity DocRelatedTickets : cuid {
   docObject : Association to DocumentationObjects;
   ticketId  : String(50);
+}
+
+// ---------------------------------------------------------------------------
+// Attachments - central entity for file lifecycle
+// ---------------------------------------------------------------------------
+entity Attachments : cuid, managed {
+  parentType      : String(40) not null; // e.g. TICKET, DOCUMENT, DELIVERABLE, COMMENT
+  parentId        : String(50) not null;
+  fileName        : String(255) not null; // sanitized storage filename
+  originalName    : String(255) not null; // original uploaded name
+  content         : LargeBinary; // file bytes stored in-DB; served via /attachments/:id
+  mimeType        : String(120) not null;
+  sizeBytes       : Integer not null;
+  storageKey      : String(500) not null; // opaque storage key (not physical path)
+  checksumSha256  : String(64);
+  uploadedBy      : String(50) not null;
+  status          : String(20) default 'ACTIVE'; // ACTIVE | DELETED | ORPHANED
+  deletedAt       : DateTime;
+  deletedBy       : String(50);
 }
 
 // ---------------------------------------------------------------------------

@@ -18,6 +18,7 @@ import {
   TICKET_STATUS_LABELS,
 } from '@/app/types/entities';
 import { TicketActions } from './TicketActions';
+import { Trash2 } from 'lucide-react';
 import { TicketDrawerDetailsGrid } from './dialogs/TicketDrawerDetailsGrid';
 import { TicketDrawerHistory } from './dialogs/TicketDrawerHistory';
 import { priorityColor, statusColor } from './ticketView.constants';
@@ -26,8 +27,10 @@ interface TicketDrawerProps {
   currentUserId?: string;
   selectedTicket: Ticket | null;
   isViewOnly: boolean;
+  canDeleteTicket: boolean;
   onOpenChange: (open: boolean) => void;
   onChangeStatus: (ticket: Ticket, newStatus: TicketStatus) => void;
+  onDeleteTicket: (ticketId: string) => void;
   resolveProjectName: (projectId: string) => string;
   resolveUserName: (userId?: string) => string;
   onDocumentationChanged: (ticketId: string, documentationIds: string[]) => void;
@@ -37,8 +40,10 @@ export const TicketDrawer: React.FC<TicketDrawerProps> = ({
   currentUserId,
   selectedTicket,
   isViewOnly,
+  canDeleteTicket,
   onOpenChange,
   onChangeStatus,
+  onDeleteTicket,
   resolveProjectName,
   resolveUserName,
   onDocumentationChanged,
@@ -89,7 +94,19 @@ export const TicketDrawer: React.FC<TicketDrawerProps> = ({
                 />
               )}
               <TicketDrawerHistory ticket={selectedTicket} resolveUserName={resolveUserName} />
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                {canDeleteTicket && !isViewOnly && selectedTicket && (
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      onDeleteTicket(selectedTicket.id);
+                      onOpenChange(false);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {t('common.delete')}
+                  </Button>
+                )}
                 <Button variant="outline" onClick={() => onOpenChange(false)}>
                   {t('common.close')}
                 </Button>

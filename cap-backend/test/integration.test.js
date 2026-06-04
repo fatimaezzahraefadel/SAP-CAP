@@ -8,6 +8,9 @@
 process.env.CDS_REQUIRES_DB_KIND = 'sqlite';
 process.env.CDS_REQUIRES_DB_CREDENTIALS_DATABASE = ':memory:';
 const cds = require('@sap/cds');
+const fs = require('fs').promises;
+const os = require('os');
+const path = require('path');
 cds.env.requires = cds.env.requires || {};
 cds.env.requires.db = {
   ...(cds.env.requires.db || {}),
@@ -917,6 +920,74 @@ describe('Validation and state-machine guards', () => {
     }
   });
 
+  test('Ticket approval records history entry', async () => {
+    await ensureAuth();
+    await ensureFunctionalConsultantAuth();
+
+    const { data: pendingTicket } = await POST(
+      '/odata/v4/ticket/Tickets',
+      {
+        projectId: requireSeedId('project1Id'),
+        createdBy: requireSeedId('foncId'),
+        title: 'Approval history test',
+        nature: 'PROGRAMME',
+        priority: 'LOW',
+      },
+      withFunctionalConsultantAuth()
+    );
+    expect(pendingTicket.ID).toBeTruthy();
+
+    const { data: approvedTicket } = await POST(
+      `/odata/v4/ticket/Tickets('${pendingTicket.ID}')/approveTicket`,
+      {
+        techConsultantId: requireSeedId('techId'),
+        allocatedHours: 12,
+      },
+      withAuth()
+    );
+    expect(approvedTicket.status).toBe('APPROVED');
+
+    const historyRows = await cds.db.run(
+      SELECT.from('sap.performance.dashboard.db.TicketHistory').where({ ticket_ID: pendingTicket.ID })
+    );
+    const historyEntry = (historyRows || []).find((row) => row.event === 'APPROVED');
+    expect(historyEntry).toBeTruthy();
+    expect(historyEntry.details).toContain('assigned to');
+  });
+
+  test('Ticket rejection records history entry', async () => {
+    await ensureAuth();
+    await ensureFunctionalConsultantAuth();
+
+    const { data: pendingTicket } = await POST(
+      '/odata/v4/ticket/Tickets',
+      {
+        projectId: requireSeedId('project1Id'),
+        createdBy: requireSeedId('foncId'),
+        title: 'Rejection history test',
+        nature: 'PROGRAMME',
+        priority: 'LOW',
+      },
+      withFunctionalConsultantAuth()
+    );
+    expect(pendingTicket.ID).toBeTruthy();
+
+    await POST(
+      `/odata/v4/ticket/Tickets('${pendingTicket.ID}')/rejectTicket`,
+      {
+        reason: 'Out of scope',
+      },
+      withAuth()
+    );
+
+    const historyRows = await cds.db.run(
+      SELECT.from('sap.performance.dashboard.db.TicketHistory').where({ ticket_ID: pendingTicket.ID })
+    );
+    const historyEntry = (historyRows || []).find((row) => row.event === 'REJECTED');
+    expect(historyEntry).toBeTruthy();
+    expect(historyEntry.details).toBe('Out of scope');
+  });
+
   test('Comment create rejects spoofed authorId', async () => {
     await ensureConsultantAuth();
     try {
@@ -1280,3 +1351,250 @@ describe('Evaluations CRUD', () => {
   });
 });
 
+describe('Documentation cleanup', () => {
+  test('cleanupOrphanAttachments deletes DocAttachedFiles without a valid DocumentationObjects reference', async () => {
+    await ensureAdminAuth();
+
+    const docTitle = `Orphan cleanup ${Math.random().toString(36).slice(2, 8)}`;
+    const { status: createDocStatus, data: createdDoc } = await POST(
+      '/odata/v4/core/DocumentationObjects',
+      {
+        title: docTitle,
+        description: 'Cleanup test object',
+        projectId: requireSeedId('project1Id'),
+      },
+      withAdminAuth()
+    );
+    expect(createDocStatus).toBe(201);
+    expect(createdDoc.ID).toBeTruthy();
+
+    const entries = [
+      {
+        docObject_ID: createdDoc.ID,
+        fileName: 'cleanup-valid.pdf',
+        fileUrl: 'https://example.com/cleanup-valid.pdf',
+      },
+      {
+        docObject_ID: null,
+        fileName: 'cleanup-orphan-null.pdf',
+        fileUrl: 'https://example.com/cleanup-orphan-null.pdf',
+      },
+      {
+        docObject_ID: '00000000-0000-0000-0000-000000000000',
+        fileName: 'cleanup-orphan-bad-ref.pdf',
+        fileUrl: 'https://example.com/cleanup-orphan-bad-ref.pdf',
+      },
+    ];
+
+    await cds.db.run(INSERT.into('sap.performance.dashboard.db.DocAttachedFiles').entries(entries));
+
+    const beforeRows = await cds.db.run(
+      SELECT.from('sap.performance.dashboard.db.DocAttachedFiles').columns(['ID', 'fileName', 'docObject_ID']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
+    );
+    expect(beforeRows.length).toBe(3);
+
+    const { status: cleanupStatus, data: cleanupData } = await POST(
+      '/odata/v4/core/cleanupOrphanAttachments',
+      {},
+      withAdminAuth()
+    );
+    expect(cleanupStatus).toBe(200);
+
+    const deletedCount = Number(
+      cleanupData?.value ?? cleanupData?.cleanupOrphanAttachments ?? cleanupData ?? 0
+    );
+    expect(deletedCount).toBe(2);
+
+    const afterRows = await cds.db.run(
+      SELECT.from('sap.performance.dashboard.db.DocAttachedFiles').columns(['ID', 'fileName', 'docObject_ID']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
+    );
+    expect(afterRows.length).toBe(1);
+    expect(afterRows[0].fileName).toBe('cleanup-valid.pdf');
+    expect(afterRows[0].docObject_ID).toBe(createdDoc.ID);
+  });
+
+  test('purgeDeletedAttachments deletes DocAttachedFiles without a valid DocumentationObjects reference', async () => {
+    await ensureAdminAuth();
+
+    const docTitle = `Purge cleanup ${Math.random().toString(36).slice(2, 8)}`;
+    const { status: createDocStatus, data: createdDoc } = await POST(
+      '/odata/v4/core/DocumentationObjects',
+      {
+        title: docTitle,
+        description: 'Purge cleanup test object',
+        projectId: requireSeedId('project1Id'),
+      },
+      withAdminAuth()
+    );
+    expect(createDocStatus).toBe(201);
+    expect(createdDoc.ID).toBeTruthy();
+
+    const entries = [
+      {
+        docObject_ID: createdDoc.ID,
+        fileName: 'purge-valid.pdf',
+        fileUrl: 'https://example.com/purge-valid.pdf',
+      },
+      {
+        docObject_ID: null,
+        fileName: 'purge-orphan-null.pdf',
+        fileUrl: 'https://example.com/purge-orphan-null.pdf',
+      },
+      {
+        docObject_ID: '00000000-0000-0000-0000-000000000000',
+        fileName: 'purge-orphan-bad-ref.pdf',
+        fileUrl: 'https://example.com/purge-orphan-bad-ref.pdf',
+      },
+    ];
+
+    await cds.db.run(INSERT.into('sap.performance.dashboard.db.DocAttachedFiles').entries(entries));
+
+    const beforeRows = await cds.db.run(
+      SELECT.from('sap.performance.dashboard.db.DocAttachedFiles').columns(['ID', 'fileName', 'docObject_ID']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
+    );
+    expect(beforeRows.length).toBe(3);
+
+    const { status: cleanupStatus, data: cleanupData } = await POST(
+      '/odata/v4/core/purgeDeletedAttachments',
+      {},
+      withAdminAuth()
+    );
+    expect(cleanupStatus).toBe(200);
+
+    const deletedCount = Number(
+      cleanupData?.value ?? cleanupData?.purgeDeletedAttachments ?? cleanupData ?? 0
+    );
+    expect(deletedCount).toBe(2);
+
+    const afterRows = await cds.db.run(
+      SELECT.from('sap.performance.dashboard.db.DocAttachedFiles').columns(['ID', 'fileName', 'docObject_ID']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
+    );
+    expect(afterRows.length).toBe(1);
+    expect(afterRows[0].fileName).toBe('purge-valid.pdf');
+    expect(afterRows[0].docObject_ID).toBe(createdDoc.ID);
+  });
+
+  test('cleanupDuplicateAttachments removes duplicate DocAttachedFiles for same document and fileUrl', async () => {
+    await ensureAdminAuth();
+
+    const docTitle = `Duplicate cleanup ${Math.random().toString(36).slice(2, 8)}`;
+    const { status: createDocStatus, data: createdDoc } = await POST(
+      '/odata/v4/core/DocumentationObjects',
+      {
+        title: docTitle,
+        description: 'Duplicate cleanup test object',
+        projectId: requireSeedId('project1Id'),
+      },
+      withAdminAuth()
+    );
+    expect(createDocStatus).toBe(201);
+    expect(createdDoc.ID).toBeTruthy();
+
+    const entries = [
+      {
+        docObject_ID: createdDoc.ID,
+        fileName: 'duplicate-1.pdf',
+        fileUrl: 'https://example.com/duplicate.pdf',
+      },
+      {
+        docObject_ID: createdDoc.ID,
+        fileName: 'duplicate-2.pdf',
+        fileUrl: 'https://example.com/duplicate.pdf',
+      },
+      {
+        docObject_ID: createdDoc.ID,
+        fileName: 'duplicate-3.pdf',
+        fileUrl: 'https://example.com/duplicate.pdf',
+      },
+      {
+        docObject_ID: createdDoc.ID,
+        fileName: 'distinct.pdf',
+        fileUrl: 'https://example.com/distinct.pdf',
+      },
+    ];
+
+    await cds.db.run(INSERT.into('sap.performance.dashboard.db.DocAttachedFiles').entries(entries));
+
+    const beforeRows = await cds.db.run(
+      SELECT.from('sap.performance.dashboard.db.DocAttachedFiles').columns(['ID', 'fileName', 'docObject_ID', 'fileUrl']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
+    );
+    expect(beforeRows.length).toBe(4);
+
+    const { status: cleanupStatus, data: cleanupData } = await POST(
+      '/odata/v4/core/cleanupDuplicateAttachments',
+      {},
+      withAdminAuth()
+    );
+    expect(cleanupStatus).toBe(200);
+
+    const deletedCount = Number(
+      cleanupData?.value ?? cleanupData?.cleanupDuplicateAttachments ?? cleanupData ?? 0
+    );
+    expect(deletedCount).toBe(2);
+
+    const afterRows = await cds.db.run(
+      SELECT.from('sap.performance.dashboard.db.DocAttachedFiles').columns(['ID', 'fileName', 'docObject_ID', 'fileUrl']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
+    );
+    expect(afterRows.length).toBe(2);
+    const remainingUrls = afterRows.map((row) => row.fileUrl).sort();
+    expect(remainingUrls).toEqual(['https://example.com/distinct.pdf', 'https://example.com/duplicate.pdf']);
+  });
+
+  test('reconcileStorage reports missing local attachments and orphan storage files', async () => {
+    await ensureAdminAuth();
+
+    const storageRoot = path.join(os.tmpdir(), `ticket-cap-reconcile-${Date.now()}`);
+    await fs.mkdir(storageRoot, { recursive: true });
+    const existingFilePath = path.join(storageRoot, 'existing.pdf');
+    const orphanFilePath = path.join(storageRoot, 'orphan.pdf');
+    await fs.writeFile(existingFilePath, 'ok');
+    await fs.writeFile(orphanFilePath, 'orphan');
+
+    const docTitle = `Reconcile storage ${Math.random().toString(36).slice(2, 8)}`;
+    const { status: createDocStatus, data: createdDoc } = await POST(
+      '/odata/v4/core/DocumentationObjects',
+      {
+        title: docTitle,
+        description: 'Reconcile storage test object',
+        projectId: requireSeedId('project1Id'),
+      },
+      withAdminAuth()
+    );
+    expect(createDocStatus).toBe(201);
+    expect(createdDoc.ID).toBeTruthy();
+
+    const entries = [
+      {
+        docObject_ID: createdDoc.ID,
+        fileName: 'existing.pdf',
+        fileUrl: 'existing.pdf',
+      },
+      {
+        docObject_ID: createdDoc.ID,
+        fileName: 'missing.pdf',
+        fileUrl: 'missing.pdf',
+      },
+    ];
+
+    await cds.db.run(INSERT.into('sap.performance.dashboard.db.DocAttachedFiles').entries(entries));
+
+    const previousStorageRoot = process.env.ATTACHMENT_STORAGE_ROOT;
+    process.env.ATTACHMENT_STORAGE_ROOT = storageRoot;
+    const { status: reconcileStatus, data: reconcileData } = await POST(
+      '/odata/v4/core/reconcileStorage',
+      {},
+      withAdminAuth()
+    );
+    expect(reconcileStatus).toBe(200);
+
+    const issueCount = Number(reconcileData?.value ?? reconcileData?.reconcileStorage ?? reconcileData ?? 0);
+    expect(issueCount).toBe(2);
+
+    if (previousStorageRoot === undefined) {
+      delete process.env.ATTACHMENT_STORAGE_ROOT;
+    } else {
+      process.env.ATTACHMENT_STORAGE_ROOT = previousStorageRoot;
+    }
+    await fs.rm(storageRoot, { recursive: true, force: true });
+  });
+});

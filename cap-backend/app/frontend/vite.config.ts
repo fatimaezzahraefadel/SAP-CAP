@@ -23,6 +23,12 @@ export default defineConfig({
         target: `http://127.0.0.1:${backendPort}`,
         changeOrigin: true,
       },
+      // Public file-download route served by the CAP backend (binary streamed
+      // from the Attachments table); not under /odata/v4 so it needs its own proxy.
+      '/attachments': {
+        target: `http://127.0.0.1:${backendPort}`,
+        changeOrigin: true,
+      },
     },
   },
 

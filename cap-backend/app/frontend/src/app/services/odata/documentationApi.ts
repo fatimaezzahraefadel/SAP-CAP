@@ -2,6 +2,7 @@ import type { DocumentationObject, Ticket, Wricef, WricefObject } from './core';
 import type { ODataQueryOptions, ODataRequestOptions } from './core';
 import { listEntities, createEntity, updateEntity, deleteEntity, quoteLiteral } from './core';
 import { TicketsAPI } from './ticketsApi';
+import { sanitizeFileName } from '../../utils/file';
 
 // ---------------------------------------------------------------------------
 // WRICEF sync helpers
@@ -33,7 +34,9 @@ const parseJsonIfString = (value: unknown): unknown => {
   }
 };
 
-const normalizeAttachments = (value: unknown): DocumentationObject['attachedFiles'] => {
+const normalizeAttachmentUrl = (value: unknown): string => String(value ?? '').trim();
+
+export const normalizeAttachments = (value: unknown): DocumentationObject['attachedFiles'] => {
   const parsed = parseJsonIfString(value);
   if (!Array.isArray(parsed)) return [];
 
@@ -41,14 +44,14 @@ const normalizeAttachments = (value: unknown): DocumentationObject['attachedFile
     .map((entry) => {
       if (!entry || typeof entry !== 'object') return null;
       const candidate = entry as Record<string, unknown>;
-      const filename = String(
+      const filename = sanitizeFileName(
         candidate.filename ??
           candidate.fileName ??
           candidate.name ??
           ''
-      ).trim();
-      const url = String(candidate.url ?? candidate.fileUrl ?? '').trim();
-      const size = Number(candidate.size ?? 0);
+      );
+      const url = normalizeAttachmentUrl(candidate.url ?? candidate.fileUrl ?? '');
+      const size = Number(candidate.size ?? candidate.fileSize ?? 0);
       return {
         filename: filename || 'Attachment',
         url: url || '#',
@@ -82,7 +85,9 @@ const normalizeDocumentationObject = (doc: DocumentationObjectRaw): Documentatio
   relatedTicketIds: normalizeRelatedTicketIds(doc.relatedTicketIds),
 });
 
-const toAttachmentRows = (value: unknown): Array<{ fileName: string; fileUrl: string }> => {
+export const toAttachmentRows = (
+  value: unknown
+): Array<{ fileName: string; fileUrl: string; fileSize: number }> => {
   const parsed = parseJsonIfString(value);
   if (!Array.isArray(parsed)) return [];
 
@@ -90,15 +95,17 @@ const toAttachmentRows = (value: unknown): Array<{ fileName: string; fileUrl: st
     .map((entry) => {
       if (!entry || typeof entry !== 'object') return null;
       const candidate = entry as Record<string, unknown>;
-      const fileName = String(candidate.fileName ?? candidate.filename ?? candidate.name ?? '').trim();
-      const fileUrl = String(candidate.fileUrl ?? candidate.url ?? '').trim();
+      const fileName = sanitizeFileName(candidate.fileName ?? candidate.filename ?? candidate.name ?? '');
+      const fileUrl = normalizeAttachmentUrl(candidate.fileUrl ?? candidate.url ?? '');
       if (!fileName && !fileUrl) return null;
+      const fileSize = Number(candidate.fileSize ?? candidate.size ?? 0);
       return {
         fileName: fileName || 'Attachment',
         fileUrl: fileUrl || '#',
+        fileSize: Number.isFinite(fileSize) && fileSize >= 0 ? fileSize : 0,
       };
     })
-    .filter((entry): entry is { fileName: string; fileUrl: string } => Boolean(entry));
+    .filter((entry): entry is { fileName: string; fileUrl: string; fileSize: number } => Boolean(entry));
 };
 
 const toRelatedTicketRows = (value: unknown): Array<{ ticketId: string }> => {

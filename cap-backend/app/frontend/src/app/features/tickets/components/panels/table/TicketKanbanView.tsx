@@ -1,26 +1,39 @@
-import React from 'react';
-import { AlertOctagon, MessageSquare } from 'lucide-react';
+import React, { useState } from 'react';
+import { AlertOctagon, MessageSquare, Trash2 } from 'lucide-react';
 import { Badge } from '@/app/components/ui/badge';
 import { Ticket, TicketStatus } from '@/app/types/entities';
 import { priorityColor, STATUS_ORDER, statusColor } from '../../ticketView.constants';
 
 interface TicketKanbanViewProps {
   isViewOnly: boolean;
+  canDelete: boolean;
   filteredTickets: Ticket[];
   onOpenTicketDetails: (ticketId: string) => void;
   onChangeStatus: (ticket: Ticket, newStatus: TicketStatus) => void;
+  onDeleteTicket: (ticketId: string) => void;
   resolveUserName: (userId?: string) => string;
 }
 
 export const TicketKanbanView: React.FC<TicketKanbanViewProps> = ({
   isViewOnly,
+  canDelete,
   filteredTickets,
   onOpenTicketDetails,
   onChangeStatus,
+  onDeleteTicket,
   resolveUserName,
 }) => {
+  const [draggedTicketId, setDraggedTicketId] = useState<string | null>(null);
+  const [isDragOverDelete, setIsDragOverDelete] = useState(false);
+
   const onDragStart = (event: React.DragEvent, ticketId: string) => {
     event.dataTransfer.setData('text/plain', ticketId);
+    setDraggedTicketId(ticketId);
+  };
+
+  const onDragEnd = () => {
+    setDraggedTicketId(null);
+    setIsDragOverDelete(false);
   };
 
   const onDragOver = (event: React.DragEvent) => event.preventDefault();
@@ -30,6 +43,30 @@ export const TicketKanbanView: React.FC<TicketKanbanViewProps> = ({
     const ticketId = event.dataTransfer.getData('text/plain');
     const ticket = filteredTickets.find((item) => item.id === ticketId);
     if (ticket && ticket.status !== targetStatus) onChangeStatus(ticket, targetStatus);
+    onDragEnd();
+  };
+
+  const onDragOverDelete = (event: React.DragEvent) => {
+    if (!canDelete) return;
+    event.preventDefault();
+    setIsDragOverDelete(true);
+  };
+
+  const onDragLeaveDelete = () => {
+    setIsDragOverDelete(false);
+  };
+
+  const onDropToDelete = (event: React.DragEvent) => {
+    if (!canDelete) return;
+    event.preventDefault();
+    const ticketId = event.dataTransfer.getData('text/plain');
+    if (ticketId) {
+      const ticket = filteredTickets.find((item) => item.id === ticketId);
+      if (ticket) {
+        onDeleteTicket(ticket.id);
+      }
+    }
+    onDragEnd();
   };
 
   return (
@@ -53,6 +90,7 @@ export const TicketKanbanView: React.FC<TicketKanbanViewProps> = ({
                   key={ticket.id}
                   draggable={!isViewOnly}
                   onDragStart={(event) => !isViewOnly && onDragStart(event, ticket.id)}
+                  onDragEnd={onDragEnd}
                   onClick={() => onOpenTicketDetails(ticket.id)}
                   className={`rounded-lg border bg-card p-3 shadow-sm hover:shadow transition ${isViewOnly ? 'cursor-pointer' : 'cursor-grab'}`}
                 >
@@ -78,6 +116,18 @@ export const TicketKanbanView: React.FC<TicketKanbanViewProps> = ({
           </div>
         );
       })}
+      {canDelete && draggedTicketId && (
+        <div
+          className={`min-w-[240px] flex-1 rounded-lg border border-dashed bg-error/10 p-4 text-center transition ${isDragOverDelete ? 'bg-error/20 border-destructive' : ''}`}
+          onDragOver={onDragOverDelete}
+          onDragLeave={onDragLeaveDelete}
+          onDrop={onDropToDelete}
+        >
+          <Trash2 className="mx-auto mb-2 h-8 w-8 text-destructive" />
+          <p className="text-sm font-semibold text-destructive">Drop here to delete</p>
+          <p className="text-xs text-muted-foreground">Managers and project managers can remove the dragged ticket</p>
+        </div>
+      )}
     </div>
   );
 };

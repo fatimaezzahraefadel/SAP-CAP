@@ -2,13 +2,22 @@
 
 const cds = require('@sap/cds');
 const { ENTITIES } = require('./validation');
+const { getRequestContext } = require('../../_shared/auth/request-context');
 
 const ADMIN_ONLY = new Set(['ADMIN']);
 const REVIEWER_ROLES = new Set(['ADMIN', 'MANAGER', 'PROJECT_MANAGER']);
 const STAFF_ROLES = new Set(['ADMIN', 'MANAGER', 'PROJECT_MANAGER', 'DEV_COORDINATOR']);
 const CONSULTANT_ROLES = new Set(['CONSULTANT_TECHNIQUE', 'CONSULTANT_FONCTIONNEL']);
 
-const getClaims = (req) => req._authClaims ?? {};
+const getClaims = (req) => {
+  const ctx = getRequestContext(req);
+  return {
+    sub: ctx.userId,
+    role: ctx.role,
+    email: ctx.email,
+    isAuthenticated: ctx.isAuthenticated,
+  };
+};
 const getUserId = (req) => String(getClaims(req).sub ?? '').trim();
 const getRole = (req) => String(getClaims(req).role ?? '').trim();
 const isAdmin = (reqOrRole) =>
