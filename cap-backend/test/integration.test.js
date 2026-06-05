@@ -1180,7 +1180,22 @@ describe('Validation and state-machine guards', () => {
 });
 
 describe('Documentation cleanup', () => {
-  test('cleanupOrphanAttachments deletes DocAttachedFiles without a valid DocumentationObjects reference', async () => {
+  const ATTACHMENTS_ENTITY = 'sap.performance.dashboard.db.Attachments';
+  const makeAttachment = (overrides) => ({
+    parentType: 'DOCUMENT',
+    parentId: 'doc-id',
+    fileName: `attachment-${Math.random().toString(36).slice(2, 8)}.pdf`,
+    originalName: 'attachment.pdf',
+    mimeType: 'application/pdf',
+    sizeBytes: 12,
+    storageKey: `https://example.com/${Math.random().toString(36).slice(2, 8)}.pdf`,
+    checksumSha256: Math.random().toString(36).slice(2, 10),
+    uploadedBy: requireSeedId('adminId'),
+    status: 'ACTIVE',
+    ...overrides,
+  });
+
+  test('cleanupOrphanAttachments deletes Attachments without a valid parent reference', async () => {
     await ensureAdminAuth();
 
     const docTitle = `Orphan cleanup ${Math.random().toString(36).slice(2, 8)}`;
@@ -1197,27 +1212,24 @@ describe('Documentation cleanup', () => {
     expect(createdDoc.ID).toBeTruthy();
 
     const entries = [
-      {
-        docObject_ID: createdDoc.ID,
+      makeAttachment({
+        parentId: createdDoc.ID,
         fileName: 'cleanup-valid.pdf',
-        fileUrl: 'https://example.com/cleanup-valid.pdf',
-      },
-      {
-        docObject_ID: null,
+      }),
+      makeAttachment({
+        parentId: '',
         fileName: 'cleanup-orphan-null.pdf',
-        fileUrl: 'https://example.com/cleanup-orphan-null.pdf',
-      },
-      {
-        docObject_ID: '00000000-0000-0000-0000-000000000000',
+      }),
+      makeAttachment({
+        parentId: '00000000-0000-0000-0000-000000000000',
         fileName: 'cleanup-orphan-bad-ref.pdf',
-        fileUrl: 'https://example.com/cleanup-orphan-bad-ref.pdf',
-      },
+      }),
     ];
 
-    await cds.db.run(INSERT.into('sap.performance.dashboard.db.DocAttachedFiles').entries(entries));
+    await cds.db.run(INSERT.into(ATTACHMENTS_ENTITY).entries(entries));
 
     const beforeRows = await cds.db.run(
-      SELECT.from('sap.performance.dashboard.db.DocAttachedFiles').columns(['ID', 'fileName', 'docObject_ID']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
+      SELECT.from(ATTACHMENTS_ENTITY).columns(['ID', 'fileName', 'parentId']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
     );
     expect(beforeRows.length).toBe(3);
 
@@ -1234,14 +1246,14 @@ describe('Documentation cleanup', () => {
     expect(deletedCount).toBe(2);
 
     const afterRows = await cds.db.run(
-      SELECT.from('sap.performance.dashboard.db.DocAttachedFiles').columns(['ID', 'fileName', 'docObject_ID']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
+      SELECT.from(ATTACHMENTS_ENTITY).columns(['ID', 'fileName', 'parentId']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
     );
     expect(afterRows.length).toBe(1);
     expect(afterRows[0].fileName).toBe('cleanup-valid.pdf');
-    expect(afterRows[0].docObject_ID).toBe(createdDoc.ID);
+    expect(afterRows[0].parentId).toBe(createdDoc.ID);
   });
 
-  test('purgeDeletedAttachments deletes DocAttachedFiles without a valid DocumentationObjects reference', async () => {
+  test('purgeDeletedAttachments deletes deleted Attachments and invalid parent references', async () => {
     await ensureAdminAuth();
 
     const docTitle = `Purge cleanup ${Math.random().toString(36).slice(2, 8)}`;
@@ -1258,27 +1270,25 @@ describe('Documentation cleanup', () => {
     expect(createdDoc.ID).toBeTruthy();
 
     const entries = [
-      {
-        docObject_ID: createdDoc.ID,
+      makeAttachment({
+        parentId: createdDoc.ID,
         fileName: 'purge-valid.pdf',
-        fileUrl: 'https://example.com/purge-valid.pdf',
-      },
-      {
-        docObject_ID: null,
-        fileName: 'purge-orphan-null.pdf',
-        fileUrl: 'https://example.com/purge-orphan-null.pdf',
-      },
-      {
-        docObject_ID: '00000000-0000-0000-0000-000000000000',
+      }),
+      makeAttachment({
+        parentId: createdDoc.ID,
+        fileName: 'purge-deleted.pdf',
+        status: 'DELETED',
+      }),
+      makeAttachment({
+        parentId: '00000000-0000-0000-0000-000000000000',
         fileName: 'purge-orphan-bad-ref.pdf',
-        fileUrl: 'https://example.com/purge-orphan-bad-ref.pdf',
-      },
+      }),
     ];
 
-    await cds.db.run(INSERT.into('sap.performance.dashboard.db.DocAttachedFiles').entries(entries));
+    await cds.db.run(INSERT.into(ATTACHMENTS_ENTITY).entries(entries));
 
     const beforeRows = await cds.db.run(
-      SELECT.from('sap.performance.dashboard.db.DocAttachedFiles').columns(['ID', 'fileName', 'docObject_ID']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
+      SELECT.from(ATTACHMENTS_ENTITY).columns(['ID', 'fileName', 'parentId', 'status']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
     );
     expect(beforeRows.length).toBe(3);
 
@@ -1295,14 +1305,14 @@ describe('Documentation cleanup', () => {
     expect(deletedCount).toBe(2);
 
     const afterRows = await cds.db.run(
-      SELECT.from('sap.performance.dashboard.db.DocAttachedFiles').columns(['ID', 'fileName', 'docObject_ID']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
+      SELECT.from(ATTACHMENTS_ENTITY).columns(['ID', 'fileName', 'parentId', 'status']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
     );
     expect(afterRows.length).toBe(1);
     expect(afterRows[0].fileName).toBe('purge-valid.pdf');
-    expect(afterRows[0].docObject_ID).toBe(createdDoc.ID);
+    expect(afterRows[0].parentId).toBe(createdDoc.ID);
   });
 
-  test('cleanupDuplicateAttachments removes duplicate DocAttachedFiles for same document and fileUrl', async () => {
+  test('cleanupDuplicateAttachments removes duplicate Attachments for same parent and checksum', async () => {
     await ensureAdminAuth();
 
     const docTitle = `Duplicate cleanup ${Math.random().toString(36).slice(2, 8)}`;
@@ -1319,32 +1329,32 @@ describe('Documentation cleanup', () => {
     expect(createdDoc.ID).toBeTruthy();
 
     const entries = [
-      {
-        docObject_ID: createdDoc.ID,
+      makeAttachment({
+        parentId: createdDoc.ID,
         fileName: 'duplicate-1.pdf',
-        fileUrl: 'https://example.com/duplicate.pdf',
-      },
-      {
-        docObject_ID: createdDoc.ID,
+        checksumSha256: 'duplicate-checksum',
+      }),
+      makeAttachment({
+        parentId: createdDoc.ID,
         fileName: 'duplicate-2.pdf',
-        fileUrl: 'https://example.com/duplicate.pdf',
-      },
-      {
-        docObject_ID: createdDoc.ID,
+        checksumSha256: 'duplicate-checksum',
+      }),
+      makeAttachment({
+        parentId: createdDoc.ID,
         fileName: 'duplicate-3.pdf',
-        fileUrl: 'https://example.com/duplicate.pdf',
-      },
-      {
-        docObject_ID: createdDoc.ID,
+        checksumSha256: 'duplicate-checksum',
+      }),
+      makeAttachment({
+        parentId: createdDoc.ID,
         fileName: 'distinct.pdf',
-        fileUrl: 'https://example.com/distinct.pdf',
-      },
+        checksumSha256: 'distinct-checksum',
+      }),
     ];
 
-    await cds.db.run(INSERT.into('sap.performance.dashboard.db.DocAttachedFiles').entries(entries));
+    await cds.db.run(INSERT.into(ATTACHMENTS_ENTITY).entries(entries));
 
     const beforeRows = await cds.db.run(
-      SELECT.from('sap.performance.dashboard.db.DocAttachedFiles').columns(['ID', 'fileName', 'docObject_ID', 'fileUrl']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
+      SELECT.from(ATTACHMENTS_ENTITY).columns(['ID', 'fileName', 'parentId', 'checksumSha256']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
     );
     expect(beforeRows.length).toBe(4);
 
@@ -1361,11 +1371,11 @@ describe('Documentation cleanup', () => {
     expect(deletedCount).toBe(2);
 
     const afterRows = await cds.db.run(
-      SELECT.from('sap.performance.dashboard.db.DocAttachedFiles').columns(['ID', 'fileName', 'docObject_ID', 'fileUrl']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
+      SELECT.from(ATTACHMENTS_ENTITY).columns(['ID', 'fileName', 'parentId', 'checksumSha256']).where({ fileName: { in: entries.map((entry) => entry.fileName) } })
     );
     expect(afterRows.length).toBe(2);
-    const remainingUrls = afterRows.map((row) => row.fileUrl).sort();
-    expect(remainingUrls).toEqual(['https://example.com/distinct.pdf', 'https://example.com/duplicate.pdf']);
+    const remainingChecksums = afterRows.map((row) => row.checksumSha256).sort();
+    expect(remainingChecksums).toEqual(['distinct-checksum', 'duplicate-checksum']);
   });
 
   test('reconcileStorage reports missing local attachments and orphan storage files', async () => {
@@ -1392,19 +1402,19 @@ describe('Documentation cleanup', () => {
     expect(createdDoc.ID).toBeTruthy();
 
     const entries = [
-      {
-        docObject_ID: createdDoc.ID,
+      makeAttachment({
+        parentId: createdDoc.ID,
         fileName: 'existing.pdf',
-        fileUrl: 'existing.pdf',
-      },
-      {
-        docObject_ID: createdDoc.ID,
+        storageKey: 'existing.pdf',
+      }),
+      makeAttachment({
+        parentId: createdDoc.ID,
         fileName: 'missing.pdf',
-        fileUrl: 'missing.pdf',
-      },
+        storageKey: 'missing.pdf',
+      }),
     ];
 
-    await cds.db.run(INSERT.into('sap.performance.dashboard.db.DocAttachedFiles').entries(entries));
+    await cds.db.run(INSERT.into(ATTACHMENTS_ENTITY).entries(entries));
 
     const previousStorageRoot = process.env.ATTACHMENT_STORAGE_ROOT;
     process.env.ATTACHMENT_STORAGE_ROOT = storageRoot;

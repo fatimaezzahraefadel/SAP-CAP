@@ -6,7 +6,8 @@ const path = require('path');
 const isLocalFileUrl = (fileUrl) =>
   typeof fileUrl === 'string' && fileUrl.trim() &&
   !/^https?:\/\//i.test(fileUrl) &&
-  !/^blob:/i.test(fileUrl);
+  !/^blob:/i.test(fileUrl) &&
+  !/^\/attachments\//i.test(fileUrl);
 
 const resolveStorageRoot = (env = process.env) =>
   env.ATTACHMENT_STORAGE_ROOT
@@ -36,6 +37,7 @@ const reconcileAttachmentStorage = async (attachments, options = {}) => {
   const storageRoot = options.storageRoot || resolveStorageRoot();
 
   const localAttachments = attachments
+    .map((entry) => ({ ...entry, fileUrl: entry.fileUrl ?? entry.storageKey }))
     .filter((entry) => isLocalFileUrl(entry.fileUrl))
     .map((entry) => ({
       id: entry.ID,

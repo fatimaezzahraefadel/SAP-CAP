@@ -6,13 +6,14 @@ const {
   ALL_NON_CONSULTANT_ROLES,
   requireOwnerOrRole,
 } = require('../shared/services/validation');
+const { getRequestContext } = require('../_shared/auth/request-context');
 
 class ProjectFeedbackDomainService {
   constructor(_srv) {
   }
 
   async beforeCreate(req) {
-    req.data.authorId = req.data.authorId || req._authClaims?.sub;
+    req.data.authorId = req.data.authorId || getRequestContext(req).userId;
     requireOwnerOrRole(
       req,
       req.data.authorId,

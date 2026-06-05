@@ -9,6 +9,7 @@ const cds = require('@sap/cds');
 
 const fs = require('fs').promises;
 const path = require('path');
+const { getRequestContext } = require('../../_shared/auth/request-context');
 
 const AUDIT_ENTITY = 'sap.performance.dashboard.db.AuditLogs';
 const SQLITE_AUDIT_TABLE = 'sap_performance_dashboard_db_AuditLogs';
@@ -98,14 +99,14 @@ const attachAuditLog = (srv) => {
     srv.after(event, '*', async (_result, req) => {
       await auditReady;
 
-      const claims = req._authClaims;
+      const ctx = getRequestContext(req);
       const entityName = req.target?.name ?? req.entity ?? 'unknown';
       const entityId = req.data?.ID ?? req.params?.[0]?.ID ?? req.params?.[0] ?? null;
 
       const logEntry = {
         timestamp: new Date().toISOString(),
-        userId: claims?.sub ?? null,
-        userRole: claims?.role ?? null,
+        userId: ctx.userId || null,
+        userRole: ctx.role || null,
         action: event,
         entityName,
         entityId: entityId !== null && entityId !== undefined ? String(entityId) : null,

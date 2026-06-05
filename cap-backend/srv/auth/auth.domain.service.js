@@ -3,6 +3,7 @@
 const crypto = require('node:crypto');
 const cds = require('@sap/cds');
 const AuthRepo = require('./auth.repo');
+const { getRequestContext } = require('../_shared/auth/request-context');
 
 const DEMO_PASSWORD_BY_EMAIL = Object.freeze({
   'alice.admin@inetum.com': 'Admin#2026',
@@ -153,7 +154,11 @@ class AuthDomainService {
   }
 
   getRequestClaims(req) {
-    return req._authClaims ?? this.authenticateRequest(req);
+    const ctx = getRequestContext(req);
+    if (ctx.isAuthenticated) {
+      return { sub: ctx.userId, userId: ctx.userId, role: ctx.role, email: ctx.email };
+    }
+    return this.authenticateRequest(req);
   }
 
   requireReviewerRole(req, claims) {
