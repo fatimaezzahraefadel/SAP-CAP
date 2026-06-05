@@ -47,6 +47,19 @@ class DeliverableDomainService {
       }
     }
   }
+
+  async beforeDelete(req) {
+    // Only managers can delete; an APPROVED deliverable is contractually
+    // delivered work and is protected from deletion regardless of role.
+    requireRole(req, MANAGER_ROLES, 'Only managers can delete deliverables');
+    const id = extractEntityId(req);
+    if (!id) req.reject(400, 'Deliverable id is required');
+
+    const current = await this.repo.findById(id);
+    if (current && current.validationStatus === 'APPROVED') {
+      req.reject(409, 'Cannot delete an APPROVED deliverable');
+    }
+  }
 }
 
 module.exports = DeliverableDomainService;

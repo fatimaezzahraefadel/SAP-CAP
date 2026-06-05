@@ -425,7 +425,7 @@ entity AuditLogs : cuid {
   timestamp  : DateTime not null;
   userId     : String(50);
   userRole   : String(40);
-  action     : String(10) not null;       // CREATE, UPDATE, DELETE
+  action     : String(60) not null;       // CREATE, UPDATE, DELETE, or custom action name (e.g. approveTicket, uploadAttachment)
   entityName : String(100) not null;
   entityId   : String(50);
   details    : String(10000);               // JSON diff / summary
