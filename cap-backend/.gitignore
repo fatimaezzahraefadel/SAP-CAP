@@ -42,6 +42,13 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# Approuter local-only env file (never deploy this; BTP injects real VCAP_SERVICES)
+app/approuter/default-env.json
+
+# MTA build artifacts
+mta_archives/
+.mta/
+
 # OS
 .DS_Store
 Thumbs.db

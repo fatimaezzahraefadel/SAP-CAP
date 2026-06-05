@@ -2,6 +2,7 @@
   "welcomeFile": "/index.html",
   "authenticationMethod": "route",
   "sessionTimeout": 30,
+  "pluginMetadataEndpoint": "/.plugin",
   "logout": {
     "logoutEndpoint": "/do/logout",
     "logoutPage": "/index.html"
@@ -18,7 +19,8 @@
       "source": "^/attachments/(.*)$",
       "target": "/attachments/$1",
       "destination": "srv-api",
-      "authenticationType": "xsuaa"
+      "authenticationType": "xsuaa",
+      "csrfProtection": false
     },
     {
       "source": "^/-/(.*)$",
@@ -27,16 +29,37 @@
       "authenticationType": "xsuaa"
     },
     {
-      "source": "^(.*\\.(js|css|html|png|jpg|jpeg|svg|ico|woff|woff2|ttf|map|json))$",
+      "source": "^/assets/(.*)$",
+      "target": "/assets/$1",
       "localDir": "resources",
       "authenticationType": "none",
-      "cacheControl": "public, max-age=31536000"
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "^/locales/(.*)$",
+      "target": "/locales/$1",
+      "localDir": "resources",
+      "authenticationType": "none",
+      "cacheControl": "public, max-age=3600"
+    },
+    {
+      "source": "^/(.*\\.(png|jpe?g|svg|ico|webp|gif|woff2?|ttf|eot|map))$",
+      "localDir": "resources",
+      "authenticationType": "none",
+      "cacheControl": "public, max-age=604800"
+    },
+    {
+      "source": "^/index\\.html$",
+      "localDir": "resources",
+      "authenticationType": "xsuaa",
+      "cacheControl": "no-cache, no-store, must-revalidate"
     },
     {
       "source": "^/(.*)$",
       "target": "/index.html",
       "localDir": "resources",
-      "authenticationType": "xsuaa"
+      "authenticationType": "xsuaa",
+      "cacheControl": "no-cache, no-store, must-revalidate"
     }
   ]
 }

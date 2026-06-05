@@ -1,21 +1,36 @@
 _schema-version: "3.3"
 ID: ticket-cap
-description: Ticket-CAP performance dashboard - CAP backend, Approuter, and SPA
+description: Ticket-CAP performance dashboard — CAP backend, Approuter, and SPA
 version: 1.0.0
 
 parameters:
   enable-parallel-deployments: true
+  deploy_mode: dist
 
+# -----------------------------------------------------------------------------
+# Build pipeline — runs once before any module is built.
+#   1. Install backend deps (cap-backend root)
+#   2. Install frontend deps (app/frontend)
+#   3. Run the project build script which:
+#        a. Builds the React SPA → app/dist
+#        b. Syncs app/dist → app/approuter/resources
+#        c. Runs `cds build --production` → gen/srv + gen/db
+# -----------------------------------------------------------------------------
 build-parameters:
   before-all:
     - builder: custom
       commands:
-        - npm ci
+        - npm ci --omit=dev=false
         - npm ci --prefix app/frontend
         - npm run build
 
+# =============================================================================
+# MODULES — each becomes one CF app
+# =============================================================================
 modules:
-  # 1. CAP backend
+  # ---------------------------------------------------------------------------
+  # 1. CAP backend (Node.js)
+  # ---------------------------------------------------------------------------
   - name: ticket-cap-srv
     type: nodejs
     path: gen/srv
@@ -23,8 +38,13 @@ modules:
       buildpack: nodejs_buildpack
       memory: 512M
       disk-quota: 1024M
+      stack: cflinuxfs4
     build-parameters:
       builder: npm-ci
+      ignore:
+        - "node_modules/"
+        - "default-env.json"
+        - ".env"
     provides:
       - name: srv-api
         properties:
@@ -33,17 +53,28 @@ modules:
       - name: ticket-cap-db
       - name: ticket-cap-uaa
 
-  # 2. HANA HDI deployer
+  # ---------------------------------------------------------------------------
+  # 2. HANA HDI deployer — applies the CDS-generated schema on every deploy
+  # ---------------------------------------------------------------------------
   - name: ticket-cap-db-deployer
     type: hdb
     path: gen/db
     parameters:
       buildpack: nodejs_buildpack
       memory: 256M
+      disk-quota: 512M
+      no-route: true
+      no-start: false
+      health-check-type: process
+    build-parameters:
+      ignore:
+        - "node_modules/"
     requires:
       - name: ticket-cap-db
 
-  # 3. Approuter
+  # ---------------------------------------------------------------------------
+  # 3. Approuter — public entry point, OAuth, reverse proxy, SPA host
+  # ---------------------------------------------------------------------------
   - name: ticket-cap-approuter
     type: approuter.nodejs
     path: app/approuter
@@ -51,8 +82,14 @@ modules:
       keep-existing-routes: true
       disk-quota: 512M
       memory: 256M
+      stack: cflinuxfs4
     build-parameters:
-      ignore: ["node_modules/"]
+      ignore:
+        - "node_modules/"
+        - "default-env.json"
+        - "README.md"
+        - ".gitkeep"
+        - "**/.gitkeep"
     requires:
       - name: srv-api
         group: destinations
@@ -60,17 +97,22 @@ modules:
           name: srv-api
           url: ~{srv-url}
           forwardAuthToken: true
+          strictSSL: true
+          timeout: 60000
       - name: ticket-cap-uaa
 
+# =============================================================================
+# RESOURCES — BTP service instances bound to the modules above
+# =============================================================================
 resources:
-  # Runtime database container
+  # HANA HDI container — runtime database for the CAP backend
   - name: ticket-cap-db
     type: com.sap.xs.hdi-container
     parameters:
       service: hana
       service-plan: hdi-shared
 
-  # OAuth and authorization service
+  # XSUAA — issues JWTs, enforces scopes defined in xs-security.json
   - name: ticket-cap-uaa
     type: org.cloudfoundry.managed-service
     parameters:

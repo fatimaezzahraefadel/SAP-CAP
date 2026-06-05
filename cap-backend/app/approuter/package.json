@@ -1,7 +1,8 @@
 {
   "name": "ticket-cap-approuter",
   "version": "1.0.0",
-  "description": "SAP Approuter for the Ticket-CAP application.",
+  "description": "SAP Approuter for the Ticket-CAP performance dashboard. Handles XSUAA OAuth, proxies API calls to the CAP backend, and serves the React SPA.",
+  "private": true,
   "engines": {
     "node": ">=18"
   },
@@ -9,6 +10,6 @@
     "start": "node node_modules/@sap/approuter/approuter.js"
   },
   "dependencies": {
-    "@sap/approuter": "^16"
+    "@sap/approuter": "^16.7.4"
   }
 }

@@ -33,11 +33,15 @@ unless you build with `--production`.
 
 | Component | What it is | Where the config lives |
 |---|---|---|
-| **Approuter** | OAuth2 entry point + reverse proxy + static SPA host | `approuter/xs-app.json` |
-| **CAP backend** | Node.js OData v4 service, hooks, policies | `cap-backend/srv/**` |
-| **HANA HDI** | Cloud database for the CAP schema | `cap-backend/db/**` |
+| **Approuter** | OAuth2 entry point + reverse proxy + static SPA host | `app/approuter/xs-app.json` |
+| **CAP backend** | Node.js OData v4 service, hooks, policies | `srv/**` |
+| **HANA HDI** | Cloud database for the CAP schema | `db/**` |
 | **XSUAA** | Issues JWTs, defines the 6 business roles | `xs-security.json` |
 | **MTA descriptor** | Glues everything together for `cf deploy` | `mta.yaml` |
+
+> All paths above are relative to `cap-backend/`, which is the project root for
+> the MTA build. There is no separate "approuter folder at the repo root" —
+> everything is under `cap-backend/`.
 
 ## Prerequisites (one-time)
 
@@ -67,7 +71,7 @@ unless you build with `--production`.
 
 ## Build and deploy
 
-From the repo root:
+From `cap-backend/` (the MTA project root):
 
 ```bash
 # 1. Build the .mtar archive (runs npm + cds build under the hood)
@@ -103,8 +107,8 @@ the XSUAA OAuth flow.
 
 | File | Local default | Production override |
 |---|---|---|
-| `cap-backend/package.json` | `auth: "mocked"`, `db: sqlite` | `[production]: { auth: xsuaa, db: hana-cloud }` |
-| `cap-backend/srv/_shared/auth/request-context.js` | Reads `req._authClaims` (mocked JWT) | Falls back to `req.user` (XSUAA scopes mapped to internal roles) |
+| `package.json` | `auth: "mocked"`, `db: sqlite` | `[production]: { auth: xsuaa, db: hana-cloud }` |
+| `srv/_shared/auth/request-context.js` | Reads `req._authClaims` (mocked JWT) | Falls back to `req.user` (XSUAA scopes mapped to internal roles) |
 | Tests | All use mocked auth — no XSUAA wiring needed | n/a |
 
 CAP activates the `[production]` profile when `NODE_ENV=production` (the
