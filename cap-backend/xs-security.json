@@ -97,6 +97,7 @@
     "redirect-uris": [
       "https://*.cfapps.eu10.hana.ondemand.com/**",
       "https://*.cfapps.us10.hana.ondemand.com/**",
+      "https://*.cfapps.us10-001.hana.ondemand.com/**",
       "http://localhost:*/**"
     ],
     "token-validity": 900,

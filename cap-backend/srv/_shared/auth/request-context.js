@@ -50,6 +50,7 @@ const ROLE_PRIORITY = [
  * Two shapes are accepted:
  *   - `user.roles` — array of scope strings (preferred, CAP normalises to this)
  *   - `user.hasRole(scopeTail)` — passport-style predicate from @sap/xssec
+ *   - `user.is(scopeTail)` — CAP user role predicate
  */
 function roleFromXsuaaUser(user) {
   if (!user || typeof user !== 'object') return '';
@@ -70,6 +71,16 @@ function roleFromXsuaaUser(user) {
         if (user.hasRole(scopeTail)) candidates.add(internalRole);
       } catch {
         // hasRole signatures vary across @sap/xssec versions — ignore failures.
+      }
+    }
+  }
+
+  if (typeof user.is === 'function') {
+    for (const [scopeTail, internalRole] of Object.entries(XSUAA_SCOPE_TO_ROLE)) {
+      try {
+        if (user.is(scopeTail)) candidates.add(internalRole);
+      } catch {
+        // CAP role predicates are environment-specific — ignore failures.
       }
     }
   }

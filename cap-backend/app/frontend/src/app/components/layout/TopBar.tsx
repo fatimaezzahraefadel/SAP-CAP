@@ -22,7 +22,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useDensity } from '../../context/DensityContext';
 import { NotificationsAPI } from '../../services/odata/notificationsApi';
-import { getODataAuthToken } from '../../services/odata/core';
 import { getBaseRouteForRole, getRoleRouteDefinitions } from '../../routing/routeRegistry';
 import { Notification } from '../../types/entities';
 import { Avatar, AvatarFallback } from '../ui/avatar';
@@ -73,11 +72,6 @@ export const TopBar: React.FC<TopBarProps> = ({
       return;
     }
 
-    // Skip polling in direct/mock sessions where no backend token exists.
-    if (!getODataAuthToken()) {
-      return;
-    }
-
     let mounted = true;
     let canPoll = true;
 
@@ -120,7 +114,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   }, [currentUser]);
 
   const visibleNotifications = useMemo(
-    () => (currentUser && getODataAuthToken() ? notifications : []),
+    () => (currentUser ? notifications : []),
     [currentUser, notifications]
   );
 

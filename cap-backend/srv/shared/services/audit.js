@@ -26,14 +26,12 @@ const CUD_EVENTS = new Set(['CREATE', 'UPDATE', 'DELETE']);
 // Events that are read-style or public and would only add noise to the audit:
 //   - READ            : every list / detail GET, far too frequent
 //   - authenticate    : login attempt, already logged by the auth service itself
-//   - quickAccessAccounts : public demo helper, returns a static list
 //   - listAttachments / downloadAttachment : read-style, no state change
 //   - cleanupOrphanAttachments / purgeDeletedAttachments / cleanupDuplicateAttachments / reconcileStorage :
 //     scheduled maintenance jobs — they have their own logging
 const AUDIT_SKIPPED_EVENTS = new Set([
   'READ',
   'authenticate',
-  'quickAccessAccounts',
   'listAttachments',
   'downloadAttachment',
   'cleanupOrphanAttachments',

@@ -25,15 +25,25 @@ class AuthRepo {
     return null;
   }
 
-  async listActiveUsers() {
+  async findUserByRole(role) {
     const users = await cds.db.run(
       SELECT.from('sap.performance.dashboard.db.Users')
-        .columns('ID', 'name', 'email', 'role', 'active')
+        .columns(
+          'ID',
+          'name',
+          'email',
+          'role',
+          'active',
+          'availabilityPercent',
+          'teamId',
+          'avatarUrl'
+        )
+        .where({ role })
     );
-    const result = users.filter(u => u.active === true || u.active === 'true' || u.active === 1 || u.active === '1');
-    console.log('[AuthRepo] listActiveUsers returned:', result?.length ?? 0, 'users');
-    return result;
+    const user = users.find(u => u.active === true || u.active === 'true' || u.active === 1 || u.active === '1');
+    return user ?? null;
   }
+
 }
 
 module.exports = AuthRepo;
