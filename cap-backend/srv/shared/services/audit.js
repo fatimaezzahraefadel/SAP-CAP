@@ -9,6 +9,7 @@ const cds = require('@sap/cds');
 
 const fs = require('fs').promises;
 const path = require('path');
+const { maskSensitive } = require('../../_shared/security/mask-sensitive');
 
 const AUDIT_ENTITY = 'sap.performance.dashboard.db.AuditLogs';
 const SQLITE_AUDIT_TABLE = 'sap_performance_dashboard_db_AuditLogs';
@@ -77,11 +78,14 @@ const alertSecurityTeam = async (err, log) => {
 
 /**
  * Build a short JSON summary of the changed payload (max 2 KB).
+ * Sensitive fields (password, token, authorization, secret) are masked BEFORE
+ * serialisation so the audit row never persists cleartext credentials.
  */
 const summarise = (data) => {
   if (!data) return null;
   try {
-    const raw = JSON.stringify(data);
+    const safe = maskSensitive(data);
+    const raw = JSON.stringify(safe);
     return raw.length > 2048 ? raw.slice(0, 2045) + '...' : raw;
   } catch {
     return null;
