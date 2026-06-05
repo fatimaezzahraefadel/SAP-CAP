@@ -4,6 +4,7 @@ const cds = require('@sap/cds');
 const WricefRepo = require('./wricef.repo');
 const { assertEntityExists, assertInEnum, ENTITIES, requireRole } = require('../shared/services/validation');
 const { nowIso } = require('../shared/utils/timestamp');
+const { getRequestContext } = require('../_shared/auth/request-context');
 
 const WRICEF_TYPES = ['W', 'R', 'I', 'C', 'E', 'F'];
 const PM_ROLES = new Set(['ADMIN', 'PROJECT_MANAGER']);
@@ -68,7 +69,7 @@ class WricefDomainService {
         return;
       }
 
-      const userId = req._authClaims?.sub || req.user?.id || req.headers?.['x-user-id'] || 'unknown';
+      const userId = getRequestContext(req).userId || 'unknown';
       const now = nowIso();
 
       // Transition the WRICEF

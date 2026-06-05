@@ -4,9 +4,24 @@ const cds = require('@sap/cds');
 const { assertEntityExists, ENTITIES, ADMIN_ONLY, requireRole } = require('../shared/services/validation');
 const { nowIso } = require('../shared/utils/timestamp');
 const { reconcileAttachmentStorage, resolveStorageRoot } = require('../shared/services/reconcileStorage');
+const { getRequestContext } = require('../_shared/auth/request-context');
 
-const DOC_ATTACHED_FILES = 'sap.performance.dashboard.db.DocAttachedFiles';
-const DOCUMENTATION_OBJECTS = 'sap.performance.dashboard.db.DocumentationObjects';
+const PARENT_ENTITY_BY_TYPE = Object.freeze({
+  COMMENT: ENTITIES.TicketComments,
+  DELIVERABLE: ENTITIES.Deliverables,
+  DOCUMENT: ENTITIES.DocumentationObjects,
+  EVALUATION: ENTITIES.Evaluations,
+  IMPUTATION: ENTITIES.Imputations,
+  LEAVE_REQUEST: ENTITIES.LeaveRequests,
+  PROJECT: ENTITIES.Projects,
+  PROJECT_FEEDBACK: ENTITIES.ProjectFeedback,
+  TICKET: ENTITIES.Tickets,
+  TIME_LOG: ENTITIES.TimeLogs,
+  TIMESHEET: ENTITIES.Timesheets,
+  USER: ENTITIES.Users,
+  WRICEF: ENTITIES.Wricefs,
+  WRICEF_OBJECT: ENTITIES.WricefObjects,
+});
 
 class DocumentationDomainService {
   constructor(_srv) {
@@ -14,7 +29,7 @@ class DocumentationDomainService {
 
   async beforeCreate(req) {
     const data = req.data;
-    const userId = String(req._authClaims?.sub ?? '').trim();
+    const userId = getRequestContext(req).userId;
 
     if (!userId) req.reject(401, 'Missing authenticated user');
     if (data.authorId !== undefined && String(data.authorId) !== userId) {
@@ -32,7 +47,7 @@ class DocumentationDomainService {
 
   async beforeUpdate(req) {
     const data = req.data;
-    const userId = String(req._authClaims?.sub ?? '').trim();
+    const userId = getRequestContext(req).userId;
 
     if (data.authorId !== undefined) {
       if (!userId) req.reject(401, 'Missing authenticated user');
@@ -50,28 +65,37 @@ class DocumentationDomainService {
 
   async _cleanupOrphanAttachments(tx) {
     const attachments = await tx.run(
-      SELECT.from(DOC_ATTACHED_FILES).columns(['ID', 'docObject_ID'])
+      SELECT.from(ENTITIES.Attachments).columns(['ID', 'parentType', 'parentId'])
     );
 
     const orphanIds = [];
-    const referencedDocIds = new Set();
+    const referencedIdsByType = new Map();
+
     for (const attachment of attachments) {
-      const docObjectId = attachment.docObject_ID;
-      if (docObjectId) {
-        referencedDocIds.add(docObjectId);
-      } else {
+      const parentType = String(attachment.parentType ?? '').trim().toUpperCase();
+      const parentId = String(attachment.parentId ?? '').trim();
+      if (!parentType || !parentId) {
         orphanIds.push(attachment.ID);
+        continue;
       }
+
+      if (!PARENT_ENTITY_BY_TYPE[parentType]) continue;
+
+      if (!referencedIdsByType.has(parentType)) {
+        referencedIdsByType.set(parentType, new Set());
+      }
+      referencedIdsByType.get(parentType).add(parentId);
     }
 
-    if (referencedDocIds.size > 0) {
-      const existingDocs = await tx.run(
-        SELECT.from(DOCUMENTATION_OBJECTS).columns('ID').where({ ID: { in: [...referencedDocIds] } })
+    for (const [parentType, referencedIds] of referencedIdsByType.entries()) {
+      const existingRows = await tx.run(
+        SELECT.from(PARENT_ENTITY_BY_TYPE[parentType]).columns('ID').where({ ID: { in: [...referencedIds] } })
       );
-      const existingIds = new Set(existingDocs.map((doc) => doc.ID));
+      const existingIds = new Set(existingRows.map((row) => String(row.ID)));
       for (const attachment of attachments) {
-        const docObjectId = attachment.docObject_ID;
-        if (docObjectId && !existingIds.has(docObjectId)) {
+        const attachmentParentType = String(attachment.parentType ?? '').trim().toUpperCase();
+        const parentId = String(attachment.parentId ?? '').trim();
+        if (attachmentParentType === parentType && parentId && !existingIds.has(parentId)) {
           orphanIds.push(attachment.ID);
         }
       }
@@ -81,20 +105,53 @@ class DocumentationDomainService {
       return 0;
     }
 
-    await tx.run(DELETE.from(DOC_ATTACHED_FILES).where({ ID: { in: orphanIds } }));
-    return orphanIds.length;
+    const uniqueOrphanIds = [...new Set(orphanIds)];
+    await tx.run(DELETE.from(ENTITIES.Attachments).where({ ID: { in: uniqueOrphanIds } }));
+    return uniqueOrphanIds.length;
+  }
+
+  async _purgeDeletedAttachments(tx) {
+    const attachments = await tx.run(
+      SELECT.from(ENTITIES.Attachments).columns('ID').where({ status: { in: ['DELETED', 'ORPHANED'] } })
+    );
+    const deletedIds = attachments.map((attachment) => attachment.ID);
+    if (deletedIds.length === 0) return 0;
+
+    await tx.run(DELETE.from(ENTITIES.Attachments).where({ ID: { in: deletedIds } }));
+    return deletedIds.length;
   }
 
   async _cleanupDuplicateAttachments(tx) {
     const attachments = await tx.run(
-      SELECT.from(DOC_ATTACHED_FILES).columns(['ID', 'docObject_ID', 'fileUrl'])
+      SELECT.from(ENTITIES.Attachments).columns([
+        'ID',
+        'parentType',
+        'parentId',
+        'fileName',
+        'originalName',
+        'mimeType',
+        'sizeBytes',
+        'storageKey',
+        'checksumSha256',
+      ]).where({ status: 'ACTIVE' })
     );
 
     const seen = new Map();
     const duplicateIds = [];
 
     for (const attachment of attachments) {
-      const key = `${String(attachment.docObject_ID ?? '').trim()}::${String(attachment.fileUrl ?? '').trim()}`;
+      const parentKey = [
+        String(attachment.parentType ?? '').trim().toUpperCase(),
+        String(attachment.parentId ?? '').trim(),
+      ].join('::');
+      const contentKey = String(attachment.checksumSha256 ?? '').trim() ||
+        [
+          String(attachment.originalName ?? attachment.fileName ?? '').trim().toLowerCase(),
+          String(attachment.mimeType ?? '').trim().toLowerCase(),
+          String(attachment.sizeBytes ?? '').trim(),
+          String(attachment.storageKey ?? '').trim(),
+        ].join('::');
+      const key = `${parentKey}::${contentKey}`;
       if (!seen.has(key)) {
         seen.set(key, attachment.ID);
       } else {
@@ -106,7 +163,7 @@ class DocumentationDomainService {
       return 0;
     }
 
-    await tx.run(DELETE.from(DOC_ATTACHED_FILES).where({ ID: { in: duplicateIds } }));
+    await tx.run(DELETE.from(ENTITIES.Attachments).where({ ID: { in: duplicateIds } }));
     return duplicateIds.length;
   }
 
@@ -117,7 +174,11 @@ class DocumentationDomainService {
 
   async purgeDeletedAttachments(req) {
     requireRole(req, ADMIN_ONLY, 'Only admins can run purgeDeletedAttachments');
-    return cds.tx(req).run(async (tx) => this._cleanupOrphanAttachments(tx));
+    return cds.tx(req).run(async (tx) => {
+      const orphanDeleted = await this._cleanupOrphanAttachments(tx);
+      const purgedDeleted = await this._purgeDeletedAttachments(tx);
+      return orphanDeleted + purgedDeleted;
+    });
   }
 
   async cleanupDuplicateAttachments(req) {
@@ -129,7 +190,7 @@ class DocumentationDomainService {
     requireRole(req, ADMIN_ONLY, 'Only admins can run reconcileStorage');
     return cds.tx(req).run(async (tx) => {
       const attachments = await tx.run(
-        SELECT.from(DOC_ATTACHED_FILES).columns(['ID', 'fileName', 'fileUrl'])
+        SELECT.from(ENTITIES.Attachments).columns(['ID', 'fileName', 'storageKey']).where({ status: 'ACTIVE' })
       );
       const storageRoot = resolveStorageRoot(process.env);
       const summary = await reconcileAttachmentStorage(attachments, { storageRoot });

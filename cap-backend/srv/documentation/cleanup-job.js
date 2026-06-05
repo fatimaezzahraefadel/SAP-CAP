@@ -1,6 +1,5 @@
 'use strict';
 
-const cds = require('@sap/cds');
 const cron = require('node-cron');
 const DocumentationDomainService = require('./documentation.domain.service');
 
@@ -11,10 +10,10 @@ function registerCleanupJob() {
   cron.schedule(scheduleSpec, async () => {
     try {
       const domain = new DocumentationDomainService();
-      const mockReq = { _authClaims: { role: 'ADMIN', sub: 'system' } };
+      const mockReq = { authContext: { role: 'ADMIN', userId: 'system' } };
       const deleted = await domain.purgeDeletedAttachments(mockReq);
       const duplicatesDeleted = await domain.cleanupDuplicateAttachments(mockReq);
-      console.info(`[cleanup-job] purged ${deleted} deleted/orphan DocAttachedFiles and ${duplicatesDeleted} duplicate DocAttachedFiles`);
+      console.info(`[cleanup-job] purged ${deleted} deleted/orphan Attachments and ${duplicatesDeleted} duplicate Attachments`);
     } catch (err) {
       console.error('[cleanup-job] failed to run purgeDeletedAttachments or cleanupDuplicateAttachments', err);
     }

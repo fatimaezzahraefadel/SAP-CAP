@@ -2,6 +2,7 @@
 
 const UserRepo = require('./user.repo');
 const { ADMIN_ONLY, requireRole, requireOwnerOrRole } = require('../shared/services/validation');
+const { getRequestContext } = require('../_shared/auth/request-context');
 
 const extractEntityId = (req) => req.params?.[0]?.ID ?? req.params?.[0] ?? req.data?.ID;
 const normalizeEmail = (value) => String(value ?? '').trim().toLowerCase();
@@ -26,7 +27,7 @@ class UserDomainService {
     const id = extractEntityId(req);
     requireOwnerOrRole(req, id, ADMIN_ONLY, 'Only ADMIN can update users');
 
-    if (String(req._authClaims?.sub ?? '') === String(id ?? '')) {
+    if (getRequestContext(req).userId === String(id ?? '')) {
       const forbiddenFields = Object.keys(req.data ?? {}).filter(
         (field) => !SELF_SERVICE_FIELDS.has(field) && field !== 'ID' && field !== 'id'
       );
