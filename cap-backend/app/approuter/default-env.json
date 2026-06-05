@@ -1,0 +1,24 @@
+{
+  "destinations": [
+    {
+      "name": "srv-api",
+      "url": "http://localhost:4004",
+      "forwardAuthToken": true
+    }
+  ],
+  "VCAP_SERVICES": {
+    "xsuaa": [
+      {
+        "name": "ticket-cap-uaa",
+        "label": "xsuaa",
+        "tags": ["xsuaa"],
+        "credentials": {
+          "xsappname": "ticket-cap-local",
+          "clientid": "ticket-cap-local",
+          "clientsecret": "dummy",
+          "url": "http://localhost:4004"
+        }
+      }
+    ]
+  }
+}

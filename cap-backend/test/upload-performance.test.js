@@ -4,7 +4,7 @@ process.env.CDS_REQUIRES_DB_KIND = 'sqlite';
 process.env.CDS_REQUIRES_DB_CREDENTIALS_DATABASE = ':memory:';
 const cds = require('@sap/cds');
 
-const { POST, expect: _expect } = cds
+const { POST, GET, expect: _expect } = cds
   .test('serve', 'all', '--in-memory')
   .in(__dirname + '/..');
 
@@ -17,8 +17,8 @@ describe('Upload Performance Test (Simulated Large Payload)', () => {
   beforeAll(async () => {
     // Authenticate as a technical consultant for deliverables
     const { data } = await POST('/odata/v4/user/authenticate', {
-      email: 'tech@example.com',
-      password: 'password123',
+      email: 'theo.tech@inetum.com',
+      password: 'Tech#2026',
     });
     authToken = data.token;
   });
@@ -32,19 +32,23 @@ describe('Upload Performance Test (Simulated Large Payload)', () => {
     // Assuming there is a project with name 'Project Alpha' or we just use a known seed ID.
     // For this test, we can use a known valid payload. If it fails due to ID, it still tests network parsing time.
     // However, it's better to fetch a real projectId.
-    const { data: projects } = await cds.test.GET('/odata/v4/project/Projects', withAuth());
+    const { data: projects } = await GET('/odata/v4/core/Projects', withAuth());
     const projectId = projects.value[0]?.ID;
+    const { data: tickets } = await GET('/odata/v4/ticket/Tickets?$top=1', withAuth());
+    const ticketId = tickets.value[0]?.ID;
     
-    if (!projectId) {
-      console.warn('No project found, skipping performance test');
+    if (!projectId || !ticketId) {
+      console.warn('No project or ticket found, skipping performance test');
       return;
     }
 
     const payload = {
       projectId: projectId,
+      ticketId: ticketId,
       type: 'SPEC',
       name: 'Large Requirements Document',
-      fileRef: `data:application/pdf;base64,${base64String}`, // Simulating the payload inside fileRef for now
+      fileRef: 'perf://upload-test.pdf',
+      functionalComment: base64String,
     };
 
     const start = performance.now();

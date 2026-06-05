@@ -1,7 +1,7 @@
 {
   "name": "ticket-cap-approuter",
   "version": "1.0.0",
-  "description": "SAP Approuter for the Ticket-CAP application — handles XSUAA OAuth, serves the SPA, and proxies API calls to the CAP backend on BTP.",
+  "description": "SAP Approuter for the Ticket-CAP application.",
   "engines": {
     "node": ">=18"
   },

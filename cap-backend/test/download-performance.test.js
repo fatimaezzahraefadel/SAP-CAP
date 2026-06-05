@@ -19,25 +19,29 @@ describe('Download Performance Test (Concurrent Requests)', () => {
   beforeAll(async () => {
     // Authenticate
     const { data } = await POST('/odata/v4/user/authenticate', {
-      email: 'tech@example.com',
-      password: 'password123',
+      email: 'theo.tech@inetum.com',
+      password: 'Tech#2026',
     });
     authToken = data.token;
 
     // Setup: create a deliverable to download
-    const { data: projects } = await GET('/odata/v4/project/Projects', withAuth());
+    const { data: projects } = await GET('/odata/v4/core/Projects', withAuth());
     const projectId = projects.value[0]?.ID;
+    const { data: tickets } = await GET('/odata/v4/ticket/Tickets?$top=1', withAuth());
+    const ticketId = tickets.value[0]?.ID;
     
-    if (projectId) {
+    if (projectId && ticketId) {
       // 1MB payload
       const size = 1 * 1024 * 1024;
       const base64String = Buffer.alloc(size, 'b').toString('base64');
       
       const { data: deliverable } = await POST('/odata/v4/core/Deliverables', {
         projectId: projectId,
+        ticketId: ticketId,
         type: 'ARCH',
         name: 'Concurrent Download Test File',
-        fileRef: `data:application/pdf;base64,${base64String}`
+        fileRef: 'perf://download-test.pdf',
+        functionalComment: base64String,
       }, withAuth());
       
       createdDeliverableId = deliverable.ID;
@@ -70,7 +74,7 @@ describe('Download Performance Test (Concurrent Requests)', () => {
     responses.forEach(res => {
       expect(res.status).toBe(200);
       expect(res.data.ID).toBe(createdDeliverableId);
-      expect(res.data.fileRef).toBeDefined();
+      expect(res.data.functionalComment).toBeDefined();
     });
 
     // Should complete within a reasonable timeframe (e.g. 5000ms locally)

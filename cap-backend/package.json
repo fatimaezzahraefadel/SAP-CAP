@@ -9,7 +9,8 @@
     "dev:web": "npm run dev --prefix app/frontend",
     "dev:all": "node scripts/dev-all.js",
     "build:web": "npm run build --prefix app/frontend",
-    "build": "npm run build:web && cds build --production",
+    "sync:approuter": "node scripts/sync-approuter-resources.js",
+    "build": "npm run build:web && npm run sync:approuter && cds build --production",
     "lint": "eslint .",
     "test": "jest --config jest.config.cjs --forceExit --detectOpenHandles"
   },

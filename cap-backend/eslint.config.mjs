@@ -2,7 +2,15 @@ import js from '@eslint/js';
 
 export default [
   {
-    ignores: ['eslint.config.mjs', 'gen/', 'node_modules/', 'coverage/'],
+    ignores: [
+      'eslint.config.mjs',
+      'gen/',
+      'node_modules/',
+      'coverage/',
+      'app/dist/',
+      'app/approuter/resources/',
+      'app/frontend/',
+    ],
   },
   js.configs.recommended,
   {
@@ -20,6 +28,8 @@ export default [
         __dirname: 'readonly',
         console: 'readonly',
         Buffer: 'readonly',
+        URLSearchParams: 'readonly',
+        performance: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
         jest: 'readonly',

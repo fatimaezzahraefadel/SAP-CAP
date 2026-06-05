@@ -54,7 +54,7 @@ function maskSensitive(value) {
  * Pass-through for non-string inputs (null / undefined / numbers).
  */
 function maskJsonString(details) {
-  if (details == null || typeof details !== 'string') return details;
+  if (details === null || details === undefined || typeof details !== 'string') return details;
 
   try {
     const parsed = JSON.parse(details);

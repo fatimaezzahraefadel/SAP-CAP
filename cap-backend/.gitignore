@@ -7,13 +7,22 @@ node_modules/
 gen/
 dist/
 build/
+app/approuter/resources/*
+!app/approuter/resources/.gitkeep
+!app/approuter/resources/assets/
+app/approuter/resources/assets/*
+!app/approuter/resources/assets/.gitkeep
 
 # SQLite database (runtime artifact - seed via cds deploy)
 *.db
+*.sqlite
+*.sqlite-*
 *.db-journal
 *.db-wal
 *.db-shm
 db/*.db
+db/*.sqlite
+db/*.sqlite-*
 db/*.db-journal
 db/*.db-wal
 db/*.db-shm
@@ -50,6 +59,10 @@ desktop.ini
 *.temp
 *.bak
 *.cache
+temp-*.js
+
+# Runtime uploads
+storage/attachments/
 
 # Test coverage
 coverage/

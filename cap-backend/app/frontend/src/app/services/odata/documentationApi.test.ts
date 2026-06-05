@@ -21,7 +21,7 @@ describe('documentationApi attachment migration', () => {
     ]);
 
     expect(rows).toEqual([
-      { fileName: 'report.pdf', fileUrl: 'https://example.com/report.pdf' },
+      { fileName: 'report.pdf', fileUrl: 'https://example.com/report.pdf', fileSize: 0 },
     ]);
   });
 
@@ -31,7 +31,7 @@ describe('documentationApi attachment migration', () => {
     ]);
 
     expect(rows).toEqual([
-      { fileName: 'report.pdf', fileUrl: 'https://example.com/report.pdf' },
+      { fileName: 'report.pdf', fileUrl: 'https://example.com/report.pdf', fileSize: 0 },
     ]);
   });
 });

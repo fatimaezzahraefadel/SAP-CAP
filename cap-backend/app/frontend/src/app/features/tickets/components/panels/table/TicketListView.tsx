@@ -52,7 +52,7 @@ export const TicketListView: React.FC<TicketListViewProps> = ({
   const { t } = useTranslation();
 
   const openTicketFromKeyboard = (
-    event: React.KeyboardEvent<HTMLTableRowElement | HTMLButtonElement>,
+    event: React.KeyboardEvent<HTMLElement>,
     ticketId: string
   ) => {
     if (event.key !== 'Enter' && event.key !== ' ') {
