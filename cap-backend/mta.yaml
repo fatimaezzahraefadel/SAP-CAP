@@ -20,7 +20,7 @@ build-parameters:
   before-all:
     - builder: custom
       commands:
-        - npm ci --omit=dev=false
+        - npm ci
         - npm ci --prefix app/frontend
         - npm run build
 
