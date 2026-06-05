@@ -1,0 +1,115 @@
+_schema-version: "3.3"
+ID: ticket-cap
+description: Ticket-CAP performance dashboard — CAP backend + Approuter + SPA
+version: 1.0.0
+
+# -----------------------------------------------------------------------------
+# PARAMETERS
+# -----------------------------------------------------------------------------
+parameters:
+  deploy_mode: html5-repo
+  enable-parallel-deployments: true
+
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm ci --prefix cap-backend
+        - npm ci --prefix cap-backend/app/frontend
+        - npm run build --prefix cap-backend
+
+# =============================================================================
+# MODULES — the actual deployable units
+# =============================================================================
+modules:
+  # ---------------------------------------------------------------------------
+  # 1. CAP backend (Node.js)
+  # ---------------------------------------------------------------------------
+  - name: ticket-cap-srv
+    type: nodejs
+    path: cap-backend/gen/srv
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 512M
+      disk-quota: 1024M
+    build-parameters:
+      builder: npm-ci
+    provides:
+      - name: srv-api
+        properties:
+          srv-url: ${default-url}
+    requires:
+      - name: ticket-cap-db
+      - name: ticket-cap-uaa
+
+  # ---------------------------------------------------------------------------
+  # 2. HANA HDI deployer — pushes the schema/data on every deploy
+  # ---------------------------------------------------------------------------
+  - name: ticket-cap-db-deployer
+    type: hdb
+    path: cap-backend/gen/db
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 256M
+    requires:
+      - name: ticket-cap-db
+
+  # ---------------------------------------------------------------------------
+  # 3. Approuter (Node.js) — public entry point, OAuth, SPA host
+  # ---------------------------------------------------------------------------
+  - name: ticket-cap-approuter
+    type: approuter.nodejs
+    path: approuter
+    parameters:
+      keep-existing-routes: true
+      disk-quota: 512M
+      memory: 256M
+    build-parameters:
+      ignore: ["node_modules/"]
+      requires:
+        - name: ticket-cap-ui-resources
+          artifacts: ["**/*"]
+          target-path: resources/
+    requires:
+      - name: srv-api
+        group: destinations
+        properties:
+          name: srv-api
+          url: ~{srv-url}
+          forwardAuthToken: true
+      - name: ticket-cap-uaa
+
+  # ---------------------------------------------------------------------------
+  # 4. UI resources (frontend dist) — copied into the approuter at build time
+  # ---------------------------------------------------------------------------
+  - name: ticket-cap-ui-resources
+    type: nodejs
+    path: cap-backend/app/dist
+    parameters:
+      no-source: true
+    build-parameters:
+      build-result: ./
+      builder: custom
+      commands: []
+
+# =============================================================================
+# RESOURCES — the BTP service instances that get bound to modules above
+# =============================================================================
+resources:
+  # HANA Cloud HDI container — runtime database for the CAP backend
+  - name: ticket-cap-db
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+
+  # XSUAA service instance — issues JWTs, enforces scopes from xs-security.json
+  - name: ticket-cap-uaa
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+      config:
+        xsappname: ticket-cap-${space}
+        tenant-mode: dedicated

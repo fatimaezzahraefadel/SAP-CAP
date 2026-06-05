@@ -9,15 +9,19 @@
     "dev:web": "npm run dev --prefix app/frontend",
     "dev:all": "node scripts/dev-all.js",
     "build:web": "npm run build --prefix app/frontend",
-    "build": "npm run build:web && cds build",
+    "build": "npm run build:web && cds build --production",
     "lint": "eslint .",
     "test": "jest --config jest.config.cjs --forceExit --detectOpenHandles"
   },
   "dependencies": {
+    "@cap-js/hana": "^1",
     "@cap-js/mcp-server": "^0.0.5",
     "@cap-js/sqlite": "^1",
     "@sap/cds": "^8",
-    "node-cron": "^3.0.2"
+    "@sap/xsenv": "^5",
+    "@sap/xssec": "^4",
+    "node-cron": "^3.0.2",
+    "passport": "^0.7.0"
   },
   "devDependencies": {
     "@sap/cds-dk": "^8",
@@ -36,6 +40,19 @@
         "kind": "sqlite",
         "credentials": {
           "database": "db/performance.db"
+        }
+      },
+      "[production]": {
+        "auth": {
+          "kind": "xsuaa"
+        },
+        "db": {
+          "kind": "hana-cloud"
+        }
+      },
+      "[hybrid]": {
+        "auth": {
+          "kind": "xsuaa"
         }
       }
     }

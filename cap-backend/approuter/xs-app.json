@@ -1,0 +1,42 @@
+{
+  "welcomeFile": "/index.html",
+  "authenticationMethod": "route",
+  "sessionTimeout": 30,
+  "logout": {
+    "logoutEndpoint": "/do/logout",
+    "logoutPage": "/index.html"
+  },
+  "routes": [
+    {
+      "source": "^/odata/v4/(.*)$",
+      "target": "/odata/v4/$1",
+      "destination": "srv-api",
+      "authenticationType": "xsuaa",
+      "csrfProtection": false
+    },
+    {
+      "source": "^/attachments/(.*)$",
+      "target": "/attachments/$1",
+      "destination": "srv-api",
+      "authenticationType": "xsuaa"
+    },
+    {
+      "source": "^/-/(.*)$",
+      "target": "/-/$1",
+      "destination": "srv-api",
+      "authenticationType": "xsuaa"
+    },
+    {
+      "source": "^(.*\\.(js|css|html|png|jpg|jpeg|svg|ico|woff|woff2|ttf|map|json))$",
+      "localDir": "resources",
+      "authenticationType": "none",
+      "cacheControl": "public, max-age=31536000"
+    },
+    {
+      "source": "^/(.*)$",
+      "target": "/index.html",
+      "localDir": "resources",
+      "authenticationType": "xsuaa"
+    }
+  ]
+}
