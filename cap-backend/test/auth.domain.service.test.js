@@ -54,7 +54,7 @@ describe('AuthDomainService in XSUAA mode', () => {
     });
   });
 
-  test('currentUser maps an XSUAA role to an active local app user', async () => {
+  test('currentUser provisions an XSUAA user profile with the assigned BTP role', async () => {
     process.env.NODE_ENV = 'production';
     delete process.env.MOCK_JWT_SECRET;
 
@@ -70,11 +70,10 @@ describe('AuthDomainService in XSUAA mode', () => {
       const AuthDomainService = require('../srv/auth/auth.domain.service');
       const domain = new AuthDomainService();
       domain.repo = {
-        findUserByEmail: jest.fn().mockResolvedValue(null),
-        findUserByRole: jest.fn().mockResolvedValue({
-          ID: 'u-admin',
-          name: 'Admin Profile',
-          email: 'alice.admin@inetum.com',
+        upsertUserFromXsuaa: jest.fn().mockResolvedValue({
+          ID: 'sap-user-1',
+          name: 'SAP Admin',
+          email: 'sap.admin@example.test',
           role: 'ADMIN',
           active: true,
           availabilityPercent: 100,
@@ -93,13 +92,18 @@ describe('AuthDomainService in XSUAA mode', () => {
       });
 
       expect(user).toEqual(expect.objectContaining({
-        id: 'u-admin',
+        id: 'sap-user-1',
         name: 'SAP Admin',
         email: 'sap.admin@example.test',
         role: 'ADMIN',
         active: true,
       }));
-      expect(domain.repo.findUserByRole).toHaveBeenCalledWith('ADMIN');
+      expect(domain.repo.upsertUserFromXsuaa).toHaveBeenCalledWith({
+        id: 'sap-user-1',
+        email: 'sap.admin@example.test',
+        name: 'SAP Admin',
+        role: 'ADMIN',
+      });
     });
   });
 });

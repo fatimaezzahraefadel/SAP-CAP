@@ -2,12 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   CheckCircle,
   Edit,
-  Plus,
   Save,
   Search,
-  Trash2,
   Users,
-  XCircle,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -27,7 +24,6 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { Progress } from '../../components/ui/progress';
-import { Switch } from '../../components/ui/switch';
 import {
   Table,
   TableBody,
@@ -43,18 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../../components/ui/alert-dialog';
-import { cn } from '../../components/ui/utils';
-import { useAuth } from '../../context/AuthContext';import { UsersAPI } from '../../services/odata/usersApi';
+import { UsersAPI } from '../../services/odata/usersApi';
 import { User, UserRole } from '../../types/entities';
 
 interface UserForm {
@@ -91,7 +76,6 @@ const getRoleBadgeTone = (role: UserRole) => {
 
 export const UsersManagement: React.FC = () => {
   const { t } = useTranslation();
-  const { currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,7 +84,6 @@ export const UsersManagement: React.FC = () => {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [form, setForm] = useState<UserForm>(EMPTY_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [userPendingDelete, setUserPendingDelete] = useState<User | null>(null);
 
   useEffect(() => {
     void loadUsers();
@@ -122,12 +105,6 @@ export const UsersManagement: React.FC = () => {
     setForm(EMPTY_FORM);
   };
 
-  const openCreate = () => {
-    setEditingUserId(null);
-    setForm(EMPTY_FORM);
-    setShowDialog(true);
-  };
-
   const openEdit = (user: User) => {
     setEditingUserId(user.id);
     setForm({
@@ -142,26 +119,10 @@ export const UsersManagement: React.FC = () => {
     setShowDialog(true);
   };
 
-  const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
-    try {
-      const updated = await UsersAPI.update(userId, { active: !currentStatus });
-      setUsers((prev) => prev.map((entry) => (entry.id === userId ? updated : entry)));
-      toast.success(t(`admin.users.toasts.${!currentStatus ? 'activated' : 'deactivated'}`));
-    } catch (error) {
-      toast.error(t('admin.users.toasts.updateStatusFailed'));
-    }
-  };
-
   const saveUser = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!form.name.trim() || !form.email.trim()) {
+    if (!form.name.trim()) {
       toast.error(t('admin.users.toasts.requiredFields'));
-      return;
-    }
-    const email = form.email.trim().toLowerCase();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      toast.error(t('admin.users.toasts.invalidEmail'));
       return;
     }
     if (form.availabilityPercent < 0 || form.availabilityPercent > 100) {
@@ -171,9 +132,6 @@ export const UsersManagement: React.FC = () => {
 
     const payload = {
       name: form.name.trim(),
-      email,
-      role: form.role,
-      active: form.active,
       skills: form.skills
         .split(',')
         .map((entry) => entry.trim())
@@ -184,7 +142,6 @@ export const UsersManagement: React.FC = () => {
         .filter(Boolean)
         .map((name, i) => ({ id: `cert_${Date.now()}_${i}`, name, issuingBody: 'N/A', dateObtained: new Date().toISOString().slice(0, 10), status: 'VALID' as const })),
       availabilityPercent: form.availabilityPercent,
-      teamId: 't1',
     };
 
     try {
@@ -193,38 +150,12 @@ export const UsersManagement: React.FC = () => {
         const updated = await UsersAPI.update(editingUserId, payload);
         setUsers((prev) => prev.map((entry) => (entry.id === editingUserId ? updated : entry)));
         toast.success(t('admin.users.toasts.updated'));
-      } else {
-        const created = await UsersAPI.create(payload);
-        setUsers((prev) => [created, ...prev]);
-        toast.success(t('admin.users.toasts.created'));
       }
       resetDialog();
     } catch (error) {
       toast.error(t('admin.users.toasts.saveFailed'));
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const requestDeleteUser = (user: User) => {
-    if (currentUser?.id === user.id) {
-      toast.error(t('admin.users.toasts.deleteSelf'));
-      return;
-    }
-    setUserPendingDelete(user);
-  };
-
-  const confirmDeleteUser = async () => {
-    if (!userPendingDelete) return;
-
-    try {
-      await UsersAPI.delete(userPendingDelete.id);
-      setUsers((prev) => prev.filter((entry) => entry.id !== userPendingDelete.id));
-      toast.success(t('admin.users.toasts.deleted'));
-    } catch (error) {
-      toast.error(t('admin.users.toasts.deleteFailed'));
-    } finally {
-      setUserPendingDelete(null);
     }
   };
 
@@ -247,12 +178,6 @@ export const UsersManagement: React.FC = () => {
           { label: t('common.home'), path: '/admin/dashboard' },
           { label: t('admin.users.title') },
         ]}
-        actions={
-          <Button type="button" onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            {t('admin.users.newUser')}
-          </Button>
-        }
       />
 
       <div className="space-y-6 p-6 lg:p-8">
@@ -363,19 +288,10 @@ export const UsersManagement: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell className="px-6 py-4">
-                        <button
-                          type="button"
-                          onClick={() => void toggleUserStatus(user.id, user.active)}
-                          className={cn(
-                            'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors',
-                            user.active
-                              ? 'bg-primary/12 text-primary hover:bg-primary/18'
-                              : 'bg-muted text-muted-foreground hover:bg-secondary'
-                          )}
-                        >
-                          {user.active ? <CheckCircle className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
+                        <Badge variant={user.active ? 'default' : 'secondary'} className="gap-1">
+                          {user.active && <CheckCircle className="h-3.5 w-3.5" />}
                           {user.active ? t('admin.users.table.active') : t('admin.users.table.inactive')}
-                        </button>
+                        </Badge>
                       </TableCell>
                       <TableCell className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-1">
@@ -387,15 +303,6 @@ export const UsersManagement: React.FC = () => {
                             aria-label={`${t('common.edit')} ${user.name}`}
                           >
                             <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => requestDeleteUser(user)}
-                            title={`${t('common.delete')} ${user.name}`}
-                            aria-label={`${t('common.delete')} ${user.name}`}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
                       </TableCell>
@@ -420,7 +327,7 @@ export const UsersManagement: React.FC = () => {
       >
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingUserId ? t('admin.users.dialog.editTitle') : t('admin.users.dialog.createTitle')}</DialogTitle>
+            <DialogTitle>{t('admin.users.dialog.editTitle')}</DialogTitle>
             <DialogDescription>
               {t('admin.users.dialog.desc')}
             </DialogDescription>
@@ -443,8 +350,7 @@ export const UsersManagement: React.FC = () => {
                   id="user-email"
                   type="email"
                   value={form.email}
-                  onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
-                  required
+                  disabled
                 />
               </div>
             </div>
@@ -454,7 +360,7 @@ export const UsersManagement: React.FC = () => {
                 <Label htmlFor="user-role">{t('admin.users.dialog.role')}</Label>
                 <Select
                   value={form.role}
-                  onValueChange={(val) => setForm((prev) => ({ ...prev, role: val as UserRole }))}
+                  disabled
                 >
                   <SelectTrigger id="user-role">
                     <SelectValue placeholder={t('admin.users.dialog.selectRole')} />
@@ -509,48 +415,19 @@ export const UsersManagement: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center justify-between rounded-md border border-border/70 bg-surface-2 p-3">
-              <Label htmlFor="user-active">{t('admin.users.dialog.active')}</Label>
-              <Switch
-                id="user-active"
-                checked={form.active}
-                onCheckedChange={(checked) =>
-                  setForm((prev) => ({ ...prev, active: Boolean(checked) }))
-                }
-              />
-            </div>
-
             <DialogFooter>
               <Button type="button" variant="outline" onClick={resetDialog}>
                 {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 <Save className="h-4 w-4" />
-                {isSubmitting ? t('admin.users.dialog.saving') : editingUserId ? t('common.edit') : t('common.create')}
+                {isSubmitting ? t('admin.users.dialog.saving') : t('common.edit')}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={userPendingDelete !== null} onOpenChange={(open) => !open && setUserPendingDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('admin.users.deleteDialog.title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {userPendingDelete
-                ? t('admin.users.deleteDialog.desc', { name: userPendingDelete.name })
-                : t('admin.users.deleteDialog.fallback')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => void confirmDeleteUser()}>
-              {t('common.delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

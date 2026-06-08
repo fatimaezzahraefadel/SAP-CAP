@@ -20,6 +20,7 @@ const MOCKED_AUTH_ENABLED =
   authConfig === 'mocked' ||
   authConfig?.kind === 'mocked' ||
   authConfig?.strategy === 'mocked';
+const XSUAA_AUTH_ENABLED = authConfig?.kind === 'xsuaa' || authConfig?.strategy === 'xsuaa';
 
 const JWT_SECRET = process.env.MOCK_JWT_SECRET || DEFAULT_DEV_JWT_SECRET;
 if (MOCKED_AUTH_ENABLED && !process.env.MOCK_JWT_SECRET) {
@@ -207,6 +208,20 @@ class AuthDomainService {
       email ||
       ''
     ).trim();
+
+    if (XSUAA_AUTH_ENABLED) {
+      const user = await this.repo.upsertUserFromXsuaa({
+        id: claims.userId || claims.sub,
+        email,
+        name: displayName,
+        role: claims.role,
+      });
+
+      return this.toAuthUser(user, {
+        email: email || user.email,
+        name: displayName || user.name,
+      });
+    }
 
     const user =
       (email ? await this.repo.findUserByEmail(email) : null) ||
