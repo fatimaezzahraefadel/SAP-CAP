@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate } from 'react-router';
-import { BookOpenText, ExternalLink, FilePlus2, Paperclip, Search } from 'lucide-react';
+import { BookOpenText, ExternalLink, FilePlus2, FileText, Paperclip, Pencil, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../../components/common/PageHeader';
 import { Badge } from '../../components/ui/badge';
@@ -31,6 +31,22 @@ import {
   TableHeader,
   TableRow,
 } from '../../components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../../components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../components/ui/alert-dialog';
 import { Textarea } from '../../components/ui/textarea';
 import { Checkbox } from '../../components/ui/checkbox';
 import { useAuth } from '../../context/AuthContext';
@@ -62,6 +78,26 @@ const homePathByRole: Record<UserRole, string> = {
 };
 
 const DOCUMENTATION_OBJECT_TYPES: DocumentationObjectType[] = ['SFD', 'GUIDE', 'ARCHITECTURE_DOC', 'GENERAL'];
+
+// Per-type colour coding for the Type badge + stat cards.
+const typeBadgeColor: Record<DocumentationObjectType, string> = {
+  SFD: 'border-transparent bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  GUIDE: 'border-transparent bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+  ARCHITECTURE_DOC: 'border-transparent bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  GENERAL: 'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300',
+};
+
+const typeAccent: Record<DocumentationObjectType, string> = {
+  SFD: 'text-blue-500',
+  GUIDE: 'text-purple-500',
+  ARCHITECTURE_DOC: 'text-amber-500',
+  GENERAL: 'text-slate-500',
+};
+
+const sourceBadgeColor = (sourceSystem?: string): string =>
+  sourceSystem === 'WRICEF'
+    ? 'border-transparent bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300'
+    : 'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300';
 
 const formatFileSize = (size: number) => {
   if (size < 1024) return `${size} B`;
@@ -116,6 +152,9 @@ export const DocumentationObjectsPage: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [objectPendingDelete, setObjectPendingDelete] = useState<DocumentationObject | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [projectFilter, setProjectFilter] = useState('ALL');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('ALL');
@@ -195,8 +234,65 @@ export const DocumentationObjectsPage: React.FC = () => {
   }, [documentationObjects]);
 
   const openCreateDialog = () => {
+    setEditingId(null);
     setForm(EMPTY_FORM);
     setIsCreateOpen(true);
+  };
+
+  const openEditDialog = (doc: DocumentationObject) => {
+    setEditingId(doc.id);
+    setForm({
+      title: doc.title,
+      description: doc.description,
+      type: doc.type,
+      content: doc.content,
+      projectId: doc.projectId,
+      relatedTicketIds: Array.isArray(doc.relatedTicketIds) ? [...doc.relatedTicketIds] : [],
+      attachedFiles: Array.isArray(doc.attachedFiles) ? [...doc.attachedFiles] : [],
+    });
+    setIsCreateOpen(true);
+  };
+
+  // Opens an attachment in a new tab regardless of file type. Data URLs are
+  // converted to a Blob object URL so the browser renders them inline instead
+  // of blocking top-level navigation to a data: URL.
+  const openAttachment = (file: DocumentationAttachment) => {
+    try {
+      if (!file.url || file.url === '#') {
+        toast.error(t('documentation.errors.fileUnavailable'));
+        return;
+      }
+      if (file.url.startsWith('data:')) {
+        const [meta, base64] = file.url.split(',');
+        const mime = meta.match(/data:(.*?)(;base64)?$/)?.[1] || 'application/octet-stream';
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+        const blob = new Blob([bytes], { type: mime });
+        const objectUrl = URL.createObjectURL(blob);
+        window.open(objectUrl, '_blank', 'noopener,noreferrer');
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      } else {
+        window.open(file.url, '_blank', 'noopener,noreferrer');
+      }
+    } catch {
+      toast.error(t('documentation.errors.fileUnavailable'));
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!objectPendingDelete) return;
+    setIsDeleting(true);
+    try {
+      await DocumentationAPI.delete(objectPendingDelete.id);
+      setDocumentationObjects((prev) => prev.filter((d) => d.id !== objectPendingDelete.id));
+      toast.success(t('documentation.success.deleted'));
+    } catch {
+      toast.error(t('documentation.errors.deleteFailed'));
+    } finally {
+      setIsDeleting(false);
+      setObjectPendingDelete(null);
+    }
   };
 
   const handleFileAttach = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -262,26 +358,60 @@ export const DocumentationObjectsPage: React.FC = () => {
 
     try {
       setIsCreating(true);
-      const created = await DocumentationAPI.create({
-        title: form.title.trim(),
-        description: form.description.trim(),
-        type: form.type,
-        content: form.content.trim(),
-        attachedFiles: form.attachedFiles,
-        relatedTicketIds: form.relatedTicketIds,
-        projectId: form.projectId,
-        authorId: currentUser.id,
-        sourceSystem: 'MANUAL',
-      });
 
-      setDocumentationObjects((prev) =>
-        [created, ...prev].sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
-      );
+      if (editingId) {
+        const updated = await DocumentationAPI.update(editingId, {
+          title: form.title.trim(),
+          description: form.description.trim(),
+          type: form.type,
+          content: form.content.trim(),
+          attachedFiles: form.attachedFiles,
+          relatedTicketIds: form.relatedTicketIds,
+          projectId: form.projectId,
+        });
+        setDocumentationObjects((prev) =>
+          prev
+            .map((d) => (d.id === editingId ? updated : d))
+            .sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
+        );
+        toast.success(t('documentation.success.updated'));
+      } else {
+        const created = await DocumentationAPI.create({
+          title: form.title.trim(),
+          description: form.description.trim(),
+          type: form.type,
+          content: form.content.trim(),
+          attachedFiles: form.attachedFiles,
+          relatedTicketIds: form.relatedTicketIds,
+          projectId: form.projectId,
+          authorId: currentUser.id,
+          sourceSystem: 'MANUAL',
+        });
+        setDocumentationObjects((prev) =>
+          [created, ...prev].sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
+        );
+        toast.success(t('documentation.success.created'));
+      }
+
       setIsCreateOpen(false);
+      setEditingId(null);
       setForm(EMPTY_FORM);
-      toast.success(t('documentation.success.created'));
-    } catch {
-      toast.error(t('documentation.errors.createFailed'));
+    } catch (error) {
+      // Surface the precise backend reason both in the console and the toast.
+      console.error('[DocumentationObjects] save failed:', error);
+      const baseMessage = editingId
+        ? t('documentation.errors.updateFailed')
+        : t('documentation.errors.createFailed');
+      const err = (error ?? {}) as {
+        message?: unknown;
+        status?: unknown;
+        details?: Array<{ message?: unknown }>;
+      };
+      const detail =
+        (Array.isArray(err.details) && err.details[0]?.message
+          ? String(err.details[0].message)
+          : '') || (err.message ? String(err.message) : '');
+      toast.error(detail ? `${baseMessage}: ${detail}` : baseMessage);
     } finally {
       setIsCreating(false);
     }
@@ -320,76 +450,60 @@ export const DocumentationObjectsPage: React.FC = () => {
             <CardContent className="pt-4 text-sm text-destructive">{loadError}</CardContent>
           </Card>
         )}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-          <Card className="md:col-span-2">
-            <CardContent className="pt-6">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  className="pl-8"
-                  placeholder={t('documentation.searchPlaceholder')}
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                />
-              </div>
-            </CardContent>
-          </Card>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="pl-8"
+              placeholder={t('documentation.searchPlaceholder')}
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+          </div>
 
-          <Card>
-            <CardContent className="pt-6">
-              <Select value={projectFilter} onValueChange={setProjectFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('documentation.allProjects')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">{t('documentation.allProjects')}</SelectItem>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
+          <Select value={projectFilter} onValueChange={setProjectFilter}>
+            <SelectTrigger className="sm:w-48">
+              <SelectValue placeholder={t('documentation.allProjects')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">{t('documentation.allProjects')}</SelectItem>
+              {projects.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-          <Card>
-            <CardContent className="pt-6">
-              <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as TypeFilter)}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('documentation.allTypes')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">{t('documentation.allTypes')}</SelectItem>
-                  {DOCUMENTATION_OBJECT_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {t(`documentation.types.${type}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
+          <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as TypeFilter)}>
+            <SelectTrigger className="sm:w-44">
+              <SelectValue placeholder={t('documentation.allTypes')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">{t('documentation.allTypes')}</SelectItem>
+              {DOCUMENTATION_OBJECT_TYPES.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {t(`documentation.types.${type}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('documentation.objects')}</p>
-              <p className="text-2xl font-semibold text-foreground">{filteredObjects.length}</p>
-            </CardContent>
-          </Card>
+          <div className="flex items-center gap-2 whitespace-nowrap rounded-md border border-border bg-card px-3 py-2 text-sm">
+            <span className="text-muted-foreground">{t('documentation.objects')}</span>
+            <span className="font-semibold text-foreground">{filteredObjects.length}</span>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {DOCUMENTATION_OBJECT_TYPES.map((type) => (
-            <Card key={type}>
+            <Card key={type} className="overflow-hidden">
               <CardContent className="flex items-center justify-between pt-6">
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                    {t(`documentation.types.${type}`)}
-                  </p>
-                  <p className="text-lg font-semibold text-foreground">{countsByType[type]}</p>
+                  <Badge className={`mb-1 ${typeBadgeColor[type]}`}>{t(`documentation.types.${type}`)}</Badge>
+                  <p className="text-2xl font-semibold text-foreground">{countsByType[type]}</p>
                 </div>
-                <BookOpenText className="h-4 w-4 text-primary" />
+                <BookOpenText className={`h-6 w-6 ${typeAccent[type]}`} />
               </CardContent>
             </Card>
           ))}
@@ -401,17 +515,17 @@ export const DocumentationObjectsPage: React.FC = () => {
           </CardHeader>
           <CardContent className="p-0">
             <Table>
-              <TableHeader className="bg-muted/55">
-                <TableRow>
-                  <TableHead className="px-4">{t('documentation.table.title')}</TableHead>
-                  <TableHead className="px-4">{t('documentation.table.type')}</TableHead>
-                  <TableHead className="px-4">{t('documentation.table.source')}</TableHead>
-                  <TableHead className="px-4">{t('documentation.table.project')}</TableHead>
-                  <TableHead className="px-4">{t('documentation.table.linkedTickets')}</TableHead>
-                  <TableHead className="px-4">{t('documentation.table.files')}</TableHead>
-                  <TableHead className="px-4">{t('documentation.table.author')}</TableHead>
-                  <TableHead className="px-4">{t('documentation.table.updated')}</TableHead>
-                  <TableHead className="px-4 text-right">{t('documentation.table.action')}</TableHead>
+              <TableHeader className="bg-muted/50">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="h-11 px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('documentation.table.title')}</TableHead>
+                  <TableHead className="h-11 whitespace-nowrap px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('documentation.table.type')}</TableHead>
+                  <TableHead className="h-11 whitespace-nowrap px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('documentation.table.source')}</TableHead>
+                  <TableHead className="h-11 whitespace-nowrap px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('documentation.table.project')}</TableHead>
+                  <TableHead className="h-11 whitespace-nowrap px-4 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('documentation.table.linkedTickets')}</TableHead>
+                  <TableHead className="h-11 whitespace-nowrap px-4 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('documentation.table.files')}</TableHead>
+                  <TableHead className="h-11 whitespace-nowrap px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('documentation.table.author')}</TableHead>
+                  <TableHead className="h-11 whitespace-nowrap px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('documentation.table.updated')}</TableHead>
+                  <TableHead className="h-11 px-4 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('documentation.table.action')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -431,46 +545,108 @@ export const DocumentationObjectsPage: React.FC = () => {
                   filteredObjects.map((doc) => (
                     <TableRow key={doc.id} className="hover:bg-accent/30">
                       <TableCell className="px-4 py-3">
-                        <div>
+                        <div className="min-w-[200px] max-w-xs">
                           <p className="font-medium text-foreground">{doc.title}</p>
                           <p className="line-clamp-2 text-xs text-muted-foreground">{doc.description}</p>
                         </div>
                       </TableCell>
                       <TableCell className="px-4 py-3">
-                        <Badge variant="outline">{t(`documentation.types.${doc.type}`)}</Badge>
+                        <Badge className={typeBadgeColor[doc.type]}>{t(`documentation.types.${doc.type}`)}</Badge>
                       </TableCell>
                       <TableCell className="px-4 py-3">
-                        <Badge variant={doc.sourceSystem === 'WRICEF' ? 'secondary' : 'outline'}>
+                        <Badge className={sourceBadgeColor(doc.sourceSystem)}>
                           {doc.sourceSystem === 'WRICEF' ? t('documentation.source.wricef') : t('documentation.manual')}
                         </Badge>
                       </TableCell>
                       <TableCell className="px-4 py-3 text-sm text-muted-foreground">
                         {projectName(doc.projectId)}
                       </TableCell>
-                      <TableCell className="px-4 py-3">
-                        <Badge variant="secondary">
-                          {Array.isArray(doc.relatedTicketIds) ? doc.relatedTicketIds.length : 0}
-                        </Badge>
+                      <TableCell className="px-4 py-3 text-center">
+                        {(() => {
+                          const count = Array.isArray(doc.relatedTicketIds) ? doc.relatedTicketIds.length : 0;
+                          return (
+                            <Badge
+                              className={
+                                count > 0
+                                  ? 'border-transparent bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300'
+                                  : 'border-transparent bg-muted text-muted-foreground'
+                              }
+                            >
+                              {count}
+                            </Badge>
+                          );
+                        })()}
                       </TableCell>
-                      <TableCell className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-                          <Paperclip className="h-3.5 w-3.5" />
-                          {Array.isArray(doc.attachedFiles) ? doc.attachedFiles.length : 0}
-                        </span>
+                      <TableCell className="px-4 py-3 text-center">
+                        {Array.isArray(doc.attachedFiles) && doc.attachedFiles.length > 0 ? (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="mx-auto inline-flex h-8 items-center gap-1 text-sm text-primary hover:bg-primary/10 hover:text-primary"
+                              >
+                                <Paperclip className="h-3.5 w-3.5" />
+                                {doc.attachedFiles.length}
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="center" className="max-w-xs">
+                              {doc.attachedFiles.map((file, index) => (
+                                <DropdownMenuItem
+                                  key={`${file.filename}-${index}`}
+                                  onSelect={() => openAttachment(file)}
+                                  className="cursor-pointer gap-2"
+                                >
+                                  <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                  <span className="truncate">{file.filename}</span>
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+                            <Paperclip className="h-3.5 w-3.5" />
+                            0
+                          </span>
+                        )}
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-sm">{userName(doc.authorId)}</TableCell>
-                      <TableCell className="px-4 py-3 text-xs text-muted-foreground">
+                      <TableCell className="whitespace-nowrap px-4 py-3 text-sm">{userName(doc.authorId)}</TableCell>
+                      <TableCell className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
                         {formatDateTime(doc.updatedAt ?? doc.createdAt, i18n.language)}
                       </TableCell>
                       <TableCell className="px-4 py-3 text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => navigate(`/shared/documentation/${doc.id}`)}
-                        >
-                          <ExternalLink className="mr-1 h-3.5 w-3.5" />
-                          {t('documentation.open')}
-                        </Button>
+                        <div className="flex items-center justify-end gap-0.5">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 text-primary hover:bg-primary/10 hover:text-primary"
+                            onClick={() => navigate(`/shared/documentation/${doc.id}`)}
+                            title={t('documentation.open')}
+                            aria-label={t('documentation.open')}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => openEditDialog(doc)}
+                            title={t('common.edit')}
+                            aria-label={t('common.edit')}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => setObjectPendingDelete(doc)}
+                            title={t('common.delete')}
+                            aria-label={t('common.delete')}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -481,10 +657,19 @@ export const DocumentationObjectsPage: React.FC = () => {
         </Card>
       </div>
 
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+      <Dialog
+        open={isCreateOpen}
+        onOpenChange={(open) => {
+          setIsCreateOpen(open);
+          if (!open) {
+            setEditingId(null);
+            setForm(EMPTY_FORM);
+          }
+        }}
+      >
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t('documentation.createTitle')}</DialogTitle>
+            <DialogTitle>{editingId ? t('documentation.editTitle') : t('documentation.createTitle')}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -623,11 +808,42 @@ export const DocumentationObjectsPage: React.FC = () => {
               {t('documentation.cancel')}
             </Button>
             <Button onClick={() => void submitCreate()} disabled={isCreating}>
-              {isCreating ? t('documentation.creating') : t('documentation.createObject')}
+              {isCreating
+                ? editingId
+                  ? t('documentation.saving')
+                  : t('documentation.creating')
+                : editingId
+                  ? t('common.save')
+                  : t('documentation.createObject')}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog
+        open={objectPendingDelete !== null}
+        onOpenChange={(open) => { if (!open) setObjectPendingDelete(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('documentation.deleteConfirm.title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('documentation.deleteConfirm.description', { title: objectPendingDelete?.title ?? '' })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('documentation.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => void confirmDelete()}
+              disabled={isDeleting}
+            >
+              {t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

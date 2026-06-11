@@ -98,6 +98,7 @@ export interface ManagerTicketsViewModel {
   loading: boolean;
   error: string | null;
   isViewOnly: boolean;
+  canDragStatus: boolean;
   projects: Project[];
   users: User[];
   tickets: Ticket[];
@@ -163,6 +164,10 @@ export const useManagerTicketsViewModel = (): ManagerTicketsViewModel => {
   const { updateTicket, deleteTicket } = useManagerTicketsMutations();
 
   const isViewOnly = currentUser?.role === 'CONSULTANT_TECHNIQUE';
+  // Kanban status drag is allowed for everyone who can reach the board, including
+  // tech consultants (the backend still enforces per-ticket ownership and valid
+  // workflow transitions, rejecting moves the user isn't allowed to make).
+  const canDragStatus = Boolean(currentUser);
   const canDeleteTicket = currentUser?.role === 'MANAGER' || currentUser?.role === 'PROJECT_MANAGER';
   const [form, setForm] = useState<TicketForm>(EMPTY_FORM);
   const [searchQuery, setSearchQuery] = useState('');
@@ -373,8 +378,12 @@ export const useManagerTicketsViewModel = (): ManagerTicketsViewModel => {
         setSelectedTicket(updated);
       }
       toast.success(`Status -> ${newStatus.replace('_', ' ')}`);
-    } catch {
-      toast.error('Failed to update status');
+    } catch (err) {
+      const detail =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: unknown }).message ?? '')
+          : '';
+      toast.error(detail ? `Failed to update status: ${detail}` : 'Failed to update status');
     }
   };
 
@@ -442,6 +451,7 @@ export const useManagerTicketsViewModel = (): ManagerTicketsViewModel => {
     loading,
     error,
     isViewOnly,
+    canDragStatus,
     projects,
     users,
     tickets,

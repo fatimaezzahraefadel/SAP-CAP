@@ -46,3 +46,5 @@ export { TimeLogsAPI } from './timeLogsApi';
 export { ImputationsAPI } from './imputationsApi';
 export { ImputationPeriodsAPI } from './imputationPeriodsApi';
 export { AuditLogsAPI } from './auditLogsApi';
+export { CertificatesAPI } from './certificatesApi';
+export type { CertificateDocument } from './certificatesApi';

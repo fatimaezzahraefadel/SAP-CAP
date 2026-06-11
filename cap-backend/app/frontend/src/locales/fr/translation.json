@@ -811,6 +811,7 @@
     "manual": "Manuel",
     "open": "Ouvrir",
     "createTitle": "Créer un Objet de Documentation",
+    "editTitle": "Modifier l'Objet de Documentation",
     "titleLabel": "Titre *",
     "titlePlaceholder": "Titre de l'objet de documentation",
     "typeLabel": "Type",
@@ -826,8 +827,13 @@
     "noTicketsFound": "Aucun ticket trouvé pour ce projet.",
     "cancel": "Annuler",
     "creating": "Création...",
+    "saving": "Enregistrement...",
     "createObject": "Créer l'Objet",
     "defaultTitle": "Objet de documentation",
+    "deleteConfirm": {
+      "title": "Supprimer l'objet de documentation ?",
+      "description": "Êtes-vous sûr de vouloir supprimer « {{title}} » ? Cette action est irréversible."
+    },
     "source": {
       "wricef": "WRICEF"
     },
@@ -860,10 +866,15 @@
       "titleRequired": "Le titre est requis",
       "projectRequired": "Le projet est requis",
       "contentRequired": "Le contenu est requis",
-      "createFailed": "Échec de la création de l'objet"
+      "createFailed": "Échec de la création de l'objet",
+      "updateFailed": "Échec de la mise à jour de l'objet",
+      "deleteFailed": "Échec de la suppression de l'objet",
+      "fileUnavailable": "Fichier indisponible"
     },
     "success": {
-      "created": "Objet créé"
+      "created": "Objet créé",
+      "updated": "Objet mis à jour",
+      "deleted": "Objet supprimé"
     },
     "section": {
       "title": "Documentation Associée",
@@ -1648,11 +1659,16 @@
       "errors": {
         "dateRequired": "La date de début et de fin sont requises",
         "endAfterStart": "La date de fin doit être après la date de début",
+        "managerRequired": "Veuillez sélectionner un manager",
         "createFailed": "Échec de la soumission de la demande"
       },
       "toasts": {
         "requestSuccess": "Demande de congé soumise",
-        "requestFailed": "Échec de la soumission de la demande"
+        "requestFailed": "Échec de la soumission de la demande",
+        "updateSuccess": "Demande de congé mise à jour",
+        "updateFailed": "Échec de la mise à jour de la demande",
+        "deleteSuccess": "Demande de congé supprimée",
+        "deleteFailed": "Échec de la suppression de la demande"
       },
       "status": {
         "PENDING": "En attente",
@@ -1662,10 +1678,17 @@
       "empty": "Aucune demande de congé pour le moment.",
       "dialog": {
         "title": "Nouvelle demande de congé",
+        "editTitle": "Modifier la demande de congé",
         "startDate": "Date de début *",
         "endDate": "Date de fin *",
+        "manager": "Manager *",
+        "managerPlaceholder": "Sélectionnez un manager",
         "reason": "Motif",
         "reasonPlaceholder": "Motif facultatif..."
+      },
+      "deleteConfirm": {
+        "title": "Supprimer la demande de congé ?",
+        "description": "Êtes-vous sûr de vouloir supprimer cette demande de congé ? Cette action est irréversible."
       }
     },
     "certifications": {
@@ -1680,7 +1703,9 @@
         "issuingBody": "Organisme",
         "obtained": "Obtenue",
         "expires": "Expire",
-        "status": "Statut"
+        "status": "Statut",
+        "document": "Document",
+        "viewDocument": "Visualiser le document"
       },
       "status": {
         "VALID": "Valide",
@@ -1696,7 +1721,12 @@
         "issuingBodyPlaceholder": "ex. SAP",
         "dateObtained": "Date d'obtention *",
         "expiryDate": "Date d'expiration",
-        "status": "Statut"
+        "status": "Statut",
+        "document": "Document (PDF, image)"
+      },
+      "deleteConfirm": {
+        "title": "Supprimer la certification ?",
+        "description": "Êtes-vous sûr de vouloir supprimer la certification « {{name}} » ? Cette action est irréversible."
       }
     }
   },
