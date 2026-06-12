@@ -111,7 +111,7 @@ const claimsFromMockedUser = (req) => {
   return {
     sub: reqUserId,
     email: reqUserEmail || 'mocked.dev@local',
-    role: reqUserRole || 'ADMIN',
+    role: reqUserRole || 'DEV_COORDINATOR',
     name: reqUser?.name || 'Mocked Dev User',
     mocked: true,
   };

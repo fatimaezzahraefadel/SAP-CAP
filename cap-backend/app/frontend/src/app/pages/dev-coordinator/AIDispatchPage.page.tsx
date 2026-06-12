@@ -223,6 +223,15 @@ const AIDispatchPage: React.FC = () => {
                         <Badge key={skill} variant="outline" className="text-xs">{skill}</Badge>
                       ))}
                     </div>
+
+                    {rec.explanation && (
+                      <div className="mt-3 rounded bg-primary/5 p-3 text-sm text-muted-foreground border border-primary/20">
+                        <p className="flex items-center gap-2 font-semibold text-primary mb-1">
+                          <Sparkles className="h-4 w-4" /> AI Recommendation
+                        </p>
+                        <p className="italic">{rec.explanation}</p>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -231,19 +240,21 @@ const AIDispatchPage: React.FC = () => {
         </Card>
       )}
 
-      <Card className="border-border/80 bg-card">
-        <CardHeader>
-          <CardTitle className="text-sm text-muted-foreground">{t('coordinator.dispatch.algorithm.title')}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-1 text-xs text-muted-foreground">
-          <p>{t('coordinator.dispatch.algorithm.formula')}</p>
-          <p>{t('coordinator.dispatch.algorithm.availability')}</p>
-          <p>{t('coordinator.dispatch.algorithm.skillsMatch')}</p>
-          <p>{t('coordinator.dispatch.algorithm.performance')}</p>
-          <p>{t('coordinator.dispatch.algorithm.similarTickets')}</p>
-          <p className="pt-2 italic text-muted-foreground/70">{t('coordinator.dispatch.algorithm.engine')}</p>
-        </CardContent>
-      </Card>
+      {recommendations.length > 0 && !recommendations[0]?.explanation && (
+        <Card className="border-border/80 bg-card mt-6">
+          <CardHeader>
+            <CardTitle className="text-sm text-muted-foreground">{t('coordinator.dispatch.algorithm.title')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1 text-xs text-muted-foreground">
+            <p>{t('coordinator.dispatch.algorithm.formula')}</p>
+            <p>{t('coordinator.dispatch.algorithm.availability')}</p>
+            <p>{t('coordinator.dispatch.algorithm.skillsMatch')}</p>
+            <p>{t('coordinator.dispatch.algorithm.performance')}</p>
+            <p>{t('coordinator.dispatch.algorithm.similarTickets')}</p>
+            <p className="pt-2 italic text-muted-foreground/70">{t('coordinator.dispatch.algorithm.engine')}</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
