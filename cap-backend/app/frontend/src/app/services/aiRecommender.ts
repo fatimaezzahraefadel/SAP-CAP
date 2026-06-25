@@ -65,7 +65,7 @@ export class HeuristicAssigneeRecommender implements IAssigneeRecommender {
     allTickets: Ticket[],
     weights: ScoringWeights = DEFAULT_WEIGHTS,
   ): AssigneeRecommendation[] {
-    const candidates = allUsers.filter((user) => user.active && user.role !== 'ADMIN' && user.role !== 'MANAGER');
+    const candidates = allUsers.filter((user) => user.active && user.role === 'CONSULTANT_TECHNIQUE');
 
     const scored = candidates
       .map((user) => {

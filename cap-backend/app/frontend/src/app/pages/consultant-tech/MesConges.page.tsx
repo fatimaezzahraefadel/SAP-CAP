@@ -79,7 +79,7 @@ export const MesConges: React.FC = () => {
         endDate: form.endDate,
         reason: form.reason.trim() || undefined,
         status: 'PENDING',
-        managerId: '',
+        managerId: 'TBD',
       });
       setRequests((prev) => [created, ...prev]);
       setForm(EMPTY_FORM);

@@ -62,7 +62,8 @@ class UserDomainService {
       }
     }
 
-    if (getRequestContext(req).userId === String(id ?? '')) {
+    const ctx = getRequestContext(req);
+    if (ctx.dbUserId === String(id ?? '') || ctx.userId === String(id ?? '')) {
       const forbiddenFields = Object.keys(req.data ?? {}).filter(
         (field) => !SELF_SERVICE_FIELDS.has(field) && field !== 'ID' && field !== 'id'
       );

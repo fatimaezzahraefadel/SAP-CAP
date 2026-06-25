@@ -109,6 +109,7 @@ function getRequestContext(req) {
 
   return {
     userId,
+    dbUserId: normalizeString(claims?.dbUserId) || userId,
     role,
     email,
     isAuthenticated: Boolean(userId && role),

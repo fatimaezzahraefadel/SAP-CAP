@@ -44,7 +44,7 @@ const AIDispatchPage: React.FC = () => {
     void load();
   }, []);
 
-  const unassignedTickets = tickets.filter((ticket) => !ticket.assignedTo && ticket.status !== 'DONE' && ticket.status !== 'REJECTED');
+  const unassignedTickets = tickets.filter((ticket) => !ticket.assignedTo && ticket.status === 'NEW');
   const selectedTicket = tickets.find((ticket) => ticket.id === selectedTicketId);
 
   const runRecommendation = useCallback(async () => {
@@ -162,11 +162,15 @@ const AIDispatchPage: React.FC = () => {
           <CardContent>
             <div className="space-y-4">
               {recommendations.map((rec, index) => {
-                const user = users.find((candidate) => candidate.id === rec.userId);
-                if (!user) return null;
+                const rawRecId = String((rec as any).userId || (rec as any).id || '').toLowerCase();
+                const user = users.find((candidate) => candidate.id.toLowerCase() === rawRecId);
+                if (!user) {
+                  console.warn('AI recommended an unknown user ID:', (rec as any).userId || (rec as any).id, 'Full rec:', rec);
+                  return null;
+                }
 
                 return (
-                  <div key={rec.userId} className="rounded-lg border p-4 space-y-3">
+                  <div key={rawRecId} className="rounded-lg border p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
