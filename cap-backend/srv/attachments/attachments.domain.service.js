@@ -3,6 +3,7 @@
 const crypto = require('node:crypto');
 const AttachmentsRepo = require('./attachments.repo');
 const { nowIso } = require('../shared/utils/timestamp');
+const { getRequestContext } = require('../_shared/auth/request-context');
 
 const MAX_SIZE_MB = Number(process.env.ATTACHMENT_MAX_SIZE_MB || 25);
 const ALLOWED_MIME = (process.env.ATTACHMENT_ALLOWED_MIME_TYPES || 'pdf,png,jpg,jpeg,docx,xlsx,txt').split(',').map(s => s.trim().toLowerCase());
@@ -15,7 +16,7 @@ class AttachmentsDomainService {
   }
 
   _currentUserId(req) {
-    return String(req._authClaims?.sub ?? req._authClaims?.userId ?? 'system');
+    return getRequestContext(req).userId || 'system';
   }
 
   async upload(req) {
@@ -94,7 +95,7 @@ class AttachmentsDomainService {
    */
   async getFile(id) {
     const row = await this.repo.findContentById(id);
-    if (!row || row.content == null || row.status === 'DELETED') return null;
+    if (!row || row.content === null || row.content === undefined || row.status === 'DELETED') return null;
 
     return {
       content: row.content,

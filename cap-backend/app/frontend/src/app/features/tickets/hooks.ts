@@ -162,7 +162,8 @@ export const useManagerTicketsViewModel = (): ManagerTicketsViewModel => {
   const { projects, setProjects, users, tickets, setTickets, loading, error } = useManagerTicketsBootstrap();
   const { updateTicket, deleteTicket } = useManagerTicketsMutations();
 
-  const isViewOnly = currentUser?.role === 'CONSULTANT_TECHNIQUE';
+  // Modifié pour la démo : On autorise le drag & drop pour le Consultant Technique
+  const isViewOnly = false;
   const canDeleteTicket = currentUser?.role === 'MANAGER' || currentUser?.role === 'PROJECT_MANAGER';
   const [form, setForm] = useState<TicketForm>(EMPTY_FORM);
   const [searchQuery, setSearchQuery] = useState('');

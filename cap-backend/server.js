@@ -9,6 +9,26 @@ const webAppRoot = path.join(__dirname, 'app', 'dist');
 const webAppIndex = path.join(webAppRoot, 'index.html');
 
 cds.on('bootstrap', (app) => {
+	const crypto = require('node:crypto');
+	const { getLogger } = require('./srv/shared/logging/logger');
+	const logger = getLogger('server');
+
+	app.use((req, res, next) => {
+		req.traceId = req.headers['x-trace-id'] || crypto.randomUUID();
+		res.setHeader('X-Trace-Id', req.traceId);
+
+		const start = performance.now();
+		res.on('finish', () => {
+			const duration = performance.now() - start;
+			logger.info(`${req.method} ${req.originalUrl || req.url}`, {
+				traceId: req.traceId,
+				status: res.statusCode,
+				durationMs: parseFloat(duration.toFixed(2))
+			});
+		});
+		next();
+	});
+
 	if (fs.existsSync(webAppIndex)) {
 		app.use(express.static(webAppRoot));
 	}

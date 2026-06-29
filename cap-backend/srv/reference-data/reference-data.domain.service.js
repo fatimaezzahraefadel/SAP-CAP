@@ -39,6 +39,12 @@ class ReferenceDataDomainService {
       req.reject(409, `ReferenceData with type '${type}' and code '${code}' already exists`);
     }
   }
+
+  async beforeDelete(req) {
+    requireRole(req, ADMIN_ONLY, 'Only ADMIN can manage reference data');
+    const id = extractEntityId(req);
+    if (!id) req.reject(400, 'ReferenceData id is required');
+  }
 }
 
 module.exports = ReferenceDataDomainService;

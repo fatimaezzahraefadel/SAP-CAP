@@ -1,4 +1,4 @@
-﻿// AI Assignee Recommender - deterministic implementation
+// AI Assignee Recommender - deterministic implementation
 //
 // Architecture: put behind IAssigneeRecommender interface.
 // Currently a deterministic scoring algorithm; later replace with real AI.
@@ -9,6 +9,7 @@ import {
   TicketNature,
   User,
 } from '../types/entities';
+import { odataFetch } from './odata/core';
 
 // ---------------------------------------------------------------------------
 // Interface (swap out for real AI later)
@@ -21,7 +22,7 @@ export interface IAssigneeRecommender {
     allTickets: Ticket[],
     /** Weight config - optional override */
     weights?: ScoringWeights,
-  ): AssigneeRecommendation[];
+  ): AssigneeRecommendation[] | Promise<AssigneeRecommendation[]>;
 }
 
 export interface ScoringWeights {
@@ -64,7 +65,7 @@ export class HeuristicAssigneeRecommender implements IAssigneeRecommender {
     allTickets: Ticket[],
     weights: ScoringWeights = DEFAULT_WEIGHTS,
   ): AssigneeRecommendation[] {
-    const candidates = allUsers.filter((user) => user.active && user.role !== 'ADMIN' && user.role !== 'MANAGER');
+    const candidates = allUsers.filter((user) => user.active && user.role === 'CONSULTANT_TECHNIQUE');
 
     const scored = candidates
       .map((user) => {
@@ -211,4 +212,37 @@ export class HeuristicAssigneeRecommender implements IAssigneeRecommender {
   }
 }
 
-export const assigneeRecommender: IAssigneeRecommender = new HeuristicAssigneeRecommender();
+export class GeminiAiRecommender implements IAssigneeRecommender {
+  private fallbackRecommender = new HeuristicAssigneeRecommender();
+
+  async recommend(
+    ticket: Partial<Ticket>,
+    allUsers: User[],
+    allTickets: Ticket[],
+    weights: ScoringWeights = DEFAULT_WEIGHTS,
+  ): Promise<AssigneeRecommendation[]> {
+    try {
+      const response = await odataFetch<{ value: AssigneeRecommendation[] }>(
+        'ticket',
+        '/recommendAssignees',
+        {
+          method: 'POST',
+          body: JSON.stringify({ ticketId: ticket.id })
+        }
+      );
+      
+      if (response && Array.isArray(response.value) && response.value.length > 0) {
+        return response.value;
+      }
+      
+      console.warn('AI Recommender returned empty or invalid response, falling back to heuristic');
+      return this.fallbackRecommender.recommend(ticket, allUsers, allTickets, weights);
+    } catch (error) {
+      console.error('Error calling AI endpoint:', error);
+      const fallback = new HeuristicAssigneeRecommender();
+      return fallback.recommend(ticket, allUsers, allTickets, weights);
+    }
+  }
+}
+
+export const assigneeRecommender: IAssigneeRecommender = new GeminiAiRecommender();

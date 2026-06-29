@@ -5,6 +5,7 @@ const cds = require('@sap/cds');
 const CommentRepo = require('./comment.repo');
 const { restrictTicketChildRead } = require('../shared/services/authz');
 const { assertEntityExists, ENTITIES, MANAGER_ROLES } = require('../shared/services/validation');
+const { getRequestContext } = require('../_shared/auth/request-context');
 
 const COMMENT_TYPES = ['GENERAL', 'BLOCKER', 'QUESTION', 'UPDATE', 'FEEDBACK'];
 const CONSULTANT_ROLES = new Set(['CONSULTANT_TECHNIQUE', 'CONSULTANT_FONCTIONNEL']);
@@ -20,7 +21,7 @@ class CommentDomainService {
    * Consultants / DevCoordinator cannot see isInternal=true rows.
    */
   beforeRead(req) {
-    const role = req._authClaims?.role;
+    const { role } = getRequestContext(req);
     const select = req.query?.SELECT;
     if (!select) return;
 
@@ -43,30 +44,30 @@ class CommentDomainService {
    */
   async beforeCreate(req) {
     const data = req.data;
-    const claims = req._authClaims;
+    const ctx = getRequestContext(req);
 
     if (!data.ticketId) req.error(400, 'ticketId is required');
     if (!data.message?.trim()) req.error(400, 'message is required');
 
     // Always stamp the authenticated author to prevent comment spoofing.
-    if (!claims?.sub) req.reject(401, 'Missing authenticated user');
-    if (data.authorId !== undefined && String(data.authorId) !== String(claims.sub)) {
+    if (!ctx.userId) req.reject(401, 'Missing authenticated user');
+    if (data.authorId !== undefined && String(data.authorId) !== ctx.userId) {
       req.reject(403, 'authorId must match the authenticated user');
     }
-    data.authorId = claims.sub;
+    data.authorId = ctx.userId;
 
     await assertEntityExists(ENTITIES.Tickets, data.ticketId, 'ticketId', req);
     await assertEntityExists(ENTITIES.Users, data.authorId, 'authorId', req);
 
     // Only managers can post internal comments
-    if (data.isInternal && !INTERNAL_READERS.has(claims?.role)) {
+    if (data.isInternal && !INTERNAL_READERS.has(ctx.role)) {
       req.reject(403, 'Only managers can post internal comments');
     }
 
     // Consultants can only comment on tickets they are assigned to or created
-    if (CONSULTANT_ROLES.has(claims?.role)) {
+    if (CONSULTANT_ROLES.has(ctx.role)) {
       const ticket = await this._getTicket(data.ticketId);
-      if (ticket && ticket.createdBy !== claims.sub && ticket.assignedTo !== claims.sub) {
+      if (ticket && ticket.createdBy !== ctx.userId && ticket.assignedTo !== ctx.userId) {
         req.reject(403, 'You can only comment on tickets you created or are assigned to');
       }
     }
@@ -96,7 +97,7 @@ class CommentDomainService {
   async beforeUpdate(req) {
     const id = req.params?.[0]?.ID ?? req.params?.[0] ?? req.data?.ID;
     const data = req.data;
-    const claims = req._authClaims;
+    const ctx = getRequestContext(req);
 
     const comment = await this.repo.findById(id);
     if (!comment) {
@@ -115,7 +116,7 @@ class CommentDomainService {
     }
 
     // Author can resolve their own, manager can resolve any
-    if (comment.authorId !== claims?.sub && !MANAGER_ROLES.has(claims?.role)) {
+    if (comment.authorId !== ctx.userId && !MANAGER_ROLES.has(ctx.role)) {
       req.reject(403, 'Only the author or a manager can resolve a comment');
     }
   }

@@ -25,9 +25,18 @@ const registerDomainImpls = (srv) => {
 module.exports = function (srv) {
   const auth = new AuthDomainService(srv);
 
-  srv.before('*', (req) => {
+  srv.before('*', async (req) => {
     if (auth.isPublicEvent(req.event)) return;
-    req._authClaims = auth.authenticateRequest(req);
+    const claims = auth.authenticateRequest(req);
+    if (claims && claims.role) {
+      try {
+        const authUser = await auth.currentUser(req);
+        claims.dbUserId = authUser.id;
+      } catch (e) {
+        // Ignore if user cannot be fetched (e.g. invalid role)
+      }
+    }
+    req._authClaims = claims;
   });
 
   // Enforce server-side pagination: cap $top at 500, default to 100 if omitted

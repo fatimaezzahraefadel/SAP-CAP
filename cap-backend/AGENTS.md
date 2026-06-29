@@ -1,55 +1,38 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-This repository is a monolithic CAP app rooted in this directory:
+The repository root contains the application in `cap-backend/`. Work from that directory for most backend commands.
 
-- `app/frontend/`: Vite + React + TypeScript frontend.
-- `srv/` and `db/`: SAP CAP OData v4 backend (Node.js + SQLite).
-
-Frontend code lives in `app/frontend/src/` with feature-first folders under `src/app/features/` (for example `tickets/`, `projects/`), shared UI in `src/app/components/`, and page routes in `src/app/pages/` and `src/app/routes.tsx`.
-Backend domain model is in `db/schema.cds`, seed data in `db/data/*.csv`, and service handlers are in `srv/`.
+- `cap-backend/db/`: SAP CAP domain model and CSV seed data.
+- `cap-backend/srv/`: OData v4 service definitions, handlers, repositories, and domain services.
+- `cap-backend/test/`: Jest backend integration tests.
+- `cap-backend/app/frontend/`: Vite, React, and TypeScript frontend.
+- `cap-backend/app/frontend/src/app/features/`: feature modules such as `tickets`, `projects`, and `imputations`.
+- `cap-backend/app/frontend/src/app/components/`: shared UI, layout, business, chart, and common components.
+- `cap-backend/app/frontend/src/app/services/odata/`: frontend API adapters.
 
 ## Build, Test, and Development Commands
-Run backend commands from this directory and frontend commands from `app/frontend/`.
+Install dependencies separately for backend and frontend:
 
-- Frontend (`app/frontend/`)
-  - `npm install`: install dependencies.
-  - `npm run dev`: start Vite dev server.
-  - `npm run typecheck`: run strict TypeScript checks.
-  - `npm run build`: production build.
-  - `npm run check`: typecheck + build (preferred pre-PR gate).
-- Backend (`.`)
-  - `npm install`: install CAP dependencies.
-  - `npm run watch`: start CAP in watch mode.
-  - `npm start`: run `cds-serve`.
-  - `npm run build`: CAP build artifacts.
+- `cd cap-backend && npm install`: install CAP backend dependencies.
+- `cd cap-backend/app/frontend && npm install`: install frontend dependencies.
+- `cd cap-backend && npm run watch`: run CAP in watch mode.
+- `cd cap-backend && npm run dev:all`: start backend and frontend together via `scripts/dev-all.js`.
+- `cd cap-backend && npm run build`: build frontend, then run `cds build`.
+- `cd cap-backend && npm test`: run backend Jest tests.
+- `cd cap-backend && npm run lint`: lint backend JavaScript.
+- `cd cap-backend/app/frontend && npm run check`: run TypeScript checks, Vite build, and Vitest.
 
 ## Coding Style & Naming Conventions
-Use 2-space indentation, semicolons, and keep style consistent with existing files.
-
-- React components: `PascalCase.tsx` (for example `ProjectDetailsView.tsx`).
-- Utilities/services/hooks: `camelCase.ts` (for example `ticketColors.ts`, `hooks.ts`).
-- Backend modules use CommonJS and mostly kebab/dot naming (for example `ticket.impl.js`).
-- Use the `@/` alias for frontend imports (`@/app/...`).
-
-No Prettier config is currently committed beyond `.cdsprettier.json`; rely on `npm run check` and existing patterns.
+Use 2-space indentation and semicolons. Backend code is CommonJS JavaScript; frontend code is TypeScript/TSX with React hooks. Prefer `PascalCase.tsx` for React components, `camelCase.ts` for utilities, and existing backend names such as `ticket.impl.js`, `ticket.service.cds`, and `tickets.repo.js`. In frontend imports, use the established `@/app/...` alias where appropriate.
 
 ## Testing Guidelines
-Frontend uses Vitest. Prefer colocated tests as `*.test.ts` or `*.test.tsx` (examples: `src/app/services/odataClient.test.ts`, `src/app/features/projects/__tests__/panels.smoke.test.tsx`).
-
-Add or update tests for changed business logic, route guards, data mapping, and API adapters.  
-Backend integration tests run with Jest via `npm test`.
+Backend tests use Jest and live in `cap-backend/test/` as `*.test.js`. Frontend tests use Vitest and are colocated as `*.test.ts` or `*.test.tsx`. Add tests for changed business rules, OData mappers/adapters, validation, route behavior, and attachment or persistence flows.
 
 ## Commit & Pull Request Guidelines
-Git history on this branch is currently empty, so no existing commit convention can be inferred. Use clear, imperative commit messages, preferably Conventional Commit style (`feat:`, `fix:`, `refactor:`).
+Recent history mostly uses Conventional Commit-style subjects, for example `feat(ticketing): ...` and `feat(attachments): ...`. Keep commits imperative and scoped when useful: `fix(tickets): reject invalid status transition`.
 
-For PRs, include:
-
-- Scope summary and affected paths.
-- Linked issue/ticket.
-- Test evidence (`npm run check`, manual CAP verification).
-- UI screenshots/videos for frontend changes.
+Pull requests should include a short scope summary, linked issue or ticket when available, test evidence, and screenshots or recordings for visible UI changes. Note any database, seed data, or environment configuration changes explicitly.
 
 ## Security & Configuration Tips
-Frontend proxies `/odata/v4` to `http://localhost:4004` in Vite dev server by default. Production deployments should use `VITE_ODATA_CORE_URL`, `VITE_ODATA_USER_URL`, `VITE_ODATA_TICKET_URL`, and `VITE_ODATA_TIME_URL` to point to the dedicated microservices. `VITE_ODATA_BASE_URL` is still supported as a legacy fallback.
-Backend uses local SQLite at `db/performance.db`; do not commit local DB files or secrets.
+Do not commit secrets, generated build output, local SQLite files, or uploaded attachment data. Backend development uses mocked auth and SQLite configured in `cap-backend/package.json`; verify production settings before deployment.

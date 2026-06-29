@@ -1,0 +1,25 @@
+{
+  "_comment": "Copy this file to default-env.json and tweak values for LOCAL approuter testing only. Never commit default-env.json — on BTP the real values come from VCAP_SERVICES.",
+  "destinations": [
+    {
+      "name": "srv-api",
+      "url": "http://localhost:4004",
+      "forwardAuthToken": true
+    }
+  ],
+  "VCAP_SERVICES": {
+    "xsuaa": [
+      {
+        "name": "ticket-cap-uaa",
+        "label": "xsuaa",
+        "tags": ["xsuaa"],
+        "credentials": {
+          "xsappname": "ticket-cap-local",
+          "clientid": "ticket-cap-local",
+          "clientsecret": "dummy",
+          "url": "http://localhost:4004"
+        }
+      }
+    ]
+  }
+}

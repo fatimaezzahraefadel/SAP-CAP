@@ -103,9 +103,9 @@ const isMissingUserCompositionTable = (error: unknown): boolean => {
   return /no such table: .*User(Skills|Certifications)/i.test(error.message);
 };
 
-const normalizeUser = (entry: UserRaw): User => ({
+const normalizeUser = (entry: UserRaw & { ID?: string }): User => ({
   ...entry,
-  id: String(entry.id ?? ''),
+  id: String(entry.id ?? entry.ID ?? ''),
   name: String(entry.name ?? ''),
   email: String(entry.email ?? ''),
   role: entry.role,

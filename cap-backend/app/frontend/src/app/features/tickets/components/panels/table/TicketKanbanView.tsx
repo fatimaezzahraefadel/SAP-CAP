@@ -6,6 +6,8 @@ import { priorityColor, STATUS_ORDER, statusColor } from '../../ticketView.const
 
 interface TicketKanbanViewProps {
   isViewOnly: boolean;
+  currentUserId?: string;
+  currentUserRole?: string;
   canDelete: boolean;
   filteredTickets: Ticket[];
   onOpenTicketDetails: (ticketId: string) => void;
@@ -16,6 +18,8 @@ interface TicketKanbanViewProps {
 
 export const TicketKanbanView: React.FC<TicketKanbanViewProps> = ({
   isViewOnly,
+  currentUserId,
+  currentUserRole,
   canDelete,
   filteredTickets,
   onOpenTicketDetails,
@@ -69,6 +73,13 @@ export const TicketKanbanView: React.FC<TicketKanbanViewProps> = ({
     onDragEnd();
   };
 
+  const isTicketDraggable = (ticket: Ticket) => {
+    if (currentUserRole === 'CONSULTANT_TECHNIQUE') {
+      return ticket.assignedTo === currentUserId;
+    }
+    return !isViewOnly;
+  };
+
   return (
     <div className="flex gap-3 overflow-x-auto pb-4">
       {STATUS_ORDER.map((status) => {
@@ -88,11 +99,11 @@ export const TicketKanbanView: React.FC<TicketKanbanViewProps> = ({
               {columnTickets.map((ticket) => (
                 <div
                   key={ticket.id}
-                  draggable={!isViewOnly}
-                  onDragStart={(event) => !isViewOnly && onDragStart(event, ticket.id)}
+                  draggable={isTicketDraggable(ticket)}
+                  onDragStart={(event) => isTicketDraggable(ticket) && onDragStart(event, ticket.id)}
                   onDragEnd={onDragEnd}
                   onClick={() => onOpenTicketDetails(ticket.id)}
-                  className={`rounded-lg border bg-card p-3 shadow-sm hover:shadow transition ${isViewOnly ? 'cursor-pointer' : 'cursor-grab'}`}
+                  className={`rounded-lg border bg-card p-3 shadow-sm hover:shadow transition ${!isTicketDraggable(ticket) ? 'cursor-pointer' : 'cursor-grab'}`}
                 >
                   <p className="text-sm font-medium text-foreground">{ticket.title}</p>
                   <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{ticket.description}</p>

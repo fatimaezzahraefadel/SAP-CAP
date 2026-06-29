@@ -7,13 +7,22 @@ node_modules/
 gen/
 dist/
 build/
+app/approuter/resources/*
+!app/approuter/resources/.gitkeep
+!app/approuter/resources/assets/
+app/approuter/resources/assets/*
+!app/approuter/resources/assets/.gitkeep
 
 # SQLite database (runtime artifact - seed via cds deploy)
 *.db
+*.sqlite
+*.sqlite-*
 *.db-journal
 *.db-wal
 *.db-shm
 db/*.db
+db/*.sqlite
+db/*.sqlite-*
 db/*.db-journal
 db/*.db-wal
 db/*.db-shm
@@ -33,6 +42,13 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# Approuter local-only env file (never deploy this; BTP injects real VCAP_SERVICES)
+app/approuter/default-env.json
+
+# MTA build artifacts
+mta_archives/
+.mta/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -50,6 +66,10 @@ desktop.ini
 *.temp
 *.bak
 *.cache
+temp-*.js
+
+# Runtime uploads
+storage/attachments/
 
 # Test coverage
 coverage/

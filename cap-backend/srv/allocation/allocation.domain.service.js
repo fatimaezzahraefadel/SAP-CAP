@@ -46,6 +46,10 @@ class AllocationDomainService {
       assertDateRange(startDate, endDate, req);
     }
   }
+
+  async beforeDelete(req) {
+    requireRole(req, MANAGER_ROLES, 'Only managers can delete allocations');
+  }
 }
 
 module.exports = AllocationDomainService;

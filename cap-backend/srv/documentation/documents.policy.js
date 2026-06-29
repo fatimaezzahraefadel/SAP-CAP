@@ -14,6 +14,7 @@ const isAuthor = (ctx, document) => String(document?.authorId ?? '') === ctx.use
 
 function canCreateDocument(ctx, data) {
   if (!ctx.isAuthenticated) return false;
+  if (data?.authorId !== undefined && String(data.authorId) !== ctx.userId) return false;
   if (data) data.authorId = ctx.userId;
   return true;
 }
