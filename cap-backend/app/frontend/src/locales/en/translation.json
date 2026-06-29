@@ -1795,42 +1795,56 @@
   },
   "evaluations": {
     "title": "Evaluations",
-    "subtitle": "Assess consultant performance per project and period",
+    "subtitleTickets": "Score consultant performance from their tickets (on time, late, difficulty)",
     "form": {
       "title": "New evaluation",
       "consultant": "Consultant",
       "selectConsultant": "Select a consultant",
-      "project": "Project",
-      "selectProject": "Select a project",
       "period": "Period",
       "periodPlaceholder": "e.g. 2026-S1",
-      "score": "Overall score /{{max}}",
-      "gridTitle": "Qualitative grid (0-{{max}})",
+      "computedScore": "Score (auto)",
       "feedback": "Feedback",
-      "add": "Add evaluation",
+      "add": "Save evaluation",
       "saving": "Saving..."
     },
-    "axes": {
-      "productivity": "Productivity",
-      "quality": "Quality",
-      "autonomy": "Autonomy",
-      "collaboration": "Collaboration",
-      "innovation": "Innovation"
+    "summary": {
+      "onTime": "On time: {{count}}",
+      "late": "Late: {{count}}",
+      "overdueOpen": "Overdue: {{count}}",
+      "pending": "Pending: {{count}}",
+      "computedTotal": "Computed score: {{total}}"
+    },
+    "categories": {
+      "ON_TIME": "On time",
+      "LATE": "Late",
+      "OVERDUE_OPEN": "Overdue",
+      "PENDING": "Pending",
+      "NO_DUE_DATE": "No due date",
+      "EXCLUDED": "Excluded"
+    },
+    "breakdown": {
+      "title": "Ticket breakdown",
+      "ticket": "Ticket",
+      "complexity": "Complexity",
+      "status": "Status",
+      "points": "Points",
+      "bonus": "bonus +{{bonus}}",
+      "selectPrompt": "Select a consultant to see their tickets.",
+      "empty": "This consultant has no tickets."
     },
     "list": {
-      "title": "Evaluations",
+      "title": "Saved evaluations",
       "consultant": "Consultant",
-      "project": "Project",
       "period": "Period",
       "score": "Score",
-      "grid": "Grid",
       "feedback": "Feedback",
       "empty": "No evaluations yet."
     },
     "toasts": {
       "loadFailed": "Failed to load evaluations",
-      "requiredFields": "Consultant, project and period are required",
-      "invalidScore": "Score must be between 0 and {{max}}",
+      "ticketsFailed": "Failed to load the consultant's tickets",
+      "requiredFields": "Consultant and period are required",
+      "invalidScore": "Score must be a number",
       "created": "Evaluation saved",
       "createFailed": "Failed to save evaluation"
     }

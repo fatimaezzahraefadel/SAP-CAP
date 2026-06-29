@@ -1580,42 +1580,56 @@
   },
   "evaluations": {
     "title": "Évaluations",
-    "subtitle": "Évaluer la performance des consultants par projet et période",
+    "subtitleTickets": "Noter la performance d'un consultant à partir de ses tickets (à temps, en retard, difficulté)",
     "form": {
       "title": "Nouvelle évaluation",
       "consultant": "Consultant",
       "selectConsultant": "Sélectionner un consultant",
-      "project": "Projet",
-      "selectProject": "Sélectionner un projet",
       "period": "Période",
       "periodPlaceholder": "ex. 2026-S1",
-      "score": "Note globale /{{max}}",
-      "gridTitle": "Grille qualitative (0-{{max}})",
+      "computedScore": "Note (auto)",
       "feedback": "Commentaire",
-      "add": "Ajouter l'évaluation",
+      "add": "Enregistrer l'évaluation",
       "saving": "Enregistrement..."
     },
-    "axes": {
-      "productivity": "Productivité",
-      "quality": "Qualité",
-      "autonomy": "Autonomie",
-      "collaboration": "Collaboration",
-      "innovation": "Innovation"
+    "summary": {
+      "onTime": "À temps : {{count}}",
+      "late": "En retard : {{count}}",
+      "overdueOpen": "En souffrance : {{count}}",
+      "pending": "En cours : {{count}}",
+      "computedTotal": "Note calculée : {{total}}"
+    },
+    "categories": {
+      "ON_TIME": "À temps",
+      "LATE": "En retard",
+      "OVERDUE_OPEN": "En souffrance",
+      "PENDING": "En cours",
+      "NO_DUE_DATE": "Sans échéance",
+      "EXCLUDED": "Exclu"
+    },
+    "breakdown": {
+      "title": "Détail par ticket",
+      "ticket": "Ticket",
+      "complexity": "Complexité",
+      "status": "Statut",
+      "points": "Points",
+      "bonus": "bonus +{{bonus}}",
+      "selectPrompt": "Sélectionnez un consultant pour voir ses tickets.",
+      "empty": "Ce consultant n'a aucun ticket."
     },
     "list": {
-      "title": "Évaluations",
+      "title": "Évaluations enregistrées",
       "consultant": "Consultant",
-      "project": "Projet",
       "period": "Période",
       "score": "Note",
-      "grid": "Grille",
       "feedback": "Commentaire",
       "empty": "Aucune évaluation pour le moment."
     },
     "toasts": {
       "loadFailed": "Échec du chargement des évaluations",
-      "requiredFields": "Consultant, projet et période sont obligatoires",
-      "invalidScore": "La note doit être comprise entre 0 et {{max}}",
+      "ticketsFailed": "Échec du chargement des tickets du consultant",
+      "requiredFields": "Consultant et période sont obligatoires",
+      "invalidScore": "La note doit être un nombre",
       "created": "Évaluation enregistrée",
       "createFailed": "Échec de l'enregistrement de l'évaluation"
     }

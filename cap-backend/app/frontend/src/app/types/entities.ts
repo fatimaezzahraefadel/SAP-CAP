@@ -353,10 +353,12 @@ export interface Evaluation {
   id: string;
   userId: string;
   evaluatorId: string;
-  projectId: string;
+  /** Optional: ticket-based evaluations span all of a consultant's projects. */
+  projectId?: string;
   period: string;
   score: number;
-  qualitativeGrid: {
+  /** Legacy qualitative grid; kept optional for backward compatibility. */
+  qualitativeGrid?: {
     productivity: number;
     quality: number;
     autonomy: number;

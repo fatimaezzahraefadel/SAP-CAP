@@ -2,7 +2,6 @@
 
 const {
   assertEntityExists,
-  assertPositiveNumber,
   ENTITIES,
   MANAGER_ROLES,
   ALL_NON_CONSULTANT_ROLES,
@@ -23,9 +22,11 @@ class EvaluationDomainService {
 
     await assertEntityExists(ENTITIES.Users, data.userId, 'userId', req);
     await assertEntityExists(ENTITIES.Users, data.evaluatorId, 'evaluatorId', req);
+    // projectId is optional now (ticket-based evaluations span all projects);
+    // assertEntityExists is a no-op when the id is absent.
     await assertEntityExists(ENTITIES.Projects, data.projectId, 'projectId', req);
 
-    assertPositiveNumber(data.score, 'score', req);
+    // No positivity check: ticket-based scores can be negative (late/overdue).
   }
 
   async beforeUpdate(req) {
@@ -35,8 +36,6 @@ class EvaluationDomainService {
     if (data.userId !== undefined) await assertEntityExists(ENTITIES.Users, data.userId, 'userId', req);
     if (data.evaluatorId !== undefined) await assertEntityExists(ENTITIES.Users, data.evaluatorId, 'evaluatorId', req);
     if (data.projectId !== undefined) await assertEntityExists(ENTITIES.Projects, data.projectId, 'projectId', req);
-
-    if (data.score !== undefined) assertPositiveNumber(data.score, 'score', req);
   }
 
   async beforeDelete(req) {

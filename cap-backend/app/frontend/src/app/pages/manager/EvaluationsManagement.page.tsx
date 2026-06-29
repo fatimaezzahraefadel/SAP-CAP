@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { PageHeader } from '../../components/common/PageHeader';
+import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
@@ -24,54 +25,47 @@ import {
   TableRow,
 } from '../../components/ui/table';
 import { EvaluationsAPI } from '../../services/odata/evaluationsApi';
-import { ProjectsAPI } from '../../services/odata/projectsApi';
+import { TicketsAPI } from '../../services/odata/ticketsApi';
 import { UsersAPI } from '../../services/odata/usersApi';
 import { useAuth } from '../../context/AuthContext';
 import { getBaseRouteForRole } from '../../context/roleRouting';
-import { Evaluation, Project, User } from '../../types/entities';
-
-const GRID_AXES = ['productivity', 'quality', 'autonomy', 'collaboration', 'innovation'] as const;
-type Axis = (typeof GRID_AXES)[number];
+import { Evaluation, Ticket, User } from '../../types/entities';
+import {
+  ConsultantScore,
+  TicketScoreCategory,
+  scoreConsultantTickets,
+} from '../../features/evaluations/scoring';
 
 const EVALUABLE_ROLES: User['role'][] = ['CONSULTANT_TECHNIQUE', 'CONSULTANT_FONCTIONNEL'];
-const MAX_SCORE = 20;
-const MAX_RATING = 5;
 
-interface FormState {
-  userId: string;
-  projectId: string;
-  period: string;
-  score: string;
-  grid: Record<Axis, number>;
-  feedback: string;
-}
-
-const EMPTY_GRID: Record<Axis, number> = {
-  productivity: 3,
-  quality: 3,
-  autonomy: 3,
-  collaboration: 3,
-  innovation: 3,
+const CATEGORY_BADGE: Record<TicketScoreCategory, string> = {
+  ON_TIME: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+  LATE: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
+  OVERDUE_OPEN: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
+  PENDING: 'bg-muted text-muted-foreground',
+  NO_DUE_DATE: 'bg-muted text-muted-foreground',
+  EXCLUDED: 'bg-muted text-muted-foreground',
 };
 
-const EMPTY_FORM: FormState = {
-  userId: '',
-  projectId: '',
-  period: '',
-  score: '',
-  grid: { ...EMPTY_GRID },
-  feedback: '',
-};
+const todayKey = () => new Date().toISOString().slice(0, 10);
+
+const formatPoints = (points: number): string => (points > 0 ? `+${points}` : String(points));
 
 export const EvaluationsManagement: React.FC = () => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [period, setPeriod] = useState('');
+  const [scoreInput, setScoreInput] = useState('');
+  const [feedback, setFeedback] = useState('');
+
+  const [consultantTickets, setConsultantTickets] = useState<Ticket[]>([]);
+  const [ticketsLoading, setTicketsLoading] = useState(false);
 
   useEffect(() => {
     void loadData();
@@ -80,13 +74,11 @@ export const EvaluationsManagement: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [userData, projectData, evaluationData] = await Promise.all([
+      const [userData, evaluationData] = await Promise.all([
         UsersAPI.getAll(),
-        ProjectsAPI.getAll(),
         EvaluationsAPI.getAll(),
       ]);
       setUsers(userData);
-      setProjects(projectData);
       setEvaluations(evaluationData);
     } catch {
       toast.error(t('evaluations.toasts.loadFailed'));
@@ -95,53 +87,87 @@ export const EvaluationsManagement: React.FC = () => {
     }
   };
 
+  // Load the selected consultant's tickets to compute the score.
+  useEffect(() => {
+    if (!selectedUserId) {
+      setConsultantTickets([]);
+      return;
+    }
+    let cancelled = false;
+    setTicketsLoading(true);
+    TicketsAPI.getByUser(selectedUserId)
+      .then((tickets) => {
+        if (!cancelled) setConsultantTickets(tickets);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setConsultantTickets([]);
+          toast.error(t('evaluations.toasts.ticketsFailed'));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setTicketsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedUserId, t]);
+
+  const score: ConsultantScore = useMemo(
+    () => scoreConsultantTickets(consultantTickets, todayKey()),
+    [consultantTickets]
+  );
+
+  // Pre-fill the (editable) score field with the computed total.
+  useEffect(() => {
+    setScoreInput(String(score.total));
+  }, [score.total]);
+
   const evaluableUsers = useMemo(
     () => users.filter((user) => user.active && EVALUABLE_ROLES.includes(user.role)),
     [users]
   );
 
   const userName = (id: string) => users.find((user) => user.id === id)?.name ?? '-';
-  const projectName = (id: string) => projects.find((project) => project.id === id)?.name ?? '-';
 
   const sortedEvaluations = useMemo(
-    () =>
-      [...evaluations].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '')),
+    () => [...evaluations].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '')),
     [evaluations]
   );
 
-  const setGridAxis = (axis: Axis, value: number) =>
-    setForm((prev) => ({
-      ...prev,
-      grid: { ...prev.grid, [axis]: Math.max(0, Math.min(MAX_RATING, value)) },
-    }));
+  const resetForm = () => {
+    setSelectedUserId('');
+    setPeriod('');
+    setFeedback('');
+    setScoreInput('');
+    setConsultantTickets([]);
+  };
 
   const createEvaluation = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!currentUser) return;
 
-    if (!form.userId || !form.projectId || !form.period.trim()) {
+    if (!selectedUserId || !period.trim()) {
       toast.error(t('evaluations.toasts.requiredFields'));
       return;
     }
-    const score = Number(form.score);
-    if (!Number.isFinite(score) || score < 0 || score > MAX_SCORE) {
-      toast.error(t('evaluations.toasts.invalidScore', { max: MAX_SCORE }));
+    const finalScore = Number(scoreInput);
+    if (!Number.isFinite(finalScore)) {
+      toast.error(t('evaluations.toasts.invalidScore'));
       return;
     }
 
     try {
       setIsSubmitting(true);
       const created = await EvaluationsAPI.create({
-        userId: form.userId,
+        userId: selectedUserId,
         evaluatorId: currentUser.id,
-        projectId: form.projectId,
-        period: form.period.trim(),
-        score,
-        qualitativeGrid: form.grid,
-        feedback: form.feedback.trim(),
+        period: period.trim(),
+        score: finalScore,
+        feedback: feedback.trim(),
       });
       setEvaluations((prev) => [created, ...prev]);
-      setForm(EMPTY_FORM);
+      resetForm();
       toast.success(t('evaluations.toasts.created'));
     } catch (error) {
       const reason = (error as { message?: string })?.message;
@@ -159,7 +185,7 @@ export const EvaluationsManagement: React.FC = () => {
     <div className="min-h-screen bg-background">
       <PageHeader
         title={t('evaluations.title')}
-        subtitle={t('evaluations.subtitle')}
+        subtitle={t('evaluations.subtitleTickets')}
         breadcrumbs={[
           { label: t('common.home'), path: `${roleBasePath}/dashboard` },
           { label: t('evaluations.title') },
@@ -173,10 +199,7 @@ export const EvaluationsManagement: React.FC = () => {
             <form onSubmit={createEvaluation} className="space-y-3">
               <div className="space-y-1.5">
                 <Label htmlFor="evaluation-user">{t('evaluations.form.consultant')}</Label>
-                <Select
-                  value={form.userId}
-                  onValueChange={(val) => setForm((prev) => ({ ...prev, userId: val }))}
-                >
+                <Select value={selectedUserId} onValueChange={setSelectedUserId}>
                   <SelectTrigger id="evaluation-user">
                     <SelectValue placeholder={t('evaluations.form.selectConsultant')} />
                   </SelectTrigger>
@@ -190,82 +213,52 @@ export const EvaluationsManagement: React.FC = () => {
                 </Select>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="evaluation-project">{t('evaluations.form.project')}</Label>
-                <Select
-                  value={form.projectId}
-                  onValueChange={(val) => setForm((prev) => ({ ...prev, projectId: val }))}
-                >
-                  <SelectTrigger id="evaluation-project">
-                    <SelectValue placeholder={t('evaluations.form.selectProject')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="evaluation-period">{t('evaluations.form.period')}</Label>
                   <Input
                     id="evaluation-period"
                     placeholder={t('evaluations.form.periodPlaceholder')}
-                    value={form.period}
-                    onChange={(event) => setForm((prev) => ({ ...prev, period: event.target.value }))}
+                    value={period}
+                    onChange={(event) => setPeriod(event.target.value)}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="evaluation-score">{t('evaluations.form.score', { max: MAX_SCORE })}</Label>
+                  <Label htmlFor="evaluation-score">{t('evaluations.form.computedScore')}</Label>
                   <Input
                     id="evaluation-score"
                     type="number"
-                    min={0}
-                    max={MAX_SCORE}
-                    step={0.5}
-                    value={form.score}
-                    onChange={(event) => setForm((prev) => ({ ...prev, score: event.target.value }))}
+                    step={1}
+                    value={scoreInput}
+                    onChange={(event) => setScoreInput(event.target.value)}
                   />
                 </div>
               </div>
 
-              <div className="space-y-2 rounded-md border border-border/70 p-3">
-                <p className="text-sm font-medium text-foreground">
-                  {t('evaluations.form.gridTitle', { max: MAX_RATING })}
-                </p>
-                {GRID_AXES.map((axis) => (
-                  <div key={axis} className="flex items-center justify-between gap-3">
-                    <Label htmlFor={`axis-${axis}`} className="text-sm text-muted-foreground">
-                      {t(`evaluations.axes.${axis}`)}
-                    </Label>
-                    <Input
-                      id={`axis-${axis}`}
-                      type="number"
-                      min={0}
-                      max={MAX_RATING}
-                      step={1}
-                      value={form.grid[axis]}
-                      className="h-8 w-20"
-                      onChange={(event) => setGridAxis(axis, Number(event.target.value || 0))}
-                    />
+              {selectedUserId && (
+                <div className="rounded-md border border-border/70 p-3 text-xs text-muted-foreground">
+                  <div className="flex flex-wrap gap-x-3 gap-y-1">
+                    <span>{t('evaluations.summary.onTime', { count: score.counts.onTime })}</span>
+                    <span>{t('evaluations.summary.late', { count: score.counts.late })}</span>
+                    <span>{t('evaluations.summary.overdueOpen', { count: score.counts.overdueOpen })}</span>
+                    <span>{t('evaluations.summary.pending', { count: score.counts.pending })}</span>
                   </div>
-                ))}
-              </div>
+                  <div className="mt-1 font-medium text-foreground">
+                    {t('evaluations.summary.computedTotal', { total: formatPoints(score.total) })}
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <Label htmlFor="evaluation-feedback">{t('evaluations.form.feedback')}</Label>
                 <Textarea
                   id="evaluation-feedback"
-                  value={form.feedback}
-                  onChange={(event) => setForm((prev) => ({ ...prev, feedback: event.target.value }))}
+                  value={feedback}
+                  onChange={(event) => setFeedback(event.target.value)}
                 />
               </div>
 
-              <Button type="submit" disabled={isSubmitting} className="w-full">
+              <Button type="submit" disabled={isSubmitting || !selectedUserId} className="w-full">
                 <Plus className="h-4 w-4" />
                 {isSubmitting ? t('evaluations.form.saving') : t('evaluations.form.add')}
               </Button>
@@ -273,57 +266,125 @@ export const EvaluationsManagement: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden bg-card/92 xl:col-span-2">
-          <CardContent className="p-0">
-            <div className="border-b border-border p-4">
-              <h3 className="text-lg font-semibold text-foreground">{t('evaluations.list.title')}</h3>
-            </div>
-            <Table>
-              <TableHeader className="bg-muted/65">
-                <TableRow>
-                  <TableHead className="px-4">{t('evaluations.list.consultant')}</TableHead>
-                  <TableHead className="px-4">{t('evaluations.list.project')}</TableHead>
-                  <TableHead className="px-4">{t('evaluations.list.period')}</TableHead>
-                  <TableHead className="px-4">{t('evaluations.list.score')}</TableHead>
-                  <TableHead className="px-4">{t('evaluations.list.grid')}</TableHead>
-                  <TableHead className="px-4">{t('evaluations.list.feedback')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
+        <div className="space-y-6 xl:col-span-2">
+          {/* Ticket-by-ticket breakdown for the selected consultant */}
+          <Card className="overflow-hidden bg-card/92">
+            <CardContent className="p-0">
+              <div className="border-b border-border p-4">
+                <h3 className="text-lg font-semibold text-foreground">
+                  {t('evaluations.breakdown.title')}
+                </h3>
+              </div>
+              <Table>
+                <TableHeader className="bg-muted/65">
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                      {t('common.loading')}
-                    </TableCell>
+                    <TableHead className="px-4">{t('evaluations.breakdown.ticket')}</TableHead>
+                    <TableHead className="px-4">{t('evaluations.breakdown.complexity')}</TableHead>
+                    <TableHead className="px-4">{t('evaluations.breakdown.status')}</TableHead>
+                    <TableHead className="px-4 text-right">{t('evaluations.breakdown.points')}</TableHead>
                   </TableRow>
-                ) : sortedEvaluations.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                      {t('evaluations.list.empty')}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  sortedEvaluations.map((evaluation) => (
-                    <TableRow key={evaluation.id} className="hover:bg-accent/40">
-                      <TableCell className="px-4 py-3 font-medium">{userName(evaluation.userId)}</TableCell>
-                      <TableCell className="px-4 py-3">{projectName(evaluation.projectId)}</TableCell>
-                      <TableCell className="px-4 py-3 text-muted-foreground">{evaluation.period}</TableCell>
-                      <TableCell className="px-4 py-3 font-medium">
-                        {evaluation.score}/{MAX_SCORE}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 text-xs text-muted-foreground">
-                        {GRID_AXES.map((axis) => `${t(`evaluations.axes.${axis}`)}: ${evaluation.qualitativeGrid[axis]}`).join(' · ')}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 text-sm text-muted-foreground">
-                        {evaluation.feedback || '-'}
+                </TableHeader>
+                <TableBody>
+                  {!selectedUserId ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                        {t('evaluations.breakdown.selectPrompt')}
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                  ) : ticketsLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                        {t('common.loading')}
+                      </TableCell>
+                    </TableRow>
+                  ) : score.lines.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                        {t('evaluations.breakdown.empty')}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    score.lines.map((line) => (
+                      <TableRow key={line.ticketId} className="hover:bg-accent/40">
+                        <TableCell className="px-4 py-3">
+                          <span className="font-mono text-xs text-muted-foreground">{line.ticketCode}</span>{' '}
+                          {line.title}
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-sm">{line.complexity}</TableCell>
+                        <TableCell className="px-4 py-3">
+                          <Badge variant="outline" className={CATEGORY_BADGE[line.category]}>
+                            {t(`evaluations.categories.${line.category}`)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell
+                          className={`px-4 py-3 text-right font-medium ${
+                            line.points > 0
+                              ? 'text-emerald-600'
+                              : line.points < 0
+                                ? 'text-destructive'
+                                : 'text-muted-foreground'
+                          }`}
+                        >
+                          {formatPoints(line.points)}
+                          {line.bonus > 0 && (
+                            <span className="ml-1 text-[10px] text-muted-foreground">
+                              ({t('evaluations.breakdown.bonus', { bonus: line.bonus })})
+                            </span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* Saved evaluations history */}
+          <Card className="overflow-hidden bg-card/92">
+            <CardContent className="p-0">
+              <div className="border-b border-border p-4">
+                <h3 className="text-lg font-semibold text-foreground">{t('evaluations.list.title')}</h3>
+              </div>
+              <Table>
+                <TableHeader className="bg-muted/65">
+                  <TableRow>
+                    <TableHead className="px-4">{t('evaluations.list.consultant')}</TableHead>
+                    <TableHead className="px-4">{t('evaluations.list.period')}</TableHead>
+                    <TableHead className="px-4">{t('evaluations.list.score')}</TableHead>
+                    <TableHead className="px-4">{t('evaluations.list.feedback')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                        {t('common.loading')}
+                      </TableCell>
+                    </TableRow>
+                  ) : sortedEvaluations.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                        {t('evaluations.list.empty')}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    sortedEvaluations.map((evaluation) => (
+                      <TableRow key={evaluation.id} className="hover:bg-accent/40">
+                        <TableCell className="px-4 py-3 font-medium">{userName(evaluation.userId)}</TableCell>
+                        <TableCell className="px-4 py-3 text-muted-foreground">{evaluation.period}</TableCell>
+                        <TableCell className="px-4 py-3 font-medium">{formatPoints(evaluation.score)}</TableCell>
+                        <TableCell className="px-4 py-3 text-sm text-muted-foreground">
+                          {evaluation.feedback || '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

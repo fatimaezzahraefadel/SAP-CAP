@@ -143,7 +143,9 @@ entity Evaluations : cuid, managed {
   user            : Association to Users on user.ID = userId;
   evaluatorId     : String(50) not null;
   evaluator       : Association to Users on evaluator.ID = evaluatorId;
-  projectId       : String(50) not null;
+  // Optional: evaluations are now derived from the consultant's tickets across
+  // all projects, so a single projectId is no longer required.
+  projectId       : String(50);
   project         : Association to Projects on project.ID = projectId;
   period          : String(20);
   score           : Decimal(4,2) default 0;

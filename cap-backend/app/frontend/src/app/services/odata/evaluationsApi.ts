@@ -1,7 +1,7 @@
 import type { Evaluation } from './core';
 import { listEntities, createEntity } from './core';
 
-type EvaluationGrid = Evaluation['qualitativeGrid'];
+type EvaluationGrid = NonNullable<Evaluation['qualitativeGrid']>;
 
 interface EvaluationRaw extends Omit<Evaluation, 'score' | 'qualitativeGrid'> {
   score: number | string;
@@ -103,19 +103,12 @@ export const EvaluationsAPI = {
     return await listWithGridFallback();
   },
 
-  async create(evaluation: Omit<Evaluation, 'id' | 'createdAt'>): Promise<Evaluation> {
-    const { qualitativeGrid, ...rest } = evaluation;
-    // The backend stores the grid as a composition of {criteria, rating} rows
-    // (EvaluationQualitativeGrids), so the 5-axis object must be expanded into
-    // composition entries for the deep insert to persist it.
-    const payload = {
-      ...rest,
-      qualitativeGrid: GRID_KEYS.map((key) => ({
-        criteria: key,
-        rating: String(qualitativeGrid?.[key] ?? 0),
-      })),
-    };
-    const created = await createEntity<EvaluationRaw>('time', 'Evaluations', payload);
+  async create(
+    evaluation: Omit<Evaluation, 'id' | 'createdAt' | 'qualitativeGrid'>
+  ): Promise<Evaluation> {
+    // Ticket-based evaluations persist a computed score + feedback per period;
+    // the qualitative grid is no longer captured here.
+    const created = await createEntity<EvaluationRaw>('time', 'Evaluations', evaluation);
     return normalizeEvaluation(created);
   },
 };
