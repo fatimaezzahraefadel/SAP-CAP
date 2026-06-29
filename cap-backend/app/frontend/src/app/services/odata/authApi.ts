@@ -8,24 +8,11 @@ export interface AuthSession {
   user: User;
 }
 
-export interface QuickAccessAccount {
-  id: string;
-  name: string;
-  email: string;
-  role: User['role'];
-}
-
 interface AuthSessionResponse {
   token: string;
   expiresAt: string;
   user: User;
 }
-
-type QuickAccessAccountsResponse =
-  | QuickAccessAccount[]
-  | {
-      value?: QuickAccessAccount[];
-    };
 
 const parseJsonArray = <T,>(value: unknown): T[] => {
   if (Array.isArray(value)) return value as T[];
@@ -41,6 +28,23 @@ const parseJsonArray = <T,>(value: unknown): T[] => {
 };
 
 export const AuthAPI = {
+  async currentUser(requestOptions?: ODataRequestOptions): Promise<User> {
+    const data = await odataFetch<User>('user', '/currentUser', {
+      ...requestOptions,
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    if (!data) throw new Error('Authentication failed: no current user returned');
+
+    const user = normalizeEntityRecord<User>(data);
+    return {
+      ...user,
+      skills: parseJsonArray<string>(user.skills),
+      certifications: parseJsonArray<User['certifications'][number]>(user.certifications),
+      availabilityPercent: user.availabilityPercent ?? 100,
+    };
+  },
+
   async authenticate(
     email: string,
     password: string,
@@ -64,16 +68,5 @@ export const AuthAPI = {
         availabilityPercent: user.availabilityPercent ?? 100,
       },
     };
-  },
-
-  async quickAccessAccounts(requestOptions?: ODataRequestOptions): Promise<QuickAccessAccount[]> {
-    const data = await odataFetch<QuickAccessAccountsResponse>('user', '/quickAccessAccounts', {
-      ...requestOptions,
-      method: 'POST',
-      body: JSON.stringify({}),
-    });
-    if (!data) return [];
-
-    return Array.isArray(data) ? data : (data.value ?? []);
   },
 };

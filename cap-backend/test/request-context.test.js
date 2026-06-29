@@ -78,6 +78,17 @@ describe('getRequestContext — XSUAA mode', () => {
     expect(getRequestContext(req).role).toBe('ADMIN');
   });
 
+  test('supports is() predicate from CAP user objects', () => {
+    const granted = new Set(['ProjectManager']);
+    const req = {
+      user: {
+        id: 'u-is',
+        is: (scope) => granted.has(scope),
+      },
+    };
+    expect(getRequestContext(req).role).toBe('PROJECT_MANAGER');
+  });
+
   test('all 6 documented roles map correctly', () => {
     expect(roleFromXsuaaUser({ roles: ['x.Admin'] })).toBe('ADMIN');
     expect(roleFromXsuaaUser({ roles: ['x.Manager'] })).toBe('MANAGER');

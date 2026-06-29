@@ -17,7 +17,7 @@ class ProjectFeedbackDomainService {
   }
 
   async beforeCreate(req) {
-    req.data.authorId = req.data.authorId || getRequestContext(req).userId;
+    req.data.authorId = req.data.authorId || getRequestContext(req).dbUserId;
     requireOwnerOrRole(
       req,
       req.data.authorId,

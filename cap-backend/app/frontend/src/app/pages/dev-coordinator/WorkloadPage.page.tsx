@@ -40,8 +40,8 @@ const WorkloadPage: React.FC = () => {
       const allAssigned = tickets.filter((t) => t.assignedTo === c.id);
       const active = allAssigned.filter((t) => t.status !== 'DONE' && t.status !== 'REJECTED');
       const done = allAssigned.filter((t) => t.status === 'DONE');
-      const totalEffort = allAssigned.reduce((sum, t) => sum + t.effortHours, 0);
-      const activeEffort = active.reduce((sum, t) => sum + t.effortHours, 0);
+      const totalEffort = allAssigned.reduce((sum, t) => sum + (Number(t.effortHours) || 0), 0);
+      const activeEffort = active.reduce((sum, t) => sum + (Number(t.effortHours) || 0), 0);
 
       // Nature breakdown
       const natures = active.reduce<Record<string, number>>((acc, t) => {

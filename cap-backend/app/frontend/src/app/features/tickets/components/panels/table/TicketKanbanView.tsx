@@ -1,12 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { AlertOctagon, MessageSquare, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { Badge } from '@/app/components/ui/badge';
 import { Ticket, TicketStatus } from '@/app/types/entities';
-import { isStatusTransitionAllowed, priorityColor, STATUS_ORDER, statusColor } from '../../ticketView.constants';
+import { priorityColor, STATUS_ORDER, statusColor } from '../../ticketView.constants';
 
 interface TicketKanbanViewProps {
-  canDrag: boolean;
+  isViewOnly: boolean;
+  currentUserId?: string;
+  currentUserRole?: string;
   canDelete: boolean;
   filteredTickets: Ticket[];
   onOpenTicketDetails: (ticketId: string) => void;
@@ -16,7 +17,9 @@ interface TicketKanbanViewProps {
 }
 
 export const TicketKanbanView: React.FC<TicketKanbanViewProps> = ({
-  canDrag,
+  isViewOnly,
+  currentUserId,
+  currentUserRole,
   canDelete,
   filteredTickets,
   onOpenTicketDetails,
@@ -26,17 +29,6 @@ export const TicketKanbanView: React.FC<TicketKanbanViewProps> = ({
 }) => {
   const [draggedTicketId, setDraggedTicketId] = useState<string | null>(null);
   const [isDragOverDelete, setIsDragOverDelete] = useState(false);
-
-  const draggedTicket = useMemo(
-    () => filteredTickets.find((item) => item.id === draggedTicketId) ?? null,
-    [filteredTickets, draggedTicketId]
-  );
-
-  // A column is a valid drop target when the dragged ticket can transition to it.
-  const canDropOn = (targetStatus: TicketStatus): boolean => {
-    if (!draggedTicket) return true;
-    return isStatusTransitionAllowed(draggedTicket.status, targetStatus);
-  };
 
   const onDragStart = (event: React.DragEvent, ticketId: string) => {
     event.dataTransfer.setData('text/plain', ticketId);
@@ -48,22 +40,14 @@ export const TicketKanbanView: React.FC<TicketKanbanViewProps> = ({
     setIsDragOverDelete(false);
   };
 
-  const onDragOver = (event: React.DragEvent, targetStatus: TicketStatus) => {
-    // Only show a drop affordance on columns the ticket can actually move to.
-    if (canDropOn(targetStatus)) event.preventDefault();
-  };
+  const onDragOver = (event: React.DragEvent) => event.preventDefault();
 
   const onDropToStatus = (event: React.DragEvent, targetStatus: TicketStatus) => {
     event.preventDefault();
     const ticketId = event.dataTransfer.getData('text/plain');
     const ticket = filteredTickets.find((item) => item.id === ticketId);
+    if (ticket && ticket.status !== targetStatus) onChangeStatus(ticket, targetStatus);
     onDragEnd();
-    if (!ticket || ticket.status === targetStatus) return;
-    if (!isStatusTransitionAllowed(ticket.status, targetStatus)) {
-      toast.error(`Cannot move ${ticket.status.replace('_', ' ')} → ${targetStatus.replace('_', ' ')}`);
-      return;
-    }
-    onChangeStatus(ticket, targetStatus);
   };
 
   const onDragOverDelete = (event: React.DragEvent) => {
@@ -89,21 +73,23 @@ export const TicketKanbanView: React.FC<TicketKanbanViewProps> = ({
     onDragEnd();
   };
 
+  const isTicketDraggable = (ticket: Ticket) => {
+    if (currentUserRole === 'CONSULTANT_TECHNIQUE') {
+      return ticket.assignedTo === currentUserId;
+    }
+    return !isViewOnly;
+  };
+
   return (
     <div className="flex gap-3 overflow-x-auto pb-4">
       {STATUS_ORDER.map((status) => {
         const columnTickets = filteredTickets.filter((ticket) => ticket.status === status);
-        const isDragging = canDrag && Boolean(draggedTicket);
-        const isValidTarget = isDragging && status !== draggedTicket?.status && canDropOn(status);
-        const isInvalidTarget = isDragging && status !== draggedTicket?.status && !canDropOn(status);
         return (
           <div
             key={status}
-            className={`min-w-[240px] flex-1 rounded-lg border bg-muted/30 p-3 transition-colors ${
-              isValidTarget ? 'border-primary/60 bg-primary/5 ring-1 ring-primary/30' : ''
-            } ${isInvalidTarget ? 'opacity-50' : ''}`}
-            onDragOver={canDrag ? (event) => onDragOver(event, status) : undefined}
-            onDrop={canDrag ? (event) => onDropToStatus(event, status) : undefined}
+            className="min-w-[240px] flex-1 rounded-lg border bg-muted/30 p-3"
+            onDragOver={isViewOnly ? undefined : onDragOver}
+            onDrop={isViewOnly ? undefined : (event) => onDropToStatus(event, status)}
           >
             <div className="mb-3 flex items-center justify-between">
               <Badge className={statusColor[status]}>{status.replace('_', ' ')}</Badge>
@@ -113,11 +99,11 @@ export const TicketKanbanView: React.FC<TicketKanbanViewProps> = ({
               {columnTickets.map((ticket) => (
                 <div
                   key={ticket.id}
-                  draggable={canDrag}
-                  onDragStart={(event) => canDrag && onDragStart(event, ticket.id)}
+                  draggable={isTicketDraggable(ticket)}
+                  onDragStart={(event) => isTicketDraggable(ticket) && onDragStart(event, ticket.id)}
                   onDragEnd={onDragEnd}
                   onClick={() => onOpenTicketDetails(ticket.id)}
-                  className={`rounded-lg border bg-card p-3 shadow-sm hover:shadow transition ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}
+                  className={`rounded-lg border bg-card p-3 shadow-sm hover:shadow transition ${!isTicketDraggable(ticket) ? 'cursor-pointer' : 'cursor-grab'}`}
                 >
                   <p className="text-sm font-medium text-foreground">{ticket.title}</p>
                   <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{ticket.description}</p>

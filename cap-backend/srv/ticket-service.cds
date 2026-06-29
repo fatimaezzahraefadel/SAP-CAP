@@ -8,3 +8,5 @@ service TicketService {
   @readonly entity Users as projection on db.Users;
   @readonly entity Projects as projection on db.Projects;
 }
+
+using from './ai/ai.service.cds';

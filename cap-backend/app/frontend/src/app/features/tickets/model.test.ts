@@ -154,6 +154,11 @@ describe('buildTicketsByDate', () => {
     const result = buildTicketsByDate(tickets);
     expect(Object.keys(result)).toEqual(['2025-02-12']);
   });
+
+  it('skips tickets without dueDate or createdAt instead of throwing', () => {
+    const tickets = [createTicket({ id: 'F', dueDate: undefined, createdAt: null as unknown as string })];
+    expect(buildTicketsByDate(tickets)).toEqual({});
+  });
 });
 
 describe('sortProjectsByName', () => {

@@ -781,12 +781,9 @@
     "passwordPlaceholder": "Entrez votre mot de passe",
     "signingIn": "Connexion...",
     "enterPlatform": "Entrer sur la Plateforme",
-    "quickAccess": "Accès Rapide",
-    "noActiveUsers": "Aucun utilisateur actif disponible pour l'accès rapide.",
-    "selectedRole": "{{role}} sélectionné. Entrez votre mot de passe pour continuer.",
-    "signingInAs": "Connexion en tant que {{role}}...",
-    "bypassValidation": "Contourner la Validation (Direct)",
-    "directLoginSuccess": "Connexion directe en tant que {{role}}"
+    "sapLoginRequired": "L'authentification est geree par SAP XSUAA. Continuez avec votre collection de roles SAP.",
+    "continueWithSap": "Continuer avec SAP",
+    "missingRoleCollection": "Aucune collection de roles Ticket-CAP valide n'a ete trouvee pour cet utilisateur SAP."
   },
   "roles": {
     "ADMIN": "Administrateur",

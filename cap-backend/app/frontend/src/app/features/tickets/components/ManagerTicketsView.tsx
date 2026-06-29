@@ -63,7 +63,8 @@ export const ManagerTicketsView: React.FC = () => {
           loading={vm.loading}
           viewMode={vm.viewMode}
           isViewOnly={vm.isViewOnly}
-          canDragStatus={vm.canDragStatus}
+          currentUserId={vm.currentUserId}
+          currentUserRole={vm.currentUserRole}
           tickets={vm.tickets}
           filteredTickets={vm.filteredTickets}
           ticketsByDate={vm.ticketsByDate}

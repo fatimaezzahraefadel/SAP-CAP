@@ -91,7 +91,7 @@ const requireRole = (req, allowedRoles, message) => {
 
 const requireOwnerOrRole = (req, ownerId, allowedRoles, message) => {
   const ctx = getRequestContext(req);
-  if (ctx.userId === String(ownerId ?? '')) return;
+  if (ctx.dbUserId === String(ownerId ?? '') || ctx.userId === String(ownerId ?? '')) return;
   if (!allowedRoles.has(ctx.role)) {
     req.reject(403, message || 'Forbidden: not owner and insufficient role');
   }

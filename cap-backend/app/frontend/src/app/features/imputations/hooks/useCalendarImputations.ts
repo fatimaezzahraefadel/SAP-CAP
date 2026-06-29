@@ -185,9 +185,39 @@ export const useCalendarImputations = (canImpute: boolean, _canValidate: boolean
   const sendPeriodToStraTIME = async (period: ImputationPeriod) => {
     if (!currentUser) return;
     try {
+      // 1. Retrieve all imputations for this period
+      const imps = periodImputations(period);
+      
+      if (imps.length === 0) {
+        toast.error('No imputations found for this period to export.');
+        return;
+      }
+
+      // 2. Format imputations into a CSV string
+      const csvHeaders = ['Date', 'Ticket ID', 'Project ID', 'Hours', 'Description'];
+      const csvRows = imps.map(i => {
+        // Escape quotes in description and wrap in quotes to handle commas
+        const desc = i.description ? `"${i.description.replace(/"/g, '""')}"` : '""';
+        return `${i.date},${i.ticketId},${i.projectId},${i.hours},${desc}`;
+      });
+      
+      const csvContent = [csvHeaders.join(','), ...csvRows].join('\n');
+      
+      // 3. Trigger file download in the browser
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `stratime_export_${period.periodKey}_${period.consultantId}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // 4. Update the database status to 'Sent to StraTIME'
       await ImputationPeriodsAPI.sendToStraTIME(period.id, currentUser.id);
       invalidateQueries();
-      toast.success(`Period sent to Stratime`);
+      toast.success(`Period sent to Stratime and CSV downloaded`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to send period to Stratime');
     }

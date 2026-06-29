@@ -15,8 +15,15 @@ const DEMO_PASSWORD_BY_EMAIL = Object.freeze({
 });
 
 const DEFAULT_DEV_JWT_SECRET = 'dev-local-mock-jwt-secret-change-me';
+const authConfig = cds.env?.requires?.auth;
+const MOCKED_AUTH_ENABLED =
+  authConfig === 'mocked' ||
+  authConfig?.kind === 'mocked' ||
+  authConfig?.strategy === 'mocked';
+const XSUAA_AUTH_ENABLED = authConfig?.kind === 'xsuaa' || authConfig?.strategy === 'xsuaa';
+
 const JWT_SECRET = process.env.MOCK_JWT_SECRET || DEFAULT_DEV_JWT_SECRET;
-if (!process.env.MOCK_JWT_SECRET) {
+if (MOCKED_AUTH_ENABLED && !process.env.MOCK_JWT_SECRET) {
   if (process.env.NODE_ENV === 'production') {
     throw new Error('[auth] FATAL: MOCK_JWT_SECRET must be set in production. Refusing to start with default secret.');
   }
@@ -25,15 +32,8 @@ if (!process.env.MOCK_JWT_SECRET) {
 
 const JWT_TTL_SECONDS = Number(process.env.MOCK_JWT_TTL_SECONDS || 8 * 60 * 60);
 const REVIEWER_ROLES = new Set(['ADMIN', 'MANAGER', 'PROJECT_MANAGER']);
-const PUBLIC_EVENTS = new Set(['authenticate', 'quickAccessAccounts']);
-const QUICK_ACCESS_EMAILS = new Set(Object.keys(DEMO_PASSWORD_BY_EMAIL));
+const PUBLIC_EVENTS = new Set(['authenticate']);
 const MOCKED_ANONYMOUS_IDS = new Set(['anonymous', 'unauthenticated-user']);
-
-const authConfig = cds.env?.requires?.auth;
-const MOCKED_AUTH_ENABLED =
-  authConfig === 'mocked' ||
-  authConfig?.kind === 'mocked' ||
-  authConfig?.strategy === 'mocked';
 
 const normalizeEmail = (value) => String(value ?? '').trim().toLowerCase();
 
@@ -88,14 +88,14 @@ const verifyMockJwt = (token) => {
   }
 };
 
-const getAuthHeader = (req) =>
-  req?.headers?.authorization ??
-  req?.http?.req?.headers?.authorization ??
-  req?._?.req?.headers?.authorization ??
-  '';
+const getHeader = (req, name) => {
+  const lowerName = String(name).toLowerCase();
+  const headers = req?.headers ?? req?.http?.req?.headers ?? req?._?.req?.headers ?? {};
+  return headers[name] ?? headers[lowerName] ?? '';
+};
 
 const extractBearerToken = (req) => {
-  const authHeader = String(getAuthHeader(req) || '');
+  const authHeader = String(getHeader(req, 'authorization') || '');
   const [scheme, token] = authHeader.split(' ');
   if (!/^Bearer$/i.test(scheme) || !token) return null;
   return token.trim();
@@ -111,7 +111,7 @@ const claimsFromMockedUser = (req) => {
   return {
     sub: reqUserId,
     email: reqUserEmail || 'mocked.dev@local',
-    role: reqUserRole || 'ADMIN',
+    role: reqUserRole || 'DEV_COORDINATOR',
     name: reqUser?.name || 'Mocked Dev User',
     mocked: true,
   };
@@ -140,7 +140,7 @@ class AuthDomainService {
   authenticateRequest(req) {
     const token = extractBearerToken(req);
 
-    if (token) {
+    if (MOCKED_AUTH_ENABLED && token) {
       const claims = this.verify(token);
       if (!claims?.sub || !claims?.role) req.reject(401, 'Invalid or expired token');
       return claims;
@@ -148,6 +148,11 @@ class AuthDomainService {
 
     if (MOCKED_AUTH_ENABLED && hasMockedPrincipal(req)) {
       return claimsFromMockedUser(req);
+    }
+
+    const ctx = getRequestContext(req);
+    if (ctx.isAuthenticated) {
+      return { sub: ctx.userId, userId: ctx.userId, role: ctx.role, email: ctx.email };
     }
 
     req.reject(401, 'Missing Bearer token');
@@ -172,6 +177,62 @@ class AuthDomainService {
     if (!isOwner && !REVIEWER_ROLES.has(String(claims.role))) {
       req.reject(403, 'You are not allowed to execute this action for this record');
     }
+  }
+
+  toAuthUser(user, overrides = {}) {
+    return {
+      id: user.ID,
+      name: overrides.name || user.name,
+      email: overrides.email || user.email,
+      role: user.role,
+      active: Boolean(user.active),
+      skills: user.skills ?? '[]',
+      certifications: user.certifications ?? '[]',
+      availabilityPercent: Number(user.availabilityPercent ?? 100),
+      teamId: user.teamId ?? null,
+      avatarUrl: user.avatarUrl ?? null,
+    };
+  }
+
+  async currentUser(req) {
+    const claims = this.getRequestClaims(req);
+    if (!claims?.role) req.reject(403, 'No Ticket-CAP role collection assigned to this SAP user');
+
+    const xsuaaUser = req?.user ?? {};
+    const attr = xsuaaUser.attr ?? {};
+    const email = normalizeEmail(claims.email || attr.email);
+    const displayName = String(
+      xsuaaUser.name ||
+      attr.displayName ||
+      [attr.given_name, attr.family_name].filter(Boolean).join(' ') ||
+      email ||
+      ''
+    ).trim();
+
+    if (XSUAA_AUTH_ENABLED) {
+      const user = await this.repo.upsertUserFromXsuaa({
+        id: claims.userId || claims.sub,
+        email,
+        name: displayName,
+        role: claims.role,
+      });
+
+      return this.toAuthUser(user, {
+        email: email || user.email,
+        name: displayName || user.name,
+      });
+    }
+
+    const user =
+      (email ? await this.repo.findUserByEmail(email) : null) ||
+      await this.repo.findUserByRole(claims.role);
+
+    if (!user) req.reject(403, `No active local app user is configured for role ${claims.role}`);
+
+    return this.toAuthUser(user, {
+      email: email || user.email,
+      name: displayName || user.name,
+    });
   }
 
   async authenticate(req) {
@@ -203,32 +264,10 @@ class AuthDomainService {
     return {
       token,
       expiresAt: new Date(expiresAtEpoch * 1000).toISOString(),
-      user: {
-        id: user.ID,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        active: Boolean(user.active),
-        skills: user.skills ?? '[]',
-        certifications: user.certifications ?? '[]',
-        availabilityPercent: Number(user.availabilityPercent ?? 100),
-        teamId: user.teamId ?? null,
-        avatarUrl: user.avatarUrl ?? null,
-      },
+      user: this.toAuthUser(user),
     };
   }
 
-  async quickAccessAccounts() {
-    const users = await this.repo.listActiveUsers();
-    return users
-      .filter((user) => QUICK_ACCESS_EMAILS.has(normalizeEmail(user.email)))
-      .map((user) => ({
-        id: user.ID,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      }));
-  }
 }
 
 module.exports = AuthDomainService;
@@ -236,7 +275,6 @@ module.exports.DEMO_PASSWORD_BY_EMAIL = DEMO_PASSWORD_BY_EMAIL;
 module.exports.JWT_TTL_SECONDS = JWT_TTL_SECONDS;
 module.exports.REVIEWER_ROLES = REVIEWER_ROLES;
 module.exports.PUBLIC_EVENTS = PUBLIC_EVENTS;
-module.exports.QUICK_ACCESS_EMAILS = QUICK_ACCESS_EMAILS;
 module.exports.signMockJwt = signMockJwt;
 module.exports.verifyMockJwt = verifyMockJwt;
 module.exports.safeEqual = safeEqual;
