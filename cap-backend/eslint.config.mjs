@@ -28,6 +28,8 @@ export default [
         __dirname: 'readonly',
         console: 'readonly',
         Buffer: 'readonly',
+        AbortController: 'readonly',
+        fetch: 'readonly',
         URLSearchParams: 'readonly',
         performance: 'readonly',
         setTimeout: 'readonly',

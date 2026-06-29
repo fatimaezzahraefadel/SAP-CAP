@@ -14,16 +14,26 @@ const DEMO_PASSWORD_BY_EMAIL = Object.freeze({
   'diana.devco@inetum.com': 'DevCo#2026',
 });
 
+const DEMO_ROLE_BY_EMAIL = Object.freeze({
+  'alice.admin@inetum.com': 'ADMIN',
+  'marc.manager@inetum.com': 'MANAGER',
+  'theo.tech@inetum.com': 'CONSULTANT_TECHNIQUE',
+  'fatima.fonc@inetum.com': 'CONSULTANT_FONCTIONNEL',
+  'pierre.pm@inetum.com': 'PROJECT_MANAGER',
+  'diana.devco@inetum.com': 'DEV_COORDINATOR',
+});
+
+const DEMO_EMAIL_BY_ROLE = Object.freeze(
+  Object.fromEntries(Object.entries(DEMO_ROLE_BY_EMAIL).map(([email, role]) => [role, email]))
+);
+
 const DEFAULT_DEV_JWT_SECRET = 'dev-local-mock-jwt-secret-change-me';
 const authConfig = cds.env?.requires?.auth;
-const MOCKED_AUTH_ENABLED =
-  authConfig === 'mocked' ||
-  authConfig?.kind === 'mocked' ||
-  authConfig?.strategy === 'mocked';
 const XSUAA_AUTH_ENABLED = authConfig?.kind === 'xsuaa' || authConfig?.strategy === 'xsuaa';
+const LOCAL_AUTH_ENABLED = !XSUAA_AUTH_ENABLED;
 
 const JWT_SECRET = process.env.MOCK_JWT_SECRET || DEFAULT_DEV_JWT_SECRET;
-if (MOCKED_AUTH_ENABLED && !process.env.MOCK_JWT_SECRET) {
+if (LOCAL_AUTH_ENABLED && !process.env.MOCK_JWT_SECRET) {
   if (process.env.NODE_ENV === 'production') {
     throw new Error('[auth] FATAL: MOCK_JWT_SECRET must be set in production. Refusing to start with default secret.');
   }
@@ -32,7 +42,7 @@ if (MOCKED_AUTH_ENABLED && !process.env.MOCK_JWT_SECRET) {
 
 const JWT_TTL_SECONDS = Number(process.env.MOCK_JWT_TTL_SECONDS || 8 * 60 * 60);
 const REVIEWER_ROLES = new Set(['ADMIN', 'MANAGER', 'PROJECT_MANAGER']);
-const PUBLIC_EVENTS = new Set(['authenticate']);
+const PUBLIC_EVENTS = new Set(['authenticate', 'quickAccessAccounts']);
 const MOCKED_ANONYMOUS_IDS = new Set(['anonymous', 'unauthenticated-user']);
 
 const normalizeEmail = (value) => String(value ?? '').trim().toLowerCase();
@@ -140,13 +150,13 @@ class AuthDomainService {
   authenticateRequest(req) {
     const token = extractBearerToken(req);
 
-    if (MOCKED_AUTH_ENABLED && token) {
+    if (LOCAL_AUTH_ENABLED && token) {
       const claims = this.verify(token);
       if (!claims?.sub || !claims?.role) req.reject(401, 'Invalid or expired token');
       return claims;
     }
 
-    if (MOCKED_AUTH_ENABLED && hasMockedPrincipal(req)) {
+    if (LOCAL_AUTH_ENABLED && hasMockedPrincipal(req)) {
       return claimsFromMockedUser(req);
     }
 
@@ -194,6 +204,22 @@ class AuthDomainService {
     };
   }
 
+  toDemoUser(email) {
+    const role = DEMO_ROLE_BY_EMAIL[email];
+    return {
+      ID: `demo-${role}`,
+      name: email.split('@')[0].replace(/[._-]+/g, ' '),
+      email,
+      role,
+      active: true,
+      skills: '[]',
+      certifications: '[]',
+      availabilityPercent: 100,
+      teamId: null,
+      avatarUrl: null,
+    };
+  }
+
   async currentUser(req) {
     const claims = this.getRequestClaims(req);
     if (!claims?.role) req.reject(403, 'No Ticket-CAP role collection assigned to this SAP user');
@@ -227,6 +253,13 @@ class AuthDomainService {
       (email ? await this.repo.findUserByEmail(email) : null) ||
       await this.repo.findUserByRole(claims.role);
 
+    if (!user && LOCAL_AUTH_ENABLED) {
+      const demoEmail = DEMO_ROLE_BY_EMAIL[email] === claims.role
+        ? email
+        : DEMO_EMAIL_BY_ROLE[claims.role];
+      if (demoEmail) return this.toAuthUser(this.toDemoUser(demoEmail));
+    }
+
     if (!user) req.reject(403, `No active local app user is configured for role ${claims.role}`);
 
     return this.toAuthUser(user, {
@@ -245,7 +278,10 @@ class AuthDomainService {
       req.reject(401, 'Invalid credentials');
     }
 
-    const user = await this.repo.findUserByEmail(email);
+    const user =
+      await this.repo.findUserByEmail(email) ||
+      await this.repo.findUserByRole(DEMO_ROLE_BY_EMAIL[email]) ||
+      this.toDemoUser(email);
     if (!user) req.reject(401, 'Invalid credentials');
 
     const issuedAt = Math.floor(Date.now() / 1000);
@@ -256,22 +292,41 @@ class AuthDomainService {
       iat: issuedAt,
       exp: expiresAtEpoch,
       sub: user.ID,
-      email: user.email,
-      role: user.role,
+      email,
+      role: DEMO_ROLE_BY_EMAIL[email] || user.role,
       name: user.name,
     });
 
     return {
       token,
       expiresAt: new Date(expiresAtEpoch * 1000).toISOString(),
-      user: this.toAuthUser(user),
+      user: this.toAuthUser(
+        { ...user, role: DEMO_ROLE_BY_EMAIL[email] || user.role },
+        { email }
+      ),
     };
+  }
+
+  quickAccessAccounts() {
+    return Object.keys(DEMO_PASSWORD_BY_EMAIL).map((email) => ({
+      id: email,
+      name: email.split('@')[0].replace(/[._-]+/g, ' '),
+      email,
+      role: DEMO_ROLE_BY_EMAIL[email],
+      active: true,
+      skills: '[]',
+      certifications: '[]',
+      availabilityPercent: 100,
+      teamId: null,
+      avatarUrl: null,
+    }));
   }
 
 }
 
 module.exports = AuthDomainService;
 module.exports.DEMO_PASSWORD_BY_EMAIL = DEMO_PASSWORD_BY_EMAIL;
+module.exports.DEMO_ROLE_BY_EMAIL = DEMO_ROLE_BY_EMAIL;
 module.exports.JWT_TTL_SECONDS = JWT_TTL_SECONDS;
 module.exports.REVIEWER_ROLES = REVIEWER_ROLES;
 module.exports.PUBLIC_EVENTS = PUBLIC_EVENTS;
