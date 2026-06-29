@@ -1574,7 +1574,50 @@
       "WRICEF Review": "Revue WRICEF",
       "Deliverables": "Livrables",
       "AI Dispatch": "Dispatch IA",
-      "Workload": "Charge de travail"
+      "Workload": "Charge de travail",
+      "Evaluations": "Évaluations"
+    }
+  },
+  "evaluations": {
+    "title": "Évaluations",
+    "subtitle": "Évaluer la performance des consultants par projet et période",
+    "form": {
+      "title": "Nouvelle évaluation",
+      "consultant": "Consultant",
+      "selectConsultant": "Sélectionner un consultant",
+      "project": "Projet",
+      "selectProject": "Sélectionner un projet",
+      "period": "Période",
+      "periodPlaceholder": "ex. 2026-S1",
+      "score": "Note globale /{{max}}",
+      "gridTitle": "Grille qualitative (0-{{max}})",
+      "feedback": "Commentaire",
+      "add": "Ajouter l'évaluation",
+      "saving": "Enregistrement..."
+    },
+    "axes": {
+      "productivity": "Productivité",
+      "quality": "Qualité",
+      "autonomy": "Autonomie",
+      "collaboration": "Collaboration",
+      "innovation": "Innovation"
+    },
+    "list": {
+      "title": "Évaluations",
+      "consultant": "Consultant",
+      "project": "Projet",
+      "period": "Période",
+      "score": "Note",
+      "grid": "Grille",
+      "feedback": "Commentaire",
+      "empty": "Aucune évaluation pour le moment."
+    },
+    "toasts": {
+      "loadFailed": "Échec du chargement des évaluations",
+      "requiredFields": "Consultant, projet et période sont obligatoires",
+      "invalidScore": "La note doit être comprise entre 0 et {{max}}",
+      "created": "Évaluation enregistrée",
+      "createFailed": "Échec de l'enregistrement de l'évaluation"
     }
   },
   "imputations": {

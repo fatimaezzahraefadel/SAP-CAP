@@ -103,8 +103,19 @@ export const EvaluationsAPI = {
     return await listWithGridFallback();
   },
 
-  async create(evaluation: Omit<Evaluation, 'id'>): Promise<Evaluation> {
-    const created = await createEntity<EvaluationRaw>('time', 'Evaluations', evaluation);
+  async create(evaluation: Omit<Evaluation, 'id' | 'createdAt'>): Promise<Evaluation> {
+    const { qualitativeGrid, ...rest } = evaluation;
+    // The backend stores the grid as a composition of {criteria, rating} rows
+    // (EvaluationQualitativeGrids), so the 5-axis object must be expanded into
+    // composition entries for the deep insert to persist it.
+    const payload = {
+      ...rest,
+      qualitativeGrid: GRID_KEYS.map((key) => ({
+        criteria: key,
+        rating: String(qualitativeGrid?.[key] ?? 0),
+      })),
+    };
+    const created = await createEntity<EvaluationRaw>('time', 'Evaluations', payload);
     return normalizeEvaluation(created);
   },
 };

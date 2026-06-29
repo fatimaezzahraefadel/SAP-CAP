@@ -817,6 +817,7 @@
     "manual": "Manual Assignment",
     "aiSuggest": "AI Suggest",
     "selectPlaceholder": "Select a consultant...",
+    "noConsultants": "No technical consultant available. Check that consultant users exist and are active.",
     "analyzing": "Analyzing...",
     "noRecommendations": "No recommendations found.",
     "availability": "Availability",
@@ -1788,7 +1789,50 @@
       "WRICEF Review": "WRICEF Review",
       "Deliverables": "Deliverables",
       "AI Dispatch": "AI Dispatch",
-      "Workload": "Workload"
+      "Workload": "Workload",
+      "Evaluations": "Evaluations"
+    }
+  },
+  "evaluations": {
+    "title": "Evaluations",
+    "subtitle": "Assess consultant performance per project and period",
+    "form": {
+      "title": "New evaluation",
+      "consultant": "Consultant",
+      "selectConsultant": "Select a consultant",
+      "project": "Project",
+      "selectProject": "Select a project",
+      "period": "Period",
+      "periodPlaceholder": "e.g. 2026-S1",
+      "score": "Overall score /{{max}}",
+      "gridTitle": "Qualitative grid (0-{{max}})",
+      "feedback": "Feedback",
+      "add": "Add evaluation",
+      "saving": "Saving..."
+    },
+    "axes": {
+      "productivity": "Productivity",
+      "quality": "Quality",
+      "autonomy": "Autonomy",
+      "collaboration": "Collaboration",
+      "innovation": "Innovation"
+    },
+    "list": {
+      "title": "Evaluations",
+      "consultant": "Consultant",
+      "project": "Project",
+      "period": "Period",
+      "score": "Score",
+      "grid": "Grid",
+      "feedback": "Feedback",
+      "empty": "No evaluations yet."
+    },
+    "toasts": {
+      "loadFailed": "Failed to load evaluations",
+      "requiredFields": "Consultant, project and period are required",
+      "invalidScore": "Score must be between 0 and {{max}}",
+      "created": "Evaluation saved",
+      "createFailed": "Failed to save evaluation"
     }
   },
   "imputations": {
