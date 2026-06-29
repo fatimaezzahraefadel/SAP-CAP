@@ -3,9 +3,14 @@
   "version": "1.0.0",
   "description": "SAP CAP OData v4 backend – Performance Management Platform",
   "main": "server.js",
+  "engines": {
+    "node": "20.x",
+    "npm": ">=10"
+  },
   "scripts": {
     "start": "cds-serve",
     "watch": "cds watch",
+    "clean": "node scripts/clean.js",
     "dev:web": "npm run dev --prefix app/frontend",
     "dev:all": "node scripts/dev-all.js",
     "build:web": "npm run build --prefix app/frontend",
@@ -38,7 +43,7 @@
   },
   "cds": {
     "requires": {
-      "auth": "mocked",
+      "auth": "dummy",
       "db": {
         "kind": "sqlite",
         "credentials": {

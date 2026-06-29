@@ -22,4 +22,5 @@ extend UserService with definitions {
 
   action currentUser() returns AuthUser;
   action authenticate(email: String, password: String) returns AuthSession;
+  action quickAccessAccounts() returns array of AuthUser;
 };

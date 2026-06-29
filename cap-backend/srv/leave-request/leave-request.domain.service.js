@@ -1,5 +1,6 @@
 'use strict';
 
+const cds = require('@sap/cds');
 const LeaveRequestRepo = require('./leave-request.repo');
 const AuthDomainService = require('../auth/auth.domain.service');
 const { nowIso } = require('../shared/utils/timestamp');
