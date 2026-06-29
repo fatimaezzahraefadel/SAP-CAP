@@ -191,6 +191,10 @@ export const router = createBrowserRouter([
         path: 'dashboard',
         element: <RoleDashboardRedirect />,
       },
+      {
+        path: 'index.html',
+        element: <Navigate to="/dashboard" replace />,
+      },
       ...roleBranches,
       ...sharedRoutes,
       {

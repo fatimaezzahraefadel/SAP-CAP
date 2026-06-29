@@ -44,7 +44,7 @@ const DevCoordinatorDashboard: React.FC = () => {
   const unassignedTickets = tickets.filter((t) => !t.assignedTo);
   const inProgressTickets = tickets.filter((t) => t.status === 'IN_PROGRESS');
   const blockedTickets = tickets.filter((t) => t.status === 'BLOCKED');
-  const totalEffort = tickets.reduce((sum, t) => sum + t.effortHours, 0);
+  const totalEffort = tickets.reduce((sum, t) => sum + (Number(t.effortHours) || 0), 0);
 
   const getUserName = (id?: string) => users.find((u) => u.id === id)?.name ?? '—';
 
@@ -52,7 +52,7 @@ const DevCoordinatorDashboard: React.FC = () => {
   const workload = useMemo(() => {
     return consultants.map((c) => {
       const assigned = tickets.filter((t) => t.assignedTo === c.id && t.status !== 'DONE' && t.status !== 'REJECTED');
-      const effort = assigned.reduce((sum, t) => sum + t.effortHours, 0);
+      const effort = assigned.reduce((sum, t) => sum + (Number(t.effortHours) || 0), 0);
       return { user: c, ticketCount: assigned.length, effortHours: effort };
     });
   }, [consultants, tickets]);

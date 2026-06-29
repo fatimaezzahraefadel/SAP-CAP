@@ -1,0 +1,26 @@
+manifest-Version: 1.0
+Created-By: SAP Application Archive Builder 1.2.47
+
+Name: ticket-cap-srv/data.zip
+MTA-Module: ticket-cap-srv
+Content-Type: application/zip
+
+
+Name: ticket-cap-db-deployer/data.zip
+MTA-Module: ticket-cap-db-deployer
+Content-Type: application/zip
+
+
+Name: ticket-cap-approuter/data.zip
+MTA-Module: ticket-cap-approuter
+Content-Type: application/zip
+
+
+Name: xs-security.json
+MTA-Resource: ticket-cap-uaa
+Content-Type: application/json
+
+
+Name: META-INF/mtad.yaml
+Content-Type: text/plain
+

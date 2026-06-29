@@ -35,14 +35,15 @@ class ImputationPeriodDomainService {
   async beforeCreate(req) {
     const data = req.data;
     const claims = this.auth.getRequestClaims(req);
-    const userId = String(claims.sub ?? '').trim();
+    const authUser = await this.auth.currentUser(req);
+    const dbUserId = String(authUser.id ?? '').trim();
 
-    if (!userId) req.reject(401, 'Missing authenticated user');
+    if (!dbUserId) req.reject(401, 'Missing authenticated user');
     if (!isManagerRole(claims)) {
-      if (data.consultantId !== undefined && String(data.consultantId) !== userId) {
+      if (data.consultantId !== undefined && String(data.consultantId) !== dbUserId) {
         req.reject(403, 'consultantId must match the authenticated user');
       }
-      data.consultantId = userId;
+      data.consultantId = dbUserId;
     }
 
     assertRequiredValue(data.consultantId, 'consultantId', req);

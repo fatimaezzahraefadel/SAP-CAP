@@ -1,0 +1,27 @@
+{
+  "VCAP_SERVICES": {
+    "hana": [
+      {
+        "binding_name": null,
+        "credentials": {
+          "certificate": "-----BEGIN CERTIFICATE-----\nMIIGLDCCBBSgAwIBAgIQBvB+2r4sP5t3X2tK2Q1h4zANBgkqhkiG9w0BAQsFADBa\nMQswCQYDVQQGEwJJRTESMBAGA1UEChMJQmFsdGltb3JlMRMwEQYDVQQLEwpDeWJl\nclRydXN0MSIwIAYDVQQDExlCYWx0aW1vcmUgQ3liZXJUcnVzdCBSb290MB4XDTIw\nMDEyNzEyNDgwOFoXDTI1MDEyNzEyNDgwOFowWTELMAkGA1UEBhMCVVMxHjAcBgNV\nBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEqMCgGA1UEAxMhTWljcm9zb2Z0IFJT\nQSBUTFMgQ0EgMDEgZm9yIEJvdHQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK\nAoIBAQCwWlX598I7U4n/U+gB3LzXvL5pB9V9x/kL9f9X1R1u9S0e4B4h8W1y8J3L\ng6v5/wA7sQyT4m+9U+kH/A7b+Bv+P5F6b/c3k6y2n3A2j9e9N/x3b2w0Z8H5g1e3\nv4B+g1I1v7O+V4T1y5W2f8M1z2x3a4B5t0R9m7u6N5a1x0B8t5H2C9m4O7X6L3v9\n... (truncated just paste the certificate from the log... wait I don't need the cert to connect with cds if I pass rejectUnauthorized: false)",
+          "driver": "com.sap.db.jdbc.Driver",
+          "hdi_password": "J!;YJ9m S5SRhy:Vjkn471uw!3ugu15PX+upEB=~G<W@kTD4#4)=_G&oMfS6Xl[~6ap1%_?@vA8_Ojg6xO~^#T :,vr:k=V}IK/YHMw;T7f#t)zVC3Ah8^IHVE!-<~xi",
+          "hdi_user": "97C0706B4778465C98C7C8DB3CC2BBD6_7PCA5UU713MEDLJO989QHMYVL_DT",
+          "host": "0a588c54-098d-41f3-be9f-889555b18edf.hna1.prod-us10.hanacloud.ondemand.com",
+          "password": ".:9CE z|wSR?TR.5A)]ZgH#%VF2`#l% V.?YLhL],{Vg4:9@<mKK<m*(-aPWI{!+[Ks7uA~jOr}-4XY74F~hqp?g@S~&_A,YUp%F%C+7daoHEuX6h2c4Q`n=cD<^+76@",
+          "port": "443",
+          "schema": "97C0706B4778465C98C7C8DB3CC2BBD6",
+          "url": "jdbc:sap://0a588c54-098d-41f3-be9f-889555b18edf.hna1.prod-us10.hanacloud.ondemand.com:443?encrypt=true&validateCertificate=true&currentschema=97C0706B4778465C98C7C8DB3CC2BBD6",
+          "user": "97C0706B4778465C98C7C8DB3CC2BBD6_7PCA5UU713MEDLJO989QHMYVL_RT"
+        },
+        "instance_guid": "488c89c4-9547-412c-9b16-0128f253b625",
+        "instance_name": "ticket-cap-db",
+        "label": "hana",
+        "name": "ticket-cap-db",
+        "plan": "hdi-shared",
+        "tags": ["hana", "database", "relational"]
+      }
+    ]
+  }
+}
