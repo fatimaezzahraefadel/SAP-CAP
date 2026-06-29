@@ -10,6 +10,7 @@ import { AllocationsAPI } from '../../services/odata/allocationsApi';
 import { TicketsAPI } from '../../services/odata/ticketsApi';
 import { UsersAPI } from '../../services/odata/usersApi';
 import { Allocation, Ticket, TicketStatus, User } from '../../types/entities';
+import { computeProductivityMetrics, computeTace } from '../../features/dashboard/model';
 
 export const ManagerDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -43,42 +44,12 @@ export const ManagerDashboard: React.FC = () => {
     void loadData();
   }, [loadData]);
 
-  const tace = useMemo(() => {
-    const techConsultants = users.filter((u) => u.role === 'CONSULTANT_TECHNIQUE' && u.active);
-    if (techConsultants.length === 0) return 0;
+  const tace = useMemo(
+    () => computeTace(users, allocations, new Date().toISOString().slice(0, 10)),
+    [users, allocations]
+  );
 
-    const today = new Date().toISOString().slice(0, 10);
-    const rates = techConsultants.map((consultant) => {
-      const currentAllocations = allocations.filter(
-        (a) => a.userId === consultant.id && a.startDate <= today && a.endDate >= today
-      );
-      return Math.min(currentAllocations.reduce((sum, a) => sum + a.allocationPercent, 0), 100);
-    });
-
-    return Math.round(rates.reduce((sum, r) => sum + r, 0) / techConsultants.length);
-  }, [users, allocations]);
-
-  const productivityMetrics = useMemo(() => {
-    const completed = tickets.filter((ticket) => ticket.status === 'DONE');
-    const throughput = tickets.length ? (completed.length / tickets.length) * 100 : 0;
-    const criticalIssues = tickets.filter(
-      (ticket) => ticket.priority === 'CRITICAL' || ticket.status === 'BLOCKED'
-    ).length;
-
-    const onTime = completed.filter((ticket) => {
-      if (!ticket.updatedAt || !ticket.dueDate) return false;
-      return ticket.updatedAt <= ticket.dueDate;
-    }).length;
-    const slaRate = completed.length ? (onTime / completed.length) * 100 : 100;
-
-    return {
-      throughputRate: throughput,
-      criticalIssues,
-      slaRate,
-      slaOnTime: onTime,
-      slaTotal: completed.length,
-    };
-  }, [tickets]);
+  const productivityMetrics = useMemo(() => computeProductivityMetrics(tickets), [tickets]);
 
   const ticketBreakdown = useMemo(() => {
     const counts = tickets.reduce<Record<TicketStatus, number>>(
