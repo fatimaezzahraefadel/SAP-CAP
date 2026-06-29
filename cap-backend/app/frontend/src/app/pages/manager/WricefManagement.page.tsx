@@ -269,8 +269,13 @@ export const WricefManagement: React.FC = () => {
         description: t('dashboard.wricef.toasts.submitDescription', { name: wricef.sourceFileName }),
       });
       await loadData();
-    } catch {
-      toast.error(t('dashboard.wricef.toasts.submitError'));
+    } catch (error) {
+      // Surface the real backend reason (e.g. insufficient role, wrong status)
+      // instead of a generic message so failures are actually diagnosable.
+      const reason = (error as { message?: string })?.message;
+      toast.error(t('dashboard.wricef.toasts.submitError'), {
+        ...(reason ? { description: reason } : {}),
+      });
     } finally {
       setSubmitting(null);
     }

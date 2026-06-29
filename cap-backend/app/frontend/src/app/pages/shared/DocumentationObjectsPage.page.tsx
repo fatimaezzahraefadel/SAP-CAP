@@ -138,7 +138,7 @@ export const DocumentationObjectsPage: React.FC = () => {
         ]);
 
         setDocumentationObjects(
-          [...docData].sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
+          [...docData].sort((a, b) => (b.updatedAt ?? b.createdAt ?? '').localeCompare(a.updatedAt ?? a.createdAt ?? ''))
         );
         setProjects(projectData);
         setTickets(ticketData);
@@ -275,7 +275,7 @@ export const DocumentationObjectsPage: React.FC = () => {
       });
 
       setDocumentationObjects((prev) =>
-        [created, ...prev].sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
+        [created, ...prev].sort((a, b) => (b.updatedAt ?? b.createdAt ?? '').localeCompare(a.updatedAt ?? a.createdAt ?? ''))
       );
       setIsCreateOpen(false);
       setForm(EMPTY_FORM);

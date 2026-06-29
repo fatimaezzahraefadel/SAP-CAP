@@ -72,7 +72,7 @@ export const buildTicketsByDate = (tickets: Ticket[]): Record<string, Ticket[]> 
 };
 
 export const sortProjectsByName = (projects: Project[]): Project[] =>
-  [...projects].sort((a, b) => a.name.localeCompare(b.name));
+  [...projects].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
 
 export interface CalendarDayCell {
   date: string;
