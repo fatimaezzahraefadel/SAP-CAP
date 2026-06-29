@@ -20,7 +20,7 @@ build-parameters:
   before-all:
     - builder: custom
       commands:
-        - npm ci --omit=dev=false
+        - npm ci
         - npm ci --prefix app/frontend
         - npm run build
 
@@ -39,6 +39,8 @@ modules:
       memory: 512M
       disk-quota: 1024M
       stack: cflinuxfs4
+    properties:
+      NODE_ENV: production
     build-parameters:
       builder: npm-ci
       ignore:
@@ -83,6 +85,8 @@ modules:
       disk-quota: 512M
       memory: 256M
       stack: cflinuxfs4
+    properties:
+      NODE_ENV: production
     build-parameters:
       ignore:
         - "node_modules/"
