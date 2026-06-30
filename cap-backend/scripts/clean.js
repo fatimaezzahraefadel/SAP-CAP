@@ -12,6 +12,7 @@ const targets = [
   'gen',
   '.temp_mtar',
   'mta_archives',
+  'mta-op-*',
   '.mta',
   'coverage',
   '.nyc_output',

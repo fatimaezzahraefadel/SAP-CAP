@@ -65,7 +65,7 @@ npm run check
 
 ## Notes
 
-- The backend is pinned to Node 20 in `.node-version`.
+- The backend is pinned to Node 22 in `.node-version`.
 - OData services are exposed under `/odata/v4`.
 - Local development uses mocked auth and SQLite.
 - Production deployment uses XSUAA and HANA via the `[production]` CAP profile.

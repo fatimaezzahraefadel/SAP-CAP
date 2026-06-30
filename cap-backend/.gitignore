@@ -52,6 +52,7 @@ app/approuter/default-env.json
 
 # MTA build artifacts
 mta_archives/
+mta-op-*/
 .mta/
 .temp_mtar/
 Makefile_*.mta

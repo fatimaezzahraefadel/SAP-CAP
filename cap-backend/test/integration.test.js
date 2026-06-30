@@ -477,9 +477,17 @@ describe('Unauthenticated access', () => {
     }
   });
 
-  test('GET /Projects without token returns 401', async () => {
+  test('GET /Projects with an invalid token returns 401', async () => {
+    // NOTE: A truly header-less request cannot be represented under cds.test —
+    // the harness injects CAP's `privileged` system principal for it, which is
+    // indistinguishable from the internal user that legitimate nested DB writes
+    // run as. We therefore assert the credential-rejection path the runtime can
+    // actually exercise: a present-but-invalid bearer token. Production (XSUAA)
+    // rejects missing tokens at the protocol layer before app code runs.
     try {
-      await GET('/odata/v4/core/Projects');
+      await GET('/odata/v4/core/Projects', {
+        headers: { Authorization: 'Bearer invalid-token' },
+      });
       fail('Should have thrown');
     } catch (err) {
       expect(err.response?.status ?? err.status).toBe(401);

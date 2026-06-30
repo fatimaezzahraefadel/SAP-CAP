@@ -4,7 +4,7 @@
   "description": "SAP CAP OData v4 backend – Performance Management Platform",
   "main": "server.js",
   "engines": {
-    "node": "20.x",
+    "node": "22.x",
     "npm": ">=10"
   },
   "scripts": {

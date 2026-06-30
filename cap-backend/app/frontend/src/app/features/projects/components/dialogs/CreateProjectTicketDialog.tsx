@@ -18,6 +18,7 @@ import { ticketSchema, TicketFormValues } from './project-ticket/schema';
 import { useProjectDetails, useProjectWricefObjects, useProjectTickets, projectKeys } from '../../queries';
 import { toast } from 'sonner';
 import { useAuth } from '@/app/context/AuthContext';
+import { Ticket } from '@/app/types/entities';
 import { createTicketWithUnifiedFlow } from '@/app/services/ticketCreation';
 import { useQueryClient } from '@tanstack/react-query';
 import { getProjectAbaqueEstimate } from '@/app/utils/projectAbaque';
@@ -27,6 +28,7 @@ interface CreateProjectTicketDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultWricefObjectId?: string;
+  onCreated?: (ticket: Ticket) => void;
 }
 
 export const CreateProjectTicketDialog: React.FC<CreateProjectTicketDialogProps> = ({
@@ -34,6 +36,7 @@ export const CreateProjectTicketDialog: React.FC<CreateProjectTicketDialogProps>
   open,
   onOpenChange,
   defaultWricefObjectId,
+  onCreated,
 }) => {
   const { t } = useTranslation();
   const { data: project } = useProjectDetails(projectId);
@@ -85,7 +88,7 @@ export const CreateProjectTicketDialog: React.FC<CreateProjectTicketDialogProps>
     if (!project || !currentUser) return;
     try {
       setIsCreatingTicket(true);
-      await createTicketWithUnifiedFlow({
+      const { ticket: created } = await createTicketWithUnifiedFlow({
         project,
         wricefObjects,
         existingProjectTickets: tickets,
@@ -107,7 +110,8 @@ export const CreateProjectTicketDialog: React.FC<CreateProjectTicketDialogProps>
       
       queryClient.invalidateQueries({ queryKey: projectKeys.tickets(projectId) });
       queryClient.invalidateQueries({ queryKey: projectKeys.details(projectId) });
-      
+      onCreated?.(created);
+
       form.reset();
       onOpenChange(false);
       toast.success(t('tickets.create.submit'));

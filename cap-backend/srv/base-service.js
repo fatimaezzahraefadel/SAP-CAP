@@ -28,6 +28,11 @@ module.exports = function (srv) {
   srv.before('*', async (req) => {
     if (auth.isPublicEvent(req.event)) return;
     const claims = auth.authenticateRequest(req);
+    // Attach claims synchronously BEFORE any async enrichment so that
+    // downstream before-handlers (authz, read-scoping) always observe the
+    // authenticated principal. Enriching dbUserId via an awaited DB lookup
+    // first would leave a gap where handlers fall back to the mocked user.
+    req._authClaims = claims;
     if (claims && claims.role) {
       try {
         const authUser = await auth.currentUser(req);
@@ -36,7 +41,6 @@ module.exports = function (srv) {
         // Ignore if user cannot be fetched (e.g. invalid role)
       }
     }
-    req._authClaims = claims;
   });
 
   // Enforce server-side pagination: cap $top at 500, default to 100 if omitted

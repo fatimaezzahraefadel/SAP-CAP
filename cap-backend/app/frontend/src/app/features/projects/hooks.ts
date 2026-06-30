@@ -217,6 +217,7 @@ export interface ProjectDetailsViewModel {
     open: boolean;
     defaultWricefObjectId?: string;
     onOpenChange: (open: boolean) => void;
+    onCreated: (ticket: Ticket) => void;
   };
   createDocumentationDialogVm: {
     open: boolean;
@@ -855,6 +856,11 @@ export const useProjectDetailsViewModel = (): ProjectDetailsViewModel => {
       open: showCreateTicket,
       defaultWricefObjectId: createTicketDialogDefaultWricefObjectId,
       onOpenChange: handleCreateTicketOpenChange,
+      // The details view holds tickets in local bootstrap state (not React
+      // Query), so surface the freshly created ticket here to show it without
+      // a full page reload.
+      onCreated: (ticket: Ticket) =>
+        setTickets((previous) => [ticket, ...previous.filter((item) => item.id !== ticket.id)]),
     },
     createDocumentationDialogVm: {
       open: showCreateDoc,

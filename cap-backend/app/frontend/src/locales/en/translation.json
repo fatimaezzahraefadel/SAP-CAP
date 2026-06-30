@@ -1432,10 +1432,14 @@
       "objects": "{{count}} objects",
       "tickets": "{{count}} tickets",
       "noWricef": "No WRICEF file imported.",
+      "ticketCount": "{{count}} tickets",
+      "moreObjects": "... and {{count}} more objects",
       "cancel": "Cancel",
       "creating": "Creating...",
       "saving": "Saving...",
-      "saveChanges": "Save Changes"
+      "saveChanges": "Save Changes",
+      "createButton": "Create Project",
+      "updateButton": "Update Project"
     },
     "deleteDialog": {
       "title": "Delete Project",

@@ -71,6 +71,7 @@ export const ProjectDetailsView: React.FC = () => {
           open={vm.createTicketDialogVm.open}
           onOpenChange={vm.createTicketDialogVm.onOpenChange}
           defaultWricefObjectId={vm.createTicketDialogVm.defaultWricefObjectId}
+          onCreated={vm.createTicketDialogVm.onCreated}
         />
         <CreateDocumentationDialog
           open={vm.createDocumentationDialogVm.open}
