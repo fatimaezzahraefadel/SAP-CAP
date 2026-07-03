@@ -78,14 +78,14 @@ export const MyCertifications: React.FC = () => {
 
   const addCertification = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile || !form.name || !form.issuingBody || !form.dateObtained) {
+    if (!profile || !form.name || !form.dateObtained) {
       toast.error(t('consultantTech.certifications.toasts.addFailed'));
       return;
     }
     const cert: Certification = {
       id: `cert${Date.now()}`,
       name: form.name,
-      issuingBody: form.issuingBody,
+      issuingBody: form.issuingBody || 'N/A',
       dateObtained: form.dateObtained,
       expiryDate: form.expiryDate || undefined,
       status: form.status,

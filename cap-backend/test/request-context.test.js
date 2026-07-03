@@ -16,7 +16,7 @@ describe('getRequestContext — mocked-JWT mode', () => {
       _authClaims: { sub: 'u-1', role: 'ADMIN', email: 'a@b.com' },
     });
     expect(ctx).toEqual({
-      userId: 'u-1', role: 'ADMIN', email: 'a@b.com', isAuthenticated: true,
+      userId: 'u-1', dbUserId: 'u-1', role: 'ADMIN', email: 'a@b.com', isAuthenticated: true,
     });
   });
 
@@ -102,7 +102,7 @@ describe('getRequestContext — XSUAA mode', () => {
 describe('getRequestContext — no auth', () => {
   test('empty request → unauthenticated', () => {
     expect(getRequestContext({})).toEqual({
-      userId: '', role: '', email: '', isAuthenticated: false,
+      userId: '', dbUserId: '', role: '', email: '', isAuthenticated: false,
     });
   });
 

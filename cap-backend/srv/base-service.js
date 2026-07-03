@@ -26,8 +26,9 @@ const registerDomainImpls = (srv) => {
 module.exports = function (srv) {
   const auth = new AuthDomainService(srv);
 
-  srv.before('*', (req) => {
+  srv.before('*', async (req) => {
     if (auth.isPublicEvent(req.event)) return;
+
     // CAP performs internal, nested requests within the scope of an already
     // authenticated inbound request — most notably the "reselect" READ it runs
     // after a write to build the 201 response body. These nested requests do
@@ -35,13 +36,25 @@ module.exports = function (srv) {
     // exposed as `req._.req`). Re-authenticating them fails with 401, which
     // makes CAP silently fall back to `204 No Content` on CREATE/UPDATE, so the
     // client never receives the persisted entity (and its server-generated ID).
-    // Inherit the root request's claims for nested requests instead.
+    // Inherit the root request's claims for nested requests instead. For inbound
+    // HTTP requests, authenticate and enrich claims with the local DB user id
+    // when available.
     const isInboundHttpRequest = Boolean(req._?.req);
     if (!isInboundHttpRequest) {
       req._authClaims = cds.context?._authClaims ?? req._authClaims ?? null;
       return;
     }
-    req._authClaims = auth.authenticateRequest(req);
+
+    const claims = auth.authenticateRequest(req);
+    if (claims && claims.role) {
+      try {
+        const authUser = await auth.currentUser(req);
+        if (authUser && authUser.id) claims.dbUserId = authUser.id;
+      } catch (e) {
+        // Ignore if user cannot be fetched (e.g. invalid role)
+      }
+    }
+    req._authClaims = claims;
     if (cds.context) cds.context._authClaims = req._authClaims;
   });
 
