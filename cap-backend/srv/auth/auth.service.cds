@@ -20,13 +20,7 @@ extend UserService with definitions {
     user     : AuthUser;
   }
 
-  type QuickAccessAccount {
-    id   : String(50);
-    name : String(100);
-    email: String(150);
-    role : db.UserRole;
-  }
-
+  action currentUser() returns AuthUser;
   action authenticate(email: String, password: String) returns AuthSession;
-  action quickAccessAccounts() returns array of QuickAccessAccount;
+  action quickAccessAccounts() returns array of AuthUser;
 };

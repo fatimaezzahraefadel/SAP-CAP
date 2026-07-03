@@ -1,34 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader } from '../../components/common/PageHeader';
-import { LeaveRequestsAPI } from '../../services/odata/leaveRequestsApi';
-import { UsersAPI } from '../../services/odata/usersApi';
-import { LeaveRequest, LeaveStatus, User } from '../../types/entities';
+import { PageHeader } from '../../components/common/PageHeader';import { LeaveRequestsAPI } from '../../services/odata/leaveRequestsApi';
+import { LeaveRequest, LeaveStatus } from '../../types/entities';
 import { useAuth } from '../../context/AuthContext';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Badge } from '../../components/ui/badge';
 import { Textarea } from '../../components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../components/ui/select';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../../components/ui/alert-dialog';
 import {
   Dialog,
   DialogContent,
@@ -54,40 +35,24 @@ interface LeaveForm {
   startDate: string;
   endDate: string;
   reason: string;
-  managerId: string;
 }
 
-const EMPTY_FORM: LeaveForm = { startDate: '', endDate: '', reason: '', managerId: '' };
-
-const MANAGER_ROLES = new Set(['MANAGER', 'PROJECT_MANAGER']);
+const EMPTY_FORM: LeaveForm = { startDate: '', endDate: '', reason: '' };
 
 export const MesConges: React.FC = () => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
-  const [managers, setManagers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState<LeaveForm>(EMPTY_FORM);
-
-  // Edit dialog
-  const [editingRequest, setEditingRequest] = useState<LeaveRequest | null>(null);
-  const [editForm, setEditForm] = useState<LeaveForm>(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
-
-  // Delete confirmation
-  const [requestPendingDelete, setRequestPendingDelete] = useState<LeaveRequest | null>(null);
 
   const loadData = useCallback(async () => {
     if (!currentUser) return;
     setLoading(true);
     try {
-      const [data, users] = await Promise.all([
-        LeaveRequestsAPI.getByConsultant(currentUser.id),
-        UsersAPI.getActive(),
-      ]);
+      const data = await LeaveRequestsAPI.getByConsultant(currentUser.id);
       setRequests(data.sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
-      setManagers(users.filter((u) => MANAGER_ROLES.has(u.role)));
     } finally {
       setLoading(false);
     }
@@ -107,10 +72,6 @@ export const MesConges: React.FC = () => {
       toast.error(t('consultantTech.leaves.errors.endAfterStart'));
       return;
     }
-    if (!form.managerId) {
-      toast.error(t('consultantTech.leaves.errors.managerRequired'));
-      return;
-    }
     try {
       const created = await LeaveRequestsAPI.create({
         consultantId: currentUser.id,
@@ -118,7 +79,7 @@ export const MesConges: React.FC = () => {
         endDate: form.endDate,
         reason: form.reason.trim() || undefined,
         status: 'PENDING',
-        managerId: form.managerId,
+        managerId: 'TBD',
       });
       setRequests((prev) => [created, ...prev]);
       setForm(EMPTY_FORM);
@@ -126,64 +87,6 @@ export const MesConges: React.FC = () => {
       toast.success(t('consultantTech.leaves.toasts.requestSuccess'));
     } catch {
       toast.error(t('consultantTech.leaves.toasts.requestFailed'));
-    }
-  };
-
-  // ---- Edit ---------------------------------------------------------------
-  const openEdit = (req: LeaveRequest) => {
-    setEditingRequest(req);
-    setEditForm({
-      startDate: req.startDate,
-      endDate: req.endDate,
-      reason: req.reason ?? '',
-      managerId: req.managerId,
-    });
-  };
-
-  const closeEdit = () => {
-    setEditingRequest(null);
-    setEditForm(EMPTY_FORM);
-  };
-
-  const updateRequest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingRequest || !editForm.startDate || !editForm.endDate) {
-      toast.error(t('consultantTech.leaves.errors.dateRequired'));
-      return;
-    }
-    if (editForm.endDate < editForm.startDate) {
-      toast.error(t('consultantTech.leaves.errors.endAfterStart'));
-      return;
-    }
-    setSaving(true);
-    try {
-      // Only dates and reason are editable by the consultant; managerId and
-      // status cannot be reassigned by a non-manager (enforced server-side).
-      await LeaveRequestsAPI.update(editingRequest.id, {
-        startDate: editForm.startDate,
-        endDate: editForm.endDate,
-        reason: editForm.reason.trim() || undefined,
-      });
-      await loadData();
-      closeEdit();
-      toast.success(t('consultantTech.leaves.toasts.updateSuccess'));
-    } catch {
-      toast.error(t('consultantTech.leaves.toasts.updateFailed'));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // ---- Delete -------------------------------------------------------------
-  const removeRequest = async (id: string) => {
-    try {
-      await LeaveRequestsAPI.delete(id);
-      await loadData();
-      toast.success(t('consultantTech.leaves.toasts.deleteSuccess'));
-    } catch {
-      toast.error(t('consultantTech.leaves.toasts.deleteFailed'));
-    } finally {
-      setRequestPendingDelete(null);
     }
   };
 
@@ -252,7 +155,6 @@ export const MesConges: React.FC = () => {
                   <TableHead className="px-4">{t('consultantTech.leaves.table.reason')}</TableHead>
                   <TableHead className="px-4">{t('consultantTech.leaves.table.status')}</TableHead>
                   <TableHead className="px-4">{t('consultantTech.leaves.table.submitted')}</TableHead>
-                  <TableHead className="px-4">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -268,32 +170,12 @@ export const MesConges: React.FC = () => {
                         <Badge className={statusColor[req.status]}>{t(`consultantTech.leaves.status.${req.status}`)}</Badge>
                       </TableCell>
                       <TableCell className="px-4 py-3 text-xs text-muted-foreground">{new Date(req.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEdit(req)}
-                            title={t('common.edit')}
-                          >
-                            <Pencil className="h-4 w-4 text-muted-foreground" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setRequestPendingDelete(req)}
-                            title={t('common.delete')}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
                     </TableRow>
                   );
                 })}
                 {requests.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">{t('consultantTech.leaves.empty')}</TableCell>
+                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">{t('consultantTech.leaves.empty')}</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -319,21 +201,6 @@ export const MesConges: React.FC = () => {
               </div>
             </div>
             <div>
-              <Label>{t('consultantTech.leaves.dialog.manager')}</Label>
-              <Select value={form.managerId} onValueChange={(v) => setForm({ ...form, managerId: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('consultantTech.leaves.dialog.managerPlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {managers.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
               <Label>{t('consultantTech.leaves.dialog.reason')}</Label>
               <Textarea value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} rows={3} placeholder={t('consultantTech.leaves.dialog.reasonPlaceholder')} />
             </div>
@@ -344,59 +211,6 @@ export const MesConges: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
-
-      {/* Edit dialog */}
-      <Dialog open={!!editingRequest} onOpenChange={(open) => { if (!open) closeEdit(); }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('consultantTech.leaves.dialog.editTitle')}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={(e) => void updateRequest(e)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>{t('consultantTech.leaves.dialog.startDate')}</Label>
-                <Input type="date" value={editForm.startDate} onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })} />
-              </div>
-              <div>
-                <Label>{t('consultantTech.leaves.dialog.endDate')}</Label>
-                <Input type="date" value={editForm.endDate} onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })} />
-              </div>
-            </div>
-            <div>
-              <Label>{t('consultantTech.leaves.dialog.reason')}</Label>
-              <Textarea value={editForm.reason} onChange={(e) => setEditForm({ ...editForm, reason: e.target.value })} rows={3} placeholder={t('consultantTech.leaves.dialog.reasonPlaceholder')} />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={closeEdit}>{t('common.cancel')}</Button>
-              <Button type="submit" disabled={saving}>{t('common.save')}</Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete confirmation */}
-      <AlertDialog
-        open={requestPendingDelete !== null}
-        onOpenChange={(open) => { if (!open) setRequestPendingDelete(null); }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('consultantTech.leaves.deleteConfirm.title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('consultantTech.leaves.deleteConfirm.description')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => requestPendingDelete && void removeRequest(requestPendingDelete.id)}
-            >
-              {t('common.delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

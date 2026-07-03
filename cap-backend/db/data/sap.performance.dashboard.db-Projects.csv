@@ -1,4 +1,4 @@
-ID,name,projectType,managerId,startDate,endDate,status,priority,description,progress,complexity,documentation
-proj-1,SAP S/4HANA Migration - Acme Corp,BUILD,u-manager,2026-01-01,2026-12-31,ACTIVE,HIGH,Full S/4HANA migration covering FI/CO/SD/MM modules.,35,HIGH,Migration playbook v2.3
-proj-2,Fiori Launchpad - Groupe Lebon,TMA,u-manager,2026-02-01,2026-08-31,ACTIVE,MEDIUM,Custom Fiori dashboard with KPI tiles.,55,MEDIUM,
-proj-3,BI/BW Reporting Overhaul,BUILD,u-manager,2025-11-01,2026-06-30,ON_HOLD,LOW,Upgrade BW reports to embedded analytics.,10,MEDIUM,
+ID;createdAt;createdBy;modifiedAt;modifiedBy;name;projectType;managerId;startDate;endDate;status;priority;description;progress;complexity;documentation
+"proj-1";"2026-01-01T00:00:00Z";"system";"2026-02-20T00:00:00Z";"system";"SAP S/4HANA Migration - Acme Corp";"TMA";"u-manager";"2026-01-01";"2026-12-31";"ACTIVE";"HIGH";"S/4HANA migration support and FI/MM/SD stabilization.";45;"HIGH";"Migration project documentation."
+"proj-2";"2026-01-01T00:00:00Z";"system";"2026-02-20T00:00:00Z";"system";"Fiori Launchpad - Groupe Lebon";"BUILD";"u-manager";"2026-02-01";"2026-08-31";"ACTIVE";"MEDIUM";"Fiori launchpad rollout and HR self-service forms.";35;"MEDIUM";"Fiori project documentation."
+"proj-3";"2026-01-01T00:00:00Z";"system";"2026-02-20T00:00:00Z";"system";"BW Analytics - Northwind";"BUILD";"u-pm";"2026-03-01";"2026-09-30";"PLANNED";"MEDIUM";"Analytics reporting backlog.";10;"LOW";"Analytics project documentation."

@@ -59,7 +59,10 @@ export const filterTickets = (
 
 export const buildTicketsByDate = (tickets: Ticket[]): Record<string, Ticket[]> => {
   return tickets.reduce<Record<string, Ticket[]>>((acc, ticket) => {
-    const key = ticket.dueDate || ticket.createdAt.slice(0, 10);
+    const key = ticket.dueDate || (ticket.createdAt ?? '').slice(0, 10);
+    if (!key) {
+      return acc;
+    }
     if (!acc[key]) {
       acc[key] = [];
     }

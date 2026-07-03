@@ -840,12 +840,9 @@
     "passwordPlaceholder": "Enter your password",
     "signingIn": "Signing in...",
     "enterPlatform": "Enter Platform",
-    "quickAccess": "Quick Access",
-    "noActiveUsers": "No active users available for quick access.",
-    "selectedRole": "Selected {{role}}. Enter password to continue.",
-    "signingInAs": "Signing in as {{role}}...",
-    "bypassValidation": "Bypass Validation (Direct)",
-    "directLoginSuccess": "Direct login as {{role}}"
+    "sapLoginRequired": "Authentication is handled by SAP XSUAA. Continue with your assigned SAP role collection.",
+    "continueWithSap": "Continue with SAP",
+    "missingRoleCollection": "No valid Ticket-CAP role collection was found for this SAP user."
   },
   "assignment": {
     "manual": "Manual Assignment",

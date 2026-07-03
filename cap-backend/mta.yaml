@@ -39,6 +39,8 @@ modules:
       memory: 512M
       disk-quota: 1024M
       stack: cflinuxfs4
+    properties:
+      NODE_ENV: production
     build-parameters:
       builder: npm-ci
       ignore:
@@ -83,6 +85,8 @@ modules:
       disk-quota: 512M
       memory: 256M
       stack: cflinuxfs4
+    properties:
+      NODE_ENV: production
     build-parameters:
       ignore:
         - "node_modules/"
@@ -122,3 +126,8 @@ resources:
       config:
         xsappname: ticket-cap-${space}
         tenant-mode: dedicated
+        oauth2-configuration:
+          redirect-uris:
+            - https://*.cfapps.eu10.hana.ondemand.com/**
+            - https://*.cfapps.us10.hana.ondemand.com/**
+            - https://*.cfapps.us10-001.hana.ondemand.com/**

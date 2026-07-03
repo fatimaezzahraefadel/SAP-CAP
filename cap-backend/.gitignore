@@ -33,6 +33,10 @@ db/*.db-shm
 
 # Logs
 *.log
+*logs*.txt
+recent_logs*.txt
+router_logs*.txt
+approuter-logs.txt
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -41,6 +45,7 @@ yarn-error.log*
 .env
 .env.local
 .env.*.local
+default-env.json
 
 # Approuter local-only env file (never deploy this; BTP injects real VCAP_SERVICES)
 app/approuter/default-env.json
@@ -48,6 +53,8 @@ app/approuter/default-env.json
 # MTA build artifacts
 mta_archives/
 .mta/
+.temp_mtar/
+Makefile_*.mta
 
 # OS
 .DS_Store

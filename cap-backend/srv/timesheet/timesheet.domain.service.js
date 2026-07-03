@@ -35,14 +35,15 @@ class TimesheetDomainService {
   async beforeCreate(req) {
     const data = req.data;
     const claims = this.auth.getRequestClaims(req);
-    const userId = String(claims.sub ?? '').trim();
+    const authUser = await this.auth.currentUser(req);
+    const dbUserId = String(authUser.id ?? '').trim();
 
-    if (!userId) req.reject(401, 'Missing authenticated user');
+    if (!dbUserId) req.reject(401, 'Missing authenticated user');
     if (!isManagerRole(claims)) {
-      if (data.userId !== undefined && String(data.userId) !== userId) {
+      if (data.userId !== undefined && String(data.userId) !== dbUserId) {
         req.reject(403, 'userId must match the authenticated user');
       }
-      data.userId = userId;
+      data.userId = dbUserId;
     }
 
     assertRequiredValue(data.userId, 'userId', req);

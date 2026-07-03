@@ -38,6 +38,8 @@ entity Users : cuid, managed {
   availabilityPercent: Integer     default 100;
   teamId             : String(50);
   avatarUrl          : String(500);
+  identityProvider   : String(30);
+  externalId         : String(100);
 }
 
 entity UserSkills : cuid {

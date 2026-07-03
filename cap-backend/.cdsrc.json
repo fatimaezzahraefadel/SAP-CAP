@@ -1,6 +1,6 @@
 {
   "requires": {
-    "auth": "mocked",
+    "auth": "dummy",
     "db": {
       "kind": "sqlite",
       "credentials": {

@@ -16,7 +16,7 @@ describe('getRequestContext — mocked-JWT mode', () => {
       _authClaims: { sub: 'u-1', role: 'ADMIN', email: 'a@b.com' },
     });
     expect(ctx).toEqual({
-      userId: 'u-1', role: 'ADMIN', email: 'a@b.com', isAuthenticated: true,
+      userId: 'u-1', dbUserId: 'u-1', role: 'ADMIN', email: 'a@b.com', isAuthenticated: true,
     });
   });
 
@@ -78,6 +78,17 @@ describe('getRequestContext — XSUAA mode', () => {
     expect(getRequestContext(req).role).toBe('ADMIN');
   });
 
+  test('supports is() predicate from CAP user objects', () => {
+    const granted = new Set(['ProjectManager']);
+    const req = {
+      user: {
+        id: 'u-is',
+        is: (scope) => granted.has(scope),
+      },
+    };
+    expect(getRequestContext(req).role).toBe('PROJECT_MANAGER');
+  });
+
   test('all 6 documented roles map correctly', () => {
     expect(roleFromXsuaaUser({ roles: ['x.Admin'] })).toBe('ADMIN');
     expect(roleFromXsuaaUser({ roles: ['x.Manager'] })).toBe('MANAGER');
@@ -91,7 +102,7 @@ describe('getRequestContext — XSUAA mode', () => {
 describe('getRequestContext — no auth', () => {
   test('empty request → unauthenticated', () => {
     expect(getRequestContext({})).toEqual({
-      userId: '', role: '', email: '', isAuthenticated: false,
+      userId: '', dbUserId: '', role: '', email: '', isAuthenticated: false,
     });
   });
 

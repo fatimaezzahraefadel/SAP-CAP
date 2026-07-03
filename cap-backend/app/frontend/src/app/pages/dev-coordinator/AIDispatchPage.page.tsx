@@ -44,7 +44,7 @@ const AIDispatchPage: React.FC = () => {
     void load();
   }, []);
 
-  const unassignedTickets = tickets.filter((ticket) => !ticket.assignedTo && ticket.status !== 'DONE' && ticket.status !== 'REJECTED');
+  const unassignedTickets = tickets.filter((ticket) => !ticket.assignedTo && ticket.status === 'NEW');
   const selectedTicket = tickets.find((ticket) => ticket.id === selectedTicketId);
 
   const runRecommendation = useCallback(async () => {
@@ -162,11 +162,15 @@ const AIDispatchPage: React.FC = () => {
           <CardContent>
             <div className="space-y-4">
               {recommendations.map((rec, index) => {
-                const user = users.find((candidate) => candidate.id === rec.userId);
-                if (!user) return null;
+                const rawRecId = String((rec as any).userId || (rec as any).id || '').toLowerCase();
+                const user = users.find((candidate) => candidate.id.toLowerCase() === rawRecId);
+                if (!user) {
+                  console.warn('AI recommended an unknown user ID:', (rec as any).userId || (rec as any).id, 'Full rec:', rec);
+                  return null;
+                }
 
                 return (
-                  <div key={rec.userId} className="rounded-lg border p-4 space-y-3">
+                  <div key={rawRecId} className="rounded-lg border p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
@@ -223,6 +227,15 @@ const AIDispatchPage: React.FC = () => {
                         <Badge key={skill} variant="outline" className="text-xs">{skill}</Badge>
                       ))}
                     </div>
+
+                    {rec.explanation && (
+                      <div className="mt-3 rounded bg-primary/5 p-3 text-sm text-muted-foreground border border-primary/20">
+                        <p className="flex items-center gap-2 font-semibold text-primary mb-1">
+                          <Sparkles className="h-4 w-4" /> AI Recommendation
+                        </p>
+                        <p className="italic">{rec.explanation}</p>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -231,19 +244,21 @@ const AIDispatchPage: React.FC = () => {
         </Card>
       )}
 
-      <Card className="border-border/80 bg-card">
-        <CardHeader>
-          <CardTitle className="text-sm text-muted-foreground">{t('coordinator.dispatch.algorithm.title')}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-1 text-xs text-muted-foreground">
-          <p>{t('coordinator.dispatch.algorithm.formula')}</p>
-          <p>{t('coordinator.dispatch.algorithm.availability')}</p>
-          <p>{t('coordinator.dispatch.algorithm.skillsMatch')}</p>
-          <p>{t('coordinator.dispatch.algorithm.performance')}</p>
-          <p>{t('coordinator.dispatch.algorithm.similarTickets')}</p>
-          <p className="pt-2 italic text-muted-foreground/70">{t('coordinator.dispatch.algorithm.engine')}</p>
-        </CardContent>
-      </Card>
+      {recommendations.length > 0 && !recommendations[0]?.explanation && (
+        <Card className="border-border/80 bg-card mt-6">
+          <CardHeader>
+            <CardTitle className="text-sm text-muted-foreground">{t('coordinator.dispatch.algorithm.title')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1 text-xs text-muted-foreground">
+            <p>{t('coordinator.dispatch.algorithm.formula')}</p>
+            <p>{t('coordinator.dispatch.algorithm.availability')}</p>
+            <p>{t('coordinator.dispatch.algorithm.skillsMatch')}</p>
+            <p>{t('coordinator.dispatch.algorithm.performance')}</p>
+            <p>{t('coordinator.dispatch.algorithm.similarTickets')}</p>
+            <p className="pt-2 italic text-muted-foreground/70">{t('coordinator.dispatch.algorithm.engine')}</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
