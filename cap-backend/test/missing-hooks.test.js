@@ -75,7 +75,7 @@ describe('ReferenceData DELETE hook', () => {
 // 2. Deliverables DELETE — managers only, APPROVED is locked
 // ============================================================================
 describe('Deliverables DELETE hook', () => {
-  const seedDeliverable = async (validationStatus = 'PENDING') => {
+  const seedDeliverable = async (validationStatus = 'PENDING', createdBy = 'u-manager') => {
     const id = crypto.randomUUID();
     await cds.db.run(INSERT.into(DEL).entries({
       ID: id,
@@ -83,7 +83,7 @@ describe('Deliverables DELETE hook', () => {
       ticketId: 'tk-001',
       name: 'Test deliverable',
       validationStatus,
-      createdBy: 'u-manager',
+      createdBy,
     }));
     return id;
   };
@@ -106,6 +106,19 @@ describe('Deliverables DELETE hook', () => {
     await expect(
       DELETE(`/odata/v4/core/Deliverables(${id})`, auth(techToken))
     ).rejects.toMatchObject({ response: { status: 403 } });
+  });
+
+  test('author (CONSULTANT) can delete their own PENDING deliverable', async () => {
+    const id = await seedDeliverable('PENDING', 'u-fonc');
+    const res = await DELETE(`/odata/v4/core/Deliverables(${id})`, auth(foncToken));
+    expect(res.status).toBeLessThan(300);
+  });
+
+  test('author (CONSULTANT) cannot delete their own APPROVED deliverable (409)', async () => {
+    const id = await seedDeliverable('APPROVED', 'u-fonc');
+    await expect(
+      DELETE(`/odata/v4/core/Deliverables(${id})`, auth(foncToken))
+    ).rejects.toMatchObject({ response: { status: 409 } });
   });
 });
 

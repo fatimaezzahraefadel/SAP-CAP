@@ -8,6 +8,12 @@ import { isStatusTransitionAllowed, priorityColor, STATUS_ORDER, statusColor } f
 interface TicketKanbanViewProps {
   canDrag: boolean;
   canDelete: boolean;
+  /**
+   * Role-aware gate deciding whether the current user may move `ticket` to
+   * `target`. Falls back to plain workflow validity when not provided.
+   */
+  canMoveTicket?: (ticket: Ticket, target: TicketStatus) => boolean;
+  hideApprovalColumns?: boolean;
   filteredTickets: Ticket[];
   onOpenTicketDetails: (ticketId: string) => void;
   onChangeStatus: (ticket: Ticket, newStatus: TicketStatus) => void;
@@ -15,15 +21,22 @@ interface TicketKanbanViewProps {
   resolveUserName: (userId?: string) => string;
 }
 
+const APPROVAL_STATUSES: TicketStatus[] = ['PENDING_APPROVAL', 'APPROVED'];
+
 export const TicketKanbanView: React.FC<TicketKanbanViewProps> = ({
   canDrag,
   canDelete,
+  canMoveTicket,
+  hideApprovalColumns = false,
   filteredTickets,
   onOpenTicketDetails,
   onChangeStatus,
   onDeleteTicket,
   resolveUserName,
 }) => {
+  const columns = hideApprovalColumns
+    ? STATUS_ORDER.filter((status) => !APPROVAL_STATUSES.includes(status))
+    : STATUS_ORDER;
   const [draggedTicketId, setDraggedTicketId] = useState<string | null>(null);
   const [isDragOverDelete, setIsDragOverDelete] = useState(false);
 
@@ -32,9 +45,11 @@ export const TicketKanbanView: React.FC<TicketKanbanViewProps> = ({
     [filteredTickets, draggedTicketId]
   );
 
-  // A column is a valid drop target when the dragged ticket can transition to it.
+  // A column is a valid drop target when the dragged ticket can transition to
+  // it AND the current user's role is allowed to perform that move.
   const canDropOn = (targetStatus: TicketStatus): boolean => {
     if (!draggedTicket) return true;
+    if (canMoveTicket) return canMoveTicket(draggedTicket, targetStatus);
     return isStatusTransitionAllowed(draggedTicket.status, targetStatus);
   };
 
@@ -59,7 +74,10 @@ export const TicketKanbanView: React.FC<TicketKanbanViewProps> = ({
     const ticket = filteredTickets.find((item) => item.id === ticketId);
     onDragEnd();
     if (!ticket || ticket.status === targetStatus) return;
-    if (!isStatusTransitionAllowed(ticket.status, targetStatus)) {
+    const allowed = canMoveTicket
+      ? canMoveTicket(ticket, targetStatus)
+      : isStatusTransitionAllowed(ticket.status, targetStatus);
+    if (!allowed) {
       toast.error(`Cannot move ${ticket.status.replace('_', ' ')} → ${targetStatus.replace('_', ' ')}`);
       return;
     }
@@ -91,7 +109,7 @@ export const TicketKanbanView: React.FC<TicketKanbanViewProps> = ({
 
   return (
     <div className="flex gap-3 overflow-x-auto pb-4">
-      {STATUS_ORDER.map((status) => {
+      {columns.map((status) => {
         const columnTickets = filteredTickets.filter((ticket) => ticket.status === status);
         const isDragging = canDrag && Boolean(draggedTicket);
         const isValidTarget = isDragging && status !== draggedTicket?.status && canDropOn(status);

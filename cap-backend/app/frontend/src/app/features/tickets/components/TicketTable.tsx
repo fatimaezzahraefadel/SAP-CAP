@@ -17,6 +17,8 @@ interface TicketTableProps {
   viewMode: ViewMode;
   isViewOnly: boolean;
   canDragStatus: boolean;
+  canMoveTicket?: (ticket: Ticket, target: TicketStatus) => boolean;
+  hideApprovalColumns: boolean;
   tickets: Ticket[];
   filteredTickets: Ticket[];
   ticketsByDate: Record<string, Ticket[]>;
@@ -39,6 +41,8 @@ export const TicketTable: React.FC<TicketTableProps> = ({
   viewMode,
   isViewOnly,
   canDragStatus,
+  canMoveTicket,
+  hideApprovalColumns,
   filteredTickets,
   ticketsByDate,
   calendarDays,
@@ -93,6 +97,8 @@ export const TicketTable: React.FC<TicketTableProps> = ({
     <TicketKanbanView
       canDrag={canDragStatus}
       canDelete={canDeleteTicket}
+      canMoveTicket={canMoveTicket}
+      hideApprovalColumns={hideApprovalColumns}
       filteredTickets={filteredTickets}
       onOpenTicketDetails={onOpenTicketDetails}
       onChangeStatus={onChangeStatus}

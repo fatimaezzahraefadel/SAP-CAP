@@ -38,6 +38,11 @@ const FUNCTIONAL_TEST_FIELDS = new Set([
   'updatedAt',
 ]);
 
+// A pure Kanban status move — the functional owner may drive their own ticket
+// through any valid workflow transition (transition validity itself is still
+// enforced in tickets.domain.js / the UPDATE handler).
+const STATUS_MOVE_FIELDS = new Set(['status', 'history', 'updatedAt']);
+
 const EDITABLE_FUNCTIONAL_STATUSES = new Set(['PENDING_APPROVAL', 'REJECTED']);
 const FUNCTIONAL_TEST_STATUSES = new Set(['IN_TEST']);
 const FUNCTIONAL_TEST_TARGET_STATUSES = new Set(['DONE', 'IN_PROGRESS']);
@@ -99,6 +104,9 @@ function canUpdateTicket(ctx, resource) {
   }
 
   if (isFunctionalOwner(ctx, ticket)) {
+    // The author may drag their own ticket through the workflow (status move),
+    // edit details while it is still pending/rejected, and run functional tests.
+    if (isStatusMove(changes)) return true;
     if (EDITABLE_FUNCTIONAL_STATUSES.has(ticket.status)) {
       return hasOnlyFields(changes, FUNCTIONAL_DETAIL_FIELDS);
     }
@@ -118,6 +126,10 @@ function isAllowedFunctionalTestChange(changes) {
   if (!hasOnlyFields(changes, FUNCTIONAL_TEST_FIELDS)) return false;
   if (changes?.status === undefined) return true;
   return FUNCTIONAL_TEST_TARGET_STATUSES.has(changes.status);
+}
+
+function isStatusMove(changes) {
+  return changes?.status !== undefined && hasOnlyFields(changes, STATUS_MOVE_FIELDS);
 }
 
 async function canDeleteTicket(ctx, ticket) {

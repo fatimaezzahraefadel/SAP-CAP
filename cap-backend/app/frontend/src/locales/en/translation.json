@@ -21,6 +21,7 @@
     "pageNotFound": "Page not found",
     "pageNotFoundDesc": "The page you requested does not exist.",
     "cancel": "Cancel",
+    "ok": "OK",
     "save": "Save",
     "delete": "Delete",
     "actions": "Actions",
@@ -307,6 +308,7 @@
       "title": "Projects",
       "subtitle": "Functional perimeter, deliverables status and collaboration entry points",
       "loading": "Loading projects...",
+      "empty": "No projects to display.",
       "manager": "Manager",
       "techContact": "Tech Contact",
       "notAssigned": "Not assigned",
@@ -314,10 +316,15 @@
       "changesReq": "Changes Req.",
       "blockedTickets": "Blocked Tickets",
       "openTeams": "Open Teams Chat",
+      "columns": {
+        "project": "Project"
+      },
       "feedback": {
         "title": "Project Feedback",
         "placeholder": "Share business feedback, blockers, or requested adjustments...",
         "submit": "Submit Feedback",
+        "history": "History",
+        "errorTitle": "Invalid feedback",
         "errorShort": "Project feedback must contain at least 10 characters",
         "success": "Project feedback submitted",
         "saveFailed": "Failed to save feedback."
@@ -388,6 +395,11 @@
       "project": "Project",
       "reference": "Reference",
       "feedback": "Feedback",
+      "tableHeaders": {
+        "deliverable": "Deliverable",
+        "status": "Status",
+        "date": "Date"
+      },
       "review": "Review Deliverable",
       "depositDialog": {
         "title": "Deposit Deliverable",
@@ -399,6 +411,9 @@
         "docTitlePlaceholder": "e.g. Scope Def v1.2",
         "fileRef": "File Link / Reference (Optional)",
         "fileRefPlaceholder": "https://sharepoint.com/...",
+        "fileUpload": "File (Optional)",
+        "fileUploadCta": "Click to upload a file",
+        "fileUploadHint": "PDF, Word, Excel, images...",
         "submitting": "Submitting...",
         "submit": "Submit Deliverable"
       },
@@ -414,11 +429,27 @@
         "approve": "Approve",
         "saving": "Saving..."
       },
+      "editDialog": {
+        "title": "Edit Deliverable",
+        "desc": "Update the deliverable details and optionally replace the attached file.",
+        "replaceFile": "Replace file (Optional)",
+        "replaceFileCta": "Choose a new file",
+        "currentFile": "Current file",
+        "saving": "Saving..."
+      },
+      "deleteDialog": {
+        "title": "Delete Deliverable",
+        "desc": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+        "deleting": "Deleting...",
+        "approvedBlocked": "An approved deliverable cannot be deleted"
+      },
       "toasts": {
         "loadFailed": "Failed to load deliverables.",
         "notAllowed": "You are not allowed to review deliverables",
         "updated": "Deliverable status updated",
         "updateFailed": "Failed to update deliverable",
+        "deleted": "Deliverable deleted",
+        "deleteFailed": "Failed to delete deliverable",
         "requiredFields": "Project, name and type are required",
         "submitted": "Specification submitted successfully",
         "submitFailed": "Failed to submit specification"

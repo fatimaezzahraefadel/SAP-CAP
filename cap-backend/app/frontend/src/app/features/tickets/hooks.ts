@@ -24,6 +24,7 @@ import {
 } from './model';
 import { ManagerTicketsAPI } from './api';
 import { EMPTY_FORM, TicketForm, ViewMode } from './components/types';
+import { isStatusTransitionAllowed } from './components/ticketView.constants';
 
 export const useManagerTicketsBootstrap = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -99,6 +100,8 @@ export interface ManagerTicketsViewModel {
   error: string | null;
   isViewOnly: boolean;
   canDragStatus: boolean;
+  canMoveTicket: (ticket: Ticket, target: TicketStatus) => boolean;
+  hideApprovalColumns: boolean;
   projects: Project[];
   users: User[];
   tickets: Ticket[];
@@ -168,6 +171,37 @@ export const useManagerTicketsViewModel = (): ManagerTicketsViewModel => {
   // tech consultants (the backend still enforces per-ticket ownership and valid
   // workflow transitions, rejecting moves the user isn't allowed to make).
   const canDragStatus = Boolean(currentUser);
+  // Role-aware Kanban gate: mirrors the backend ticket policy so the board only
+  // offers moves the current user is actually allowed to perform, instead of
+  // letting an invalid drop hit the server and bounce back as a 403.
+  const canMoveTicket = useCallback(
+    (ticket: Ticket, target: TicketStatus): boolean => {
+      if (!isStatusTransitionAllowed(ticket.status, target)) return false;
+      const role = currentUser?.role;
+      if (!role) return false;
+      // Staff move tickets freely within valid workflow transitions.
+      if (role === 'ADMIN' || role === 'MANAGER' || role === 'PROJECT_MANAGER' || role === 'DEV_COORDINATOR') {
+        return true;
+      }
+      // The assigned technical consultant drives their own tickets.
+      if (role === 'CONSULTANT_TECHNIQUE') {
+        return ticket.assignedTo === currentUser?.id;
+      }
+      // The functional consultant may drive their own tickets through any valid
+      // workflow transition; tickets they merely test follow the testing moves.
+      if (role === 'CONSULTANT_FONCTIONNEL') {
+        if (ticket.createdBy === currentUser?.id) return true;
+        if (ticket.functionalTesterId === currentUser?.id) {
+          return ticket.status === 'IN_TEST' && (target === 'DONE' || target === 'IN_PROGRESS');
+        }
+        return false;
+      }
+      return false;
+    },
+    [currentUser]
+  );
+  // The technical consultant's board has no approval workflow columns.
+  const hideApprovalColumns = currentUser?.role === 'CONSULTANT_TECHNIQUE';
   const canDeleteTicket = currentUser?.role === 'MANAGER' || currentUser?.role === 'PROJECT_MANAGER';
   const [form, setForm] = useState<TicketForm>(EMPTY_FORM);
   const [searchQuery, setSearchQuery] = useState('');
@@ -452,6 +486,8 @@ export const useManagerTicketsViewModel = (): ManagerTicketsViewModel => {
     error,
     isViewOnly,
     canDragStatus,
+    canMoveTicket,
+    hideApprovalColumns,
     projects,
     users,
     tickets,

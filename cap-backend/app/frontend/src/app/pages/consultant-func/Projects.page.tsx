@@ -7,13 +7,53 @@ import { ProjectsAPI } from '../../services/odata/projectsApi';
 import { TicketsAPI } from '../../services/odata/ticketsApi';
 import { UsersAPI } from '../../services/odata/usersApi';
 import { Deliverable, Project, ProjectFeedback, Ticket, User } from '../../types/entities';
-import { ExternalLink } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Textarea } from '../../components/ui/textarea';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../components/ui/alert-dialog';
+import { AlertCircle, MessageSquarePlus } from 'lucide-react';
 import { toast } from 'sonner';
-import { openTeamsChat } from '../../utils/teamsChat';
+
+const COUNT_STYLES = {
+  blue: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  red: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  amber: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+} as const;
+
+const renderCount = (value: number, tone: keyof typeof COUNT_STYLES) => (
+  <span
+    className={`inline-flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-sm font-semibold ${
+      value > 0 ? COUNT_STYLES[tone] : 'bg-muted text-muted-foreground'
+    }`}
+  >
+    {value}
+  </span>
+);
 
 export const FuncProjects: React.FC = () => {
   const { t } = useTranslation();
@@ -26,6 +66,8 @@ export const FuncProjects: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [feedbackDrafts, setFeedbackDrafts] = useState<Record<string, string>>({});
   const [feedbackHistory, setFeedbackHistory] = useState<Record<string, ProjectFeedback[]>>({});
+  const [errorPopup, setErrorPopup] = useState<string | null>(null);
+  const [feedbackTarget, setFeedbackTarget] = useState<{ project: Project; manager?: User } | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -89,20 +131,12 @@ export const FuncProjects: React.FC = () => {
     });
   }, [deliverables, projects, tickets, users]);
 
-  const openTeamsDiscussion = (tech?: User) => {
-    if (!currentUser || !tech) return;
-    openTeamsChat(
-      [currentUser.email, tech.email],
-      'Need clarification on business requirements for current project.'
-    );
-  };
-
   const submitFeedback = async (project: Project, manager?: User) => {
     if (!currentUser) return;
     const content = (feedbackDrafts[project.id] ?? '').trim();
 
     if (content.length < 10) {
-      toast.error(t('func.projects.feedback.errorShort'));
+      setErrorPopup(t('func.projects.feedback.errorShort'));
       return;
     }
 
@@ -139,6 +173,7 @@ export const FuncProjects: React.FC = () => {
       }
 
       toast.success(t('func.projects.feedback.success'));
+      setFeedbackTarget(null);
     } catch (error) {
       const message = error instanceof Error ? error.message : t('func.projects.feedback.saveFailed');
       toast.error(message);
@@ -164,76 +199,95 @@ export const FuncProjects: React.FC = () => {
         )}
         {loading ? (
           <div className="text-muted-foreground">{t('func.projects.loading')}</div>
+        ) : rows.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center text-muted-foreground">
+              {t('func.projects.empty')}
+            </CardContent>
+          </Card>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {rows.map(({ project, pending, changes, blocked, manager, technicalConsultant }) => (
-              <Card key={project.id}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">{project.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{project.description}</p>
-                </CardHeader>
-                <CardContent className="space-y-4">
+          <Card className="overflow-hidden border-border/70 shadow-sm">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="px-4 min-w-[240px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('func.projects.columns.project')}</TableHead>
+                    <TableHead className="px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('func.projects.manager')}</TableHead>
+                    <TableHead className="px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('func.projects.techContact')}</TableHead>
+                    <TableHead className="px-4 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('func.projects.pending')}</TableHead>
+                    <TableHead className="px-4 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('func.projects.changesReq')}</TableHead>
+                    <TableHead className="px-4 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('func.projects.blockedTickets')}</TableHead>
+                    <TableHead className="px-4 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.actions')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map(({ project, pending, changes, blocked, manager, technicalConsultant }) => (
+                    <TableRow key={project.id} className="border-border/60 transition-colors hover:bg-muted/40">
+                      <TableCell className="px-4 py-3.5 align-top">
+                        <div className="font-semibold text-foreground whitespace-normal">{project.name}</div>
+                        {project.description && (
+                          <div className="mt-0.5 text-xs text-muted-foreground whitespace-normal line-clamp-2 max-w-xs">
+                            {project.description}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="px-4 py-3.5 text-sm text-foreground">{manager?.name ?? 'Unknown'}</TableCell>
+                      <TableCell className="px-4 py-3.5 text-sm">
+                        {technicalConsultant ? (
+                          <span className="text-foreground">{technicalConsultant.name}</span>
+                        ) : (
+                          <span className="text-muted-foreground italic">{t('func.projects.notAssigned')}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="px-4 py-3.5 text-center">{renderCount(pending, 'blue')}</TableCell>
+                      <TableCell className="px-4 py-3.5 text-center">{renderCount(changes, 'red')}</TableCell>
+                      <TableCell className="px-4 py-3.5 text-center">{renderCount(blocked, 'amber')}</TableCell>
+                      <TableCell className="px-4 py-3.5 text-right">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => setFeedbackTarget({ project, manager })}
+                        >
+                          <MessageSquarePlus className="h-4 w-4" />
+                          {t('func.projects.feedback.submit')}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="p-3 rounded border border-border">
-                    <div className="text-xs text-muted-foreground">{t('func.projects.manager')}</div>
-                    <div className="font-medium text-foreground">{manager?.name ?? 'Unknown'}</div>
-                  </div>
-                  <div className="p-3 rounded border border-border">
-                    <div className="text-xs text-muted-foreground">{t('func.projects.techContact')}</div>
-                    <div className="font-medium text-foreground">
-                      {technicalConsultant?.name ?? t('func.projects.notAssigned')}
-                    </div>
-                  </div>
-                </div>
+      <Dialog open={feedbackTarget !== null} onOpenChange={(open) => !open && setFeedbackTarget(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t('func.projects.feedback.title')}</DialogTitle>
+            <DialogDescription>{feedbackTarget?.project.name}</DialogDescription>
+          </DialogHeader>
 
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded border border-border p-2 text-center">
-                    <div className="text-xl font-semibold text-primary">{pending}</div>
-                    <div className="text-xs text-muted-foreground">{t('func.projects.pending')}</div>
-                  </div>
-                  <div className="rounded border border-border p-2 text-center">
-                    <div className="text-xl font-semibold text-destructive">{changes}</div>
-                    <div className="text-xs text-muted-foreground">{t('func.projects.changesReq')}</div>
-                  </div>
-                  <div className="rounded border border-border p-2 text-center">
-                    <div className="text-xl font-semibold text-accent-foreground">{blocked}</div>
-                    <div className="text-xs text-muted-foreground">{t('func.projects.blockedTickets')}</div>
-                  </div>
-                </div>
+          {feedbackTarget && (
+            <div className="space-y-4">
+              <Textarea
+                value={feedbackDrafts[feedbackTarget.project.id] ?? ''}
+                onChange={(event) =>
+                  setFeedbackDrafts((prev) => ({ ...prev, [feedbackTarget.project.id]: event.target.value }))
+                }
+                rows={4}
+                placeholder={t('func.projects.feedback.placeholder')}
+              />
 
-                <Button
-                  type="button"
-                  className="w-full"
-                  disabled={!technicalConsultant}
-                  onClick={() => openTeamsDiscussion(technicalConsultant)}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  {t('func.projects.openTeams')}
-                </Button>
-
-                <div className="space-y-2 rounded border border-border p-3">
+              {(feedbackHistory[feedbackTarget.project.id] ?? []).length > 0 && (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
                   <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                    {t('func.projects.feedback.title')}
+                    {t('func.projects.feedback.history')}
                   </p>
-                  <Textarea
-                    value={feedbackDrafts[project.id] ?? ''}
-                    onChange={(event) =>
-                      setFeedbackDrafts((prev) => ({ ...prev, [project.id]: event.target.value }))
-                    }
-                    rows={3}
-                    placeholder={t('func.projects.feedback.placeholder')}
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => void submitFeedback(project, manager)}
-                  >
-                    {t('func.projects.feedback.submit')}
-                  </Button>
-
-                  {(feedbackHistory[project.id] ?? []).slice(0, 2).map((feedback, index) => (
-                    <div key={`${project.id}-feedback-${index}`} className="rounded bg-surface-2 p-2 text-xs">
+                  {(feedbackHistory[feedbackTarget.project.id] ?? []).map((feedback, index) => (
+                    <div key={`${feedbackTarget.project.id}-feedback-${index}`} className="rounded bg-surface-2 p-2 text-xs">
                       <p className="font-medium text-foreground">
                         {users.find((u) => u.id === feedback.authorId)?.name ?? 'Unknown'}
                       </p>
@@ -244,12 +298,42 @@ export const FuncProjects: React.FC = () => {
                     </div>
                   ))}
                 </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setFeedbackTarget(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type="button"
+              onClick={() =>
+                feedbackTarget && void submitFeedback(feedbackTarget.project, feedbackTarget.manager)
+              }
+            >
+              {t('func.projects.feedback.submit')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={errorPopup !== null} onOpenChange={(open) => !open && setErrorPopup(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="inline-flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              {t('func.projects.feedback.errorTitle')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>{errorPopup}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setErrorPopup(null)}>
+              {t('common.ok')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

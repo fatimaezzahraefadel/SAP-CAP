@@ -1,11 +1,19 @@
-import React, { useCallback, useEffect, useState, useMemo } from 'react';
-import { CheckCircle, Clock, FileText, XCircle, Search, Filter, Plus, FileUp, ExternalLink, CalendarDays } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { CheckCircle, Clock, FileText, XCircle, Search, Filter, Plus, FileUp, ExternalLink, CalendarDays, Paperclip, X, Pencil, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { PageHeader } from '../../components/common/PageHeader';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +22,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../components/ui/alert-dialog';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import {
@@ -27,20 +45,19 @@ import { Textarea } from '../../components/ui/textarea';
 import { useAuth } from '../../context/AuthContext';import { DeliverablesAPI } from '../../services/odata/deliverablesApi';
 import { NotificationsAPI } from '../../services/odata/notificationsApi';
 import { ProjectsAPI } from '../../services/odata/projectsApi';
+import { odataFetch } from '../../services/odata/core';
 import { Deliverable, Project, UserRole, ValidationStatus } from '../../types/entities';
 
 interface UploadForm {
   projectId: string;
   type: string;
   name: string;
-  fileRef: string;
 }
 
 const EMPTY_UPLOAD_FORM: UploadForm = {
   projectId: '',
   type: 'Functional Specification',
   name: '',
-  fileRef: '',
 };
 
 export const Deliverables: React.FC = () => {
@@ -64,8 +81,19 @@ export const Deliverables: React.FC = () => {
   const [selectedDeliverable, setSelectedDeliverable] = useState<Deliverable | null>(null);
   const [comment, setComment] = useState('');
   const [uploadForm, setUploadForm] = useState<UploadForm>(EMPTY_UPLOAD_FORM);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
+
+  // Edit & delete state
+  const [editTarget, setEditTarget] = useState<Deliverable | null>(null);
+  const [editForm, setEditForm] = useState<UploadForm>(EMPTY_UPLOAD_FORM);
+  const [editFile, setEditFile] = useState<File | null>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Deliverable | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const getStatusBadge = (status: ValidationStatus) => {
     switch (status) {
@@ -173,6 +201,43 @@ export const Deliverables: React.FC = () => {
     }
   };
 
+  // Upload a file to the attachments service and link it to a deliverable,
+  // returning the refreshed deliverable (or the original if no attachment id).
+  const attachFileToDeliverable = async (deliverable: Deliverable, file: File): Promise<Deliverable> => {
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const comma = result.indexOf(',');
+        resolve(comma >= 0 ? result.slice(comma + 1) : result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    const json = await odataFetch<{ ID?: string; id?: string; value?: { ID?: string; id?: string } }>(
+      'core',
+      '/uploadAttachment',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          parentType: 'DELIVERABLE',
+          parentId: deliverable.id,
+          fileName: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          contentBase64: base64,
+        }),
+      }
+    );
+
+    const attachment = json?.value ?? json;
+    const attachmentId = attachment?.ID || attachment?.id;
+    if (attachmentId) {
+      return await DeliverablesAPI.update(deliverable.id, { fileRef: `/attachments/${attachmentId}` });
+    }
+    return deliverable;
+  };
+
   const createSpecification = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!currentUser) return;
@@ -183,38 +248,90 @@ export const Deliverables: React.FC = () => {
 
     try {
       setIsUploading(true);
-      const created = await DeliverablesAPI.create({
+      let created = await DeliverablesAPI.create({
         projectId: uploadForm.projectId,
         type: uploadForm.type.trim(),
         name: uploadForm.name.trim(),
-        fileRef: uploadForm.fileRef.trim() || undefined,
         validationStatus: 'PENDING',
         functionalComment: '',
       });
-      setDeliverables((prev) => [created, ...prev]);
 
-      const project = projects.find((entry) => entry.id === uploadForm.projectId);
-      if (project) {
-        await NotificationsAPI.create({
-          userId: project.managerId,
-          type: 'DELIVERABLE_SUBMITTED',
-          title: t('notifications.deliverableSubmitted.title'),
-          message: t('notifications.deliverableSubmitted.message', {
-            author: currentUser.name,
-            name: created.name,
-          }),
-          targetPath: `{roleBasePath}/projects/${created.projectId}`,
-          read: false,
-        });
+      // Upload the attached file (if any) and link it back to the deliverable.
+      if (uploadFile) {
+        created = await attachFileToDeliverable(created, uploadFile);
       }
 
+      setDeliverables((prev) => [created, ...prev]);
+
+      // The manager notification is generated server-side on deliverable
+      // creation; a consultant cannot POST a notification targeting another
+      // user (blocked as recipient spoofing).
+
       setUploadForm(EMPTY_UPLOAD_FORM);
+      setUploadFile(null);
       setIsDepositOpen(false);
       toast.success(t('func.deliverables.toasts.submitted'));
     } catch (error) {
       toast.error(t('func.deliverables.toasts.submitFailed'));
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const openEdit = (deliverable: Deliverable) => {
+    setEditTarget(deliverable);
+    setEditForm({
+      projectId: deliverable.projectId,
+      type: deliverable.type,
+      name: deliverable.name,
+    });
+    setEditFile(null);
+  };
+
+  const submitEdit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editTarget) return;
+    if (!editForm.projectId || !editForm.name.trim() || !editForm.type.trim()) {
+      toast.error(t('func.deliverables.toasts.requiredFields'));
+      return;
+    }
+
+    try {
+      setIsEditing(true);
+      let updated = await DeliverablesAPI.update(editTarget.id, {
+        projectId: editForm.projectId,
+        type: editForm.type.trim(),
+        name: editForm.name.trim(),
+      });
+
+      // Optionally replace the attached file.
+      if (editFile) {
+        updated = await attachFileToDeliverable(updated, editFile);
+      }
+
+      setDeliverables((prev) => prev.map((entry) => (entry.id === updated.id ? updated : entry)));
+      setEditTarget(null);
+      setEditFile(null);
+      toast.success(t('func.deliverables.toasts.updated'));
+    } catch (error) {
+      toast.error(t('func.deliverables.toasts.updateFailed'));
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      setIsDeleting(true);
+      await DeliverablesAPI.remove(deleteTarget.id);
+      setDeliverables((prev) => prev.filter((entry) => entry.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      toast.success(t('func.deliverables.toasts.deleted'));
+    } catch (error) {
+      toast.error(t('func.deliverables.toasts.deleteFailed'));
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -301,84 +418,112 @@ export const Deliverables: React.FC = () => {
                   {t('func.deliverables.waitingReview', { count: pendingCount })}
                 </h3>
              )}
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {filteredDeliverables.map((deliverable) => {
-                const badge = getStatusBadge(deliverable.validationStatus);
-                const StatusIcon = badge.icon;
-                const project = projects.find((p) => p.id === deliverable.projectId);
-                
-                return (
-                  <Card key={deliverable.id} className="flex flex-col hover:border-primary/50 transition-colors shadow-sm bg-card overflow-hidden">
-                    <div className="h-2 w-full bg-gradient-to-r from-primary/20 to-transparent" />
-                    <CardHeader className="pb-3 border-b border-border/50">
-                      <div className="flex justify-between items-start mb-2">
-                        <Badge variant="outline" className={`font-medium shadow-none ${badge.tone}`}>
-                          <StatusIcon className="mr-1.5 h-3 w-3" />
-                          {badge.label}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground flex items-center">
-                          <CalendarDays className="h-3 w-3 mr-1" />
-                          {new Date(deliverable.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </span>
-                      </div>
-                      <CardTitle className="text-lg leading-tight group-hover:text-primary transition-colors">
-                        {deliverable.name}
-                      </CardTitle>
-                      <CardDescription className="flex items-center gap-1.5 mt-1.5 text-xs font-medium text-foreground/70">
-                        {deliverable.type}
-                      </CardDescription>
-                    </CardHeader>
-                    
-                    <CardContent className="py-4 flex-1">
-                      <div className="space-y-3">
-                        <div className="flex flex-col">
-                           <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">{t('func.deliverables.project')}</span>
-                           <span className="text-sm text-foreground">{project?.name ?? deliverable.projectId}</span>
-                        </div>
-                        
-                        {deliverable.fileRef && (
-                           <div className="flex flex-col">
-                             <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">{t('func.deliverables.reference')}</span>
-                             <a href="#" className="text-sm text-blue-500 hover:underline flex items-center truncate">
+            <Card className="overflow-hidden border-border/70 shadow-sm">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader className="bg-muted/50">
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="px-4 min-w-[240px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('func.deliverables.tableHeaders.deliverable')}</TableHead>
+                      <TableHead className="px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('func.deliverables.project')}</TableHead>
+                      <TableHead className="px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('func.deliverables.tableHeaders.status')}</TableHead>
+                      <TableHead className="px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('func.deliverables.reference')}</TableHead>
+                      <TableHead className="px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('func.deliverables.tableHeaders.date')}</TableHead>
+                      <TableHead className="px-4 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('common.actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredDeliverables.map((deliverable) => {
+                      const badge = getStatusBadge(deliverable.validationStatus);
+                      const StatusIcon = badge.icon;
+                      const project = projects.find((p) => p.id === deliverable.projectId);
+
+                      return (
+                        <TableRow key={deliverable.id} className="border-border/60 transition-colors hover:bg-muted/40">
+                          <TableCell className="px-4 py-3.5 align-top">
+                            <div className="font-semibold text-foreground whitespace-normal">{deliverable.name}</div>
+                            <div className="mt-0.5 text-xs text-muted-foreground">{deliverable.type}</div>
+                            {deliverable.functionalComment && (
+                              <div className="mt-1.5 text-xs text-foreground/70 line-clamp-2 max-w-xs whitespace-normal">
+                                <span className="font-medium text-muted-foreground">{t('func.deliverables.feedback')}: </span>
+                                {deliverable.functionalComment}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-4 py-3.5 text-sm text-foreground">{project?.name ?? deliverable.projectId}</TableCell>
+                          <TableCell className="px-4 py-3.5">
+                            <Badge variant="outline" className={`font-medium shadow-none ${badge.tone}`}>
+                              <StatusIcon className="mr-1.5 h-3 w-3" />
+                              {badge.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="px-4 py-3.5 max-w-[200px]">
+                            {deliverable.fileRef ? (
+                              <a href={deliverable.fileRef} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline flex items-center">
                                 <ExternalLink className="h-3 w-3 mr-1 flex-shrink-0" />
                                 <span className="truncate">{deliverable.fileRef}</span>
-                             </a>
-                           </div>
-                        )}
-
-                        {deliverable.functionalComment && (
-                          <div className="mt-4 rounded-lg border border-border bg-muted/40 p-3">
-                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1">{t('func.deliverables.feedback')}</span>
-                            <p className="text-sm text-foreground/80 line-clamp-3">{deliverable.functionalComment}</p>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                    
-                    {canReview && deliverable.validationStatus === 'PENDING' && (
-                      <CardFooter className="pt-3 border-t border-border/50 bg-muted/10">
-                        <Button
-                          variant="default"
-                          className="w-full shadow-sm"
-                          onClick={() => {
-                            setSelectedDeliverable(deliverable);
-                            setComment(deliverable.functionalComment || '');
-                          }}
-                        >
-                          {t('func.deliverables.review')}
-                        </Button>
-                      </CardFooter>
-                    )}
-                  </Card>
-                );
-              })}
-            </div>
+                              </a>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-4 py-3.5">
+                            <span className="text-xs text-muted-foreground flex items-center whitespace-nowrap">
+                              <CalendarDays className="h-3 w-3 mr-1" />
+                              {new Date(deliverable.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          </TableCell>
+                          <TableCell className="px-4 py-3.5">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {canReview && deliverable.validationStatus === 'PENDING' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedDeliverable(deliverable);
+                                    setComment(deliverable.functionalComment || '');
+                                  }}
+                                >
+                                  {t('func.deliverables.review')}
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                title={t('common.edit')}
+                                aria-label={t('common.edit')}
+                                onClick={() => openEdit(deliverable)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              {(canReview || deliverable.createdBy === currentUser?.id) && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground hover:text-destructive disabled:opacity-40"
+                                  title={deliverable.validationStatus === 'APPROVED' ? t('func.deliverables.deleteDialog.approvedBlocked') : t('common.delete')}
+                                  aria-label={t('common.delete')}
+                                  disabled={deliverable.validationStatus === 'APPROVED'}
+                                  onClick={() => setDeleteTarget(deliverable)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
 
       {/* Deposit Dialog */}
-      <Dialog open={isDepositOpen} onOpenChange={setIsDepositOpen}>
+      <Dialog open={isDepositOpen} onOpenChange={(open) => { setIsDepositOpen(open); if (!open) setUploadFile(null); }}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -434,16 +579,43 @@ export const Deliverables: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="deliverable-file-ref" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('func.deliverables.depositDialog.fileRef')}</Label>
-              <Input
-                id="deliverable-file-ref"
-                value={uploadForm.fileRef}
-                className="h-11"
-                onChange={(event) =>
-                  setUploadForm((prev) => ({ ...prev, fileRef: event.target.value }))
-                }
-                placeholder={t('func.deliverables.depositDialog.fileRefPlaceholder')}
+              <Label htmlFor="deliverable-file" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('func.deliverables.depositDialog.fileUpload')}</Label>
+              <input
+                ref={fileInputRef}
+                id="deliverable-file"
+                type="file"
+                className="sr-only"
+                onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)}
               />
+              {uploadFile ? (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
+                  <span className="flex min-w-0 items-center gap-2 text-sm text-foreground">
+                    <Paperclip className="h-4 w-4 flex-shrink-0 text-primary" />
+                    <span className="truncate">{uploadFile.name}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUploadFile(null);
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                    }}
+                    className="text-muted-foreground transition-colors hover:text-destructive"
+                    aria-label={t('common.delete')}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/20 px-4 py-6 text-center transition-colors hover:border-primary/50 hover:bg-muted/40"
+                >
+                  <FileUp className="h-6 w-6 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">{t('func.deliverables.depositDialog.fileUploadCta')}</span>
+                  <span className="text-xs text-muted-foreground">{t('func.deliverables.depositDialog.fileUploadHint')}</span>
+                </button>
+              )}
             </div>
           </form>
 
@@ -480,7 +652,7 @@ export const Deliverables: React.FC = () => {
                 {selectedDeliverable.fileRef && (
                    <div className="col-span-2">
                       <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 block">{t('func.deliverables.reviewDialog.link')}</Label>
-                      <a href="#" className="text-sm text-blue-500 hover:underline">{selectedDeliverable.fileRef}</a>
+                      <a href={selectedDeliverable.fileRef} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline">{selectedDeliverable.fileRef}</a>
                    </div>
                 )}
               </div>
@@ -532,6 +704,141 @@ export const Deliverables: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={editTarget !== null} onOpenChange={(open) => { if (!open) { setEditTarget(null); setEditFile(null); } }}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-primary" />
+              {t('func.deliverables.editDialog.title')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('func.deliverables.editDialog.desc')}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={submitEdit} id="edit-form" className="space-y-5 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-deliverable-project" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('func.deliverables.depositDialog.targetProject')}</Label>
+              <Select
+                value={editForm.projectId}
+                onValueChange={(value) => setEditForm((prev) => ({ ...prev, projectId: value }))}
+              >
+                <SelectTrigger id="edit-deliverable-project" className="h-11">
+                  <SelectValue placeholder={t('func.deliverables.depositDialog.projectPlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-deliverable-type" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('func.deliverables.depositDialog.docType')}</Label>
+                <Input
+                  id="edit-deliverable-type"
+                  value={editForm.type}
+                  className="h-11"
+                  onChange={(event) => setEditForm((prev) => ({ ...prev, type: event.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-deliverable-name" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('func.deliverables.depositDialog.docTitle')}</Label>
+                <Input
+                  id="edit-deliverable-name"
+                  value={editForm.name}
+                  className="h-11"
+                  onChange={(event) => setEditForm((prev) => ({ ...prev, name: event.target.value }))}
+                  placeholder={t('func.deliverables.depositDialog.docTitlePlaceholder')}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-deliverable-file" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('func.deliverables.editDialog.replaceFile')}</Label>
+              <input
+                ref={editFileInputRef}
+                id="edit-deliverable-file"
+                type="file"
+                className="sr-only"
+                onChange={(event) => setEditFile(event.target.files?.[0] ?? null)}
+              />
+              {editFile ? (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
+                  <span className="flex min-w-0 items-center gap-2 text-sm text-foreground">
+                    <Paperclip className="h-4 w-4 flex-shrink-0 text-primary" />
+                    <span className="truncate">{editFile.name}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditFile(null);
+                      if (editFileInputRef.current) editFileInputRef.current.value = '';
+                    }}
+                    className="text-muted-foreground transition-colors hover:text-destructive"
+                    aria-label={t('common.delete')}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => editFileInputRef.current?.click()}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/20 px-4 py-3 text-center transition-colors hover:border-primary/50 hover:bg-muted/40"
+                >
+                  <FileUp className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">{t('func.deliverables.editDialog.replaceFileCta')}</span>
+                </button>
+              )}
+              {editTarget?.fileRef && !editFile && (
+                <p className="text-xs text-muted-foreground">
+                  {t('func.deliverables.editDialog.currentFile')}: <span className="text-foreground">{editTarget.fileRef}</span>
+                </p>
+              )}
+            </div>
+          </form>
+
+          <DialogFooter className="pt-4 border-t border-border/50">
+             <Button type="button" variant="ghost" onClick={() => setEditTarget(null)}>{t('common.cancel')}</Button>
+             <Button type="submit" form="edit-form" disabled={isEditing || !editForm.projectId || !editForm.name.trim()}>
+               {isEditing ? t('func.deliverables.editDialog.saving') : t('common.save')}
+             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="inline-flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              {t('func.deliverables.deleteDialog.title')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('func.deliverables.deleteDialog.desc', { name: deleteTarget?.name ?? '' })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeleting}
+              onClick={(event) => { event.preventDefault(); void confirmDelete(); }}
+            >
+              {isDeleting ? t('func.deliverables.deleteDialog.deleting') : t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
