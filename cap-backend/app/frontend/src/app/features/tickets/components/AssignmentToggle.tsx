@@ -92,20 +92,25 @@ export const AssignmentToggle: React.FC<AssignmentToggleProps> = ({
       </div>
 
       {/* Manual dropdown */}
-      {mode === 'manual' && (
-        <Select value={value} onValueChange={onChange}>
-          <SelectTrigger>
-            <SelectValue placeholder={t('assignment.selectPlaceholder')} />
-          </SelectTrigger>
-          <SelectContent>
-            {candidates.map((u) => (
-              <SelectItem key={u.id} value={u.id}>
-                {u.name} ({t(`roles.${u.role}`)})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
+      {mode === 'manual' &&
+        (candidates.length === 0 ? (
+          <p className="rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">
+            {t('assignment.noConsultants')}
+          </p>
+        ) : (
+          <Select value={value} onValueChange={onChange}>
+            <SelectTrigger>
+              <SelectValue placeholder={t('assignment.selectPlaceholder')} />
+            </SelectTrigger>
+            <SelectContent>
+              {candidates.map((u) => (
+                <SelectItem key={u.id} value={u.id}>
+                  {u.name} ({t(`roles.${u.role}`)})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ))}
 
       {/* AI recommendations list */}
       {mode === 'ai' && (

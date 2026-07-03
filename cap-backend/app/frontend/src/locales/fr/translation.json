@@ -1611,6 +1611,7 @@
       "title": "Détail par ticket",
       "ticket": "Ticket",
       "complexity": "Complexité",
+      "nature": "Nature",
       "status": "Statut",
       "points": "Points",
       "bonus": "bonus +{{bonus}}",

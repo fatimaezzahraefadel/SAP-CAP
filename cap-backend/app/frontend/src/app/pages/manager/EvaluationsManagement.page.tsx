@@ -280,6 +280,7 @@ export const EvaluationsManagement: React.FC = () => {
                   <TableRow>
                     <TableHead className="px-4">{t('evaluations.breakdown.ticket')}</TableHead>
                     <TableHead className="px-4">{t('evaluations.breakdown.complexity')}</TableHead>
+                    <TableHead className="px-4">{t('evaluations.breakdown.nature')}</TableHead>
                     <TableHead className="px-4">{t('evaluations.breakdown.status')}</TableHead>
                     <TableHead className="px-4 text-right">{t('evaluations.breakdown.points')}</TableHead>
                   </TableRow>
@@ -287,19 +288,19 @@ export const EvaluationsManagement: React.FC = () => {
                 <TableBody>
                   {!selectedUserId ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                      <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                         {t('evaluations.breakdown.selectPrompt')}
                       </TableCell>
                     </TableRow>
                   ) : ticketsLoading ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                      <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                         {t('common.loading')}
                       </TableCell>
                     </TableRow>
                   ) : score.lines.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                      <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                         {t('evaluations.breakdown.empty')}
                       </TableCell>
                     </TableRow>
@@ -311,6 +312,7 @@ export const EvaluationsManagement: React.FC = () => {
                           {line.title}
                         </TableCell>
                         <TableCell className="px-4 py-3 text-sm">{line.complexity}</TableCell>
+                        <TableCell className="px-4 py-3 text-sm">{line.nature}</TableCell>
                         <TableCell className="px-4 py-3">
                           <Badge variant="outline" className={CATEGORY_BADGE[line.category]}>
                             {t(`evaluations.categories.${line.category}`)}

@@ -34,6 +34,22 @@ import {
   User,
 } from '../../types/entities';
 import { formatDate, formatDateTime } from '../../utils/date';
+import { delay } from '../../utils/async';
+
+// A ticket can be briefly unreadable right after it is created (read-after-write
+// lag on the backend), which made the details page flash "ticket not found" and
+// redirect before the record became available. Retry a few times before giving up.
+const TICKET_FETCH_RETRIES = 3;
+const TICKET_FETCH_RETRY_DELAY_MS = 400;
+
+const fetchTicketWithRetry = async (ticketId: string): Promise<Ticket | null> => {
+  for (let attempt = 0; attempt < TICKET_FETCH_RETRIES; attempt += 1) {
+    const found = await TicketsAPI.getById(ticketId);
+    if (found) return found;
+    if (attempt < TICKET_FETCH_RETRIES - 1) await delay(TICKET_FETCH_RETRY_DELAY_MS);
+  }
+  return null;
+};
 
 // Mirrors the backend ticket state machine (srv/ticket/tickets.validation.js)
 // so the status dropdown only offers transitions the server will accept.
@@ -236,14 +252,18 @@ export const TicketDetailsPage: React.FC = () => {
   useEffect(() => {
     if (!ticketId || !currentUser) return;
 
+    let cancelled = false;
+
     const load = async () => {
       setLoading(true);
       try {
         const [found, allProjects, allUsers] = await Promise.all([
-          TicketsAPI.getById(ticketId),
+          fetchTicketWithRetry(ticketId),
           ProjectsAPI.getAll(),
           UsersAPI.getAll(),
         ]);
+        // The user navigated away (or to another ticket) while we were retrying.
+        if (cancelled) return;
         if (!found) {
           toast.error(t('tickets.details.notFound'));
           navigate(ticketsPath, { replace: true });
@@ -259,11 +279,15 @@ export const TicketDetailsPage: React.FC = () => {
         setProject(allProjects.find((item) => item.id === found.projectId) ?? null);
         setUsers(allUsers);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentUser, navigate, ticketId, ticketsPath, t]);
 
   if (loading) {

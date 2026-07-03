@@ -2,6 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const cds = require('@sap/cds');
 const AuthDomainService = require('./auth/auth.domain.service');
 const { attachAuditLog } = require('./shared/services/audit');
 
@@ -27,7 +28,21 @@ module.exports = function (srv) {
 
   srv.before('*', (req) => {
     if (auth.isPublicEvent(req.event)) return;
+    // CAP performs internal, nested requests within the scope of an already
+    // authenticated inbound request — most notably the "reselect" READ it runs
+    // after a write to build the 201 response body. These nested requests do
+    // not carry the Authorization header (only the top-level HTTP request does,
+    // exposed as `req._.req`). Re-authenticating them fails with 401, which
+    // makes CAP silently fall back to `204 No Content` on CREATE/UPDATE, so the
+    // client never receives the persisted entity (and its server-generated ID).
+    // Inherit the root request's claims for nested requests instead.
+    const isInboundHttpRequest = Boolean(req._?.req);
+    if (!isInboundHttpRequest) {
+      req._authClaims = cds.context?._authClaims ?? req._authClaims ?? null;
+      return;
+    }
     req._authClaims = auth.authenticateRequest(req);
+    if (cds.context) cds.context._authClaims = req._authClaims;
   });
 
   // Enforce server-side pagination: cap $top at 500, default to 100 if omitted

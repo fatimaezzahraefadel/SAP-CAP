@@ -1,7 +1,7 @@
 'use strict';
 
 const ProjectRepo = require('./project.repo');
-const { assertEntityExists, ENTITIES, MANAGER_ROLES, ADMIN_ONLY, requireRole } = require('../shared/services/validation');
+const { assertEntityExists, ENTITIES, MANAGER_ROLES, requireRole } = require('../shared/services/validation');
 
 const PROJECT_TRANSITIONS = {
   PLANNED: new Set(['ACTIVE', 'CANCELLED']),
@@ -55,7 +55,7 @@ class ProjectDomainService {
   }
 
   async beforeDelete(req) {
-    requireRole(req, ADMIN_ONLY, 'Only ADMIN can delete projects');
+    requireRole(req, MANAGER_ROLES, 'Only managers can delete projects');
     const id = extractEntityId(req);
     if (!id) return;
 

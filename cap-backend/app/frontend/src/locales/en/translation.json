@@ -1826,6 +1826,7 @@
       "title": "Ticket breakdown",
       "ticket": "Ticket",
       "complexity": "Complexity",
+      "nature": "Nature",
       "status": "Status",
       "points": "Points",
       "bonus": "bonus +{{bonus}}",

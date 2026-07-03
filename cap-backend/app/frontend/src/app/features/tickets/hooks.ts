@@ -61,6 +61,20 @@ export const useManagerTicketsBootstrap = () => {
     }
   }, []);
 
+  // Refetches tickets from the server without flipping the page-level loading
+  // state, so we can silently reconcile after a mutation (e.g. a create whose
+  // response came back incomplete) without flashing a skeleton over the list.
+  const refreshTickets = useCallback(async () => {
+    try {
+      const fresh = await ManagerTicketsAPI.listTickets();
+      setTickets(fresh);
+    } catch (err) {
+      if (!isAbortError(err)) {
+        console.error('[useManagerTicketsBootstrap] Failed to refresh tickets', err);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     void reload();
 
@@ -80,6 +94,7 @@ export const useManagerTicketsBootstrap = () => {
     loading,
     error,
     reload,
+    refreshTickets,
   };
 };
 
@@ -159,7 +174,7 @@ export interface ManagerTicketsViewModel {
 export const useManagerTicketsViewModel = (): ManagerTicketsViewModel => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const { projects, setProjects, users, tickets, setTickets, loading, error } = useManagerTicketsBootstrap();
+  const { projects, setProjects, users, tickets, setTickets, loading, error, refreshTickets } = useManagerTicketsBootstrap();
   const { updateTicket, deleteTicket } = useManagerTicketsMutations();
 
   const isViewOnly = currentUser?.role === 'CONSULTANT_TECHNIQUE';
@@ -334,7 +349,13 @@ export const useManagerTicketsViewModel = (): ManagerTicketsViewModel => {
           : 'Ticket created',
       });
 
-      setTickets((previous) => [created, ...previous]);
+      // The create response can come back incomplete (e.g. a `return=minimal`
+      // reply), leaving the row without id/status/ticketCode — which then breaks
+      // opening or deleting it. Only show it optimistically when it's complete,
+      // and always reconcile against the authoritative server copy.
+      if (created.id && created.status) {
+        setTickets((previous) => [created, ...previous]);
+      }
       if (updatedProject) {
         setProjects((previous) =>
           previous.map((item) => (item.id === updatedProject.id ? updatedProject : item))
@@ -344,6 +365,7 @@ export const useManagerTicketsViewModel = (): ManagerTicketsViewModel => {
       setForm(EMPTY_FORM);
       setShowCreate(false);
       toast.success('Ticket created successfully');
+      void refreshTickets();
     } catch {
       toast.error('Failed to create ticket');
     } finally {
@@ -392,6 +414,13 @@ export const useManagerTicketsViewModel = (): ManagerTicketsViewModel => {
   };
 
   const deleteTicketById = async (ticketId: string) => {
+    // A missing id means the row was built from an incomplete create response;
+    // there is nothing to delete on the server. Drop it locally and re-sync.
+    if (!ticketId) {
+      setTickets((previous) => previous.filter((item) => item.id));
+      void refreshTickets();
+      return;
+    }
     try {
       await deleteTicket(ticketId);
       setTickets((previous) => previous.filter((item) => item.id !== ticketId));

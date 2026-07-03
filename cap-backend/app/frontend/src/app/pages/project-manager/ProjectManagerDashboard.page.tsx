@@ -100,14 +100,16 @@ const ProjectManagerDashboard: React.FC = () => {
           </Button>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-lg border p-3">
+          <div className="relative overflow-hidden rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 to-transparent p-4 transition-transform duration-300 hover:-translate-y-0.5">
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-amber-500 to-orange-400" />
             <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('pm.dashboard.validationPipeline.submittedPeriods')}</p>
-            <p className="mt-1 text-2xl font-semibold text-foreground">{pendingValidation}</p>
+            <p className="mt-1 bg-gradient-to-br from-amber-600 to-orange-500 bg-clip-text text-2xl font-bold text-transparent">{pendingValidation}</p>
             <p className="text-xs text-muted-foreground">{t('pm.dashboard.validationPipeline.waitingForValidation')}</p>
           </div>
-          <div className="rounded-lg border p-3">
+          <div className="relative overflow-hidden rounded-xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/10 to-transparent p-4 transition-transform duration-300 hover:-translate-y-0.5">
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-emerald-500 to-teal-400" />
             <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('pm.dashboard.validationPipeline.readyForStratime')}</p>
-            <p className="mt-1 text-2xl font-semibold text-foreground">{readyToSend}</p>
+            <p className="mt-1 bg-gradient-to-br from-emerald-600 to-teal-500 bg-clip-text text-2xl font-bold text-transparent">{readyToSend}</p>
             <p className="text-xs text-muted-foreground">{t('pm.dashboard.validationPipeline.readyDescription')}</p>
           </div>
         </CardContent>

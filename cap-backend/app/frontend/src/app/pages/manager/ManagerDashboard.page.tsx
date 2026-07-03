@@ -12,6 +12,18 @@ import { UsersAPI } from '../../services/odata/usersApi';
 import { Allocation, Ticket, TicketStatus, User } from '../../types/entities';
 import { computeProductivityMetrics, computeTace } from '../../features/dashboard/model';
 
+/** A distinct accent colour for each ticket status used in the delivery snapshot. */
+const STATUS_DOT: Record<TicketStatus, string> = {
+  PENDING_APPROVAL: 'bg-amber-500',
+  APPROVED: 'bg-sky-500',
+  NEW: 'bg-blue-500',
+  IN_PROGRESS: 'bg-indigo-500',
+  IN_TEST: 'bg-purple-500',
+  BLOCKED: 'bg-rose-500',
+  DONE: 'bg-emerald-500',
+  REJECTED: 'bg-slate-400',
+};
+
 export const ManagerDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -73,6 +85,7 @@ export const ManagerDashboard: React.FC = () => {
       .filter(([, count]) => count > 0)
       .sort((a, b) => b[1] - a[1])
       .map(([status, count]) => ({
+        status,
         label: t(`entities.ticketStatus.${status}`),
         count,
       }));
@@ -222,9 +235,15 @@ export const ManagerDashboard: React.FC = () => {
                 <p className="text-sm text-muted-foreground">{t('dashboard.manager.deliverySnapshot.noData')}</p>
               ) : (
                 ticketBreakdown.map((entry) => (
-                  <div key={entry.label} className="flex items-center justify-between rounded-md border border-border/70 p-3">
-                    <span className="text-sm text-foreground">{entry.label}</span>
-                    <span className="text-sm font-semibold text-foreground">{entry.count}</span>
+                  <div
+                    key={entry.label}
+                    className="flex items-center justify-between rounded-lg border border-border/70 bg-surface-1 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"
+                  >
+                    <span className="flex items-center gap-2.5 text-sm text-foreground">
+                      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${STATUS_DOT[entry.status]}`} />
+                      {entry.label}
+                    </span>
+                    <span className="text-sm font-bold text-foreground">{entry.count}</span>
                   </div>
                 ))
               )}
