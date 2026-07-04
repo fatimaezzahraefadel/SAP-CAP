@@ -4,14 +4,17 @@ const { ENTITIES, assertRequiredValue, assertEntityExists, assertInEnum, assertP
 const { getUserId, getRole } = require('../shared/services/authz');
 const { TICKET_STATUS, TICKET_PRIORITY, TICKET_NATURE, TICKET_COMPLEXITY } = require('../shared/constants/enums');
 
+// IMPORTANT: keep this in sync with the same map in tickets.domain.js.
+// Working statuses (NEW, IN_PROGRESS, IN_TEST, BLOCKED, DONE) are freely
+// interchangeable in both directions; the approval gate stays one-way.
 const TICKET_STATUS_TRANSITIONS = {
-  PENDING_APPROVAL: new Set(['NEW', 'REJECTED']),
+  PENDING_APPROVAL: new Set(['APPROVED', 'REJECTED']),
   APPROVED: new Set(['NEW', 'IN_PROGRESS', 'REJECTED']),
-  NEW: new Set(['IN_PROGRESS', 'BLOCKED', 'REJECTED']),
-  IN_PROGRESS: new Set(['IN_TEST', 'BLOCKED', 'DONE', 'REJECTED']),
-  IN_TEST: new Set(['DONE', 'IN_PROGRESS', 'REJECTED']),
-  BLOCKED: new Set(['IN_PROGRESS', 'REJECTED']),
-  DONE: new Set([]),
+  NEW: new Set(['IN_PROGRESS', 'IN_TEST', 'BLOCKED', 'DONE', 'REJECTED']),
+  IN_PROGRESS: new Set(['NEW', 'IN_TEST', 'BLOCKED', 'DONE', 'REJECTED']),
+  IN_TEST: new Set(['NEW', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'REJECTED']),
+  BLOCKED: new Set(['NEW', 'IN_PROGRESS', 'IN_TEST', 'DONE', 'REJECTED']),
+  DONE: new Set(['NEW', 'IN_PROGRESS', 'IN_TEST', 'BLOCKED', 'REJECTED']),
   REJECTED: new Set(['NEW', 'PENDING_APPROVAL']),
 };
 

@@ -385,6 +385,7 @@ export interface Deliverable {
   fileRef?: string;
   validationStatus: ValidationStatus;
   functionalComment?: string;
+  createdBy?: string;
   createdAt: string;
 }
 

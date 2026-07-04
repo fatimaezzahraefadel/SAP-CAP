@@ -1,7 +1,9 @@
 'use strict';
 
+const cds = require('@sap/cds');
 const DeliverableRepo = require('./deliverable.repo');
-const { assertEntityExists, ENTITIES, MANAGER_ROLES, requireRole } = require('../shared/services/validation');
+const { assertEntityExists, ENTITIES, MANAGER_ROLES, requireRole, requireOwnerOrRole } = require('../shared/services/validation');
+const { getRequestContext } = require('../_shared/auth/request-context');
 
 const DELIVERABLE_TRANSITIONS = {
   PENDING: new Set(['APPROVED', 'CHANGES_REQUESTED']),
@@ -24,6 +26,50 @@ class DeliverableDomainService {
 
     if (!String(data.name ?? '').trim()) req.error(400, 'name is required');
     if (data.validationStatus === undefined) data.validationStatus = 'PENDING';
+
+    // Stamp the authenticated application user as the author so ownership
+    // checks (e.g. self-delete) work under the mocked-JWT auth, where CAP's
+    // managed `createdBy` does not carry the application user id.
+    const ctx = getRequestContext(req);
+    if (ctx.userId) data.createdBy = ctx.userId;
+  }
+
+  /**
+   * Notify the project manager that a new deliverable was submitted for review.
+   * Generated server-side (trusted) because a consultant cannot POST a
+   * Notification targeting another user — that path is blocked as recipient
+   * spoofing in notification.domain.service.js. A notification failure must
+   * never roll back a successfully created deliverable.
+   */
+  async afterCreate(data, req) {
+    try {
+      const project = await cds.db.run(
+        SELECT.one.from(ENTITIES.Projects).columns('managerId').where({ ID: data.projectId })
+      );
+      if (!project?.managerId) return;
+
+      const ctx = getRequestContext(req);
+      // Don't notify the manager about their own submission.
+      if (String(project.managerId) === ctx.userId) return;
+
+      const submitter = ctx.userId
+        ? await cds.db.run(
+            SELECT.one.from(ENTITIES.Users).columns('name').where({ ID: ctx.userId })
+          )
+        : null;
+      const author = submitter?.name || ctx.email || 'Un consultant';
+
+      await cds.db.run(INSERT.into(ENTITIES.Notifications).entries({
+        userId: project.managerId,
+        type: 'DELIVERABLE_SUBMITTED',
+        title: 'Nouvelle spécification fonctionnelle',
+        message: `${author} a soumis « ${data.name} » pour validation.`,
+        targetPath: `{roleBasePath}/projects/${data.projectId}`,
+        read: false,
+      }));
+    } catch (err) {
+      req.warn?.(`Failed to create DELIVERABLE_SUBMITTED notification: ${err.message}`);
+    }
   }
 
   async beforeUpdate(req) {
@@ -49,16 +95,20 @@ class DeliverableDomainService {
   }
 
   async beforeDelete(req) {
-    // Only managers can delete; an APPROVED deliverable is contractually
-    // delivered work and is protected from deletion regardless of role.
-    requireRole(req, MANAGER_ROLES, 'Only managers can delete deliverables');
     const id = extractEntityId(req);
     if (!id) req.reject(400, 'Deliverable id is required');
 
     const current = await this.repo.findById(id);
+
+    // An APPROVED deliverable is contractually delivered work and is protected
+    // from deletion regardless of role.
     if (current && current.validationStatus === 'APPROVED') {
       req.reject(409, 'Cannot delete an APPROVED deliverable');
     }
+
+    // Managers can delete any deliverable; everyone else may delete only the
+    // (non-approved) deliverables they authored.
+    requireOwnerOrRole(req, current?.createdBy, MANAGER_ROLES, 'You can only delete your own deliverables');
   }
 }
 

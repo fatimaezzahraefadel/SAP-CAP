@@ -26,14 +26,18 @@ const logger = getLogger('TicketDomain');
 
 const CONSULTANT_ROLES = new Set([Roles.CONSULTANT_TECHNIQUE, Roles.CONSULTANT_FONCTIONNEL]);
 
+// Working statuses (NEW, IN_PROGRESS, IN_TEST, BLOCKED, DONE) are freely
+// interchangeable in BOTH directions so a ticket can move backward as well as
+// forward on the board. The approval gate (PENDING_APPROVAL/APPROVED) stays
+// one-way to preserve the validation workflow.
 const TICKET_STATUS_TRANSITIONS = {
   PENDING_APPROVAL: new Set(['APPROVED', 'REJECTED']),
   APPROVED: new Set(['NEW', 'IN_PROGRESS', 'REJECTED']),
-  NEW: new Set(['IN_PROGRESS', 'BLOCKED', 'REJECTED']),
-  IN_PROGRESS: new Set(['IN_TEST', 'BLOCKED', 'DONE', 'REJECTED']),
-  IN_TEST: new Set(['DONE', 'IN_PROGRESS', 'REJECTED']),
-  BLOCKED: new Set(['IN_PROGRESS', 'REJECTED']),
-  DONE: new Set([]),
+  NEW: new Set(['IN_PROGRESS', 'IN_TEST', 'BLOCKED', 'DONE', 'REJECTED']),
+  IN_PROGRESS: new Set(['NEW', 'IN_TEST', 'BLOCKED', 'DONE', 'REJECTED']),
+  IN_TEST: new Set(['NEW', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'REJECTED']),
+  BLOCKED: new Set(['NEW', 'IN_PROGRESS', 'IN_TEST', 'DONE', 'REJECTED']),
+  DONE: new Set(['NEW', 'IN_PROGRESS', 'IN_TEST', 'BLOCKED', 'REJECTED']),
   REJECTED: new Set(['NEW', 'PENDING_APPROVAL']),
 };
 
@@ -74,6 +78,23 @@ class TicketDomainService {
     }
 
     select.where = visibilityFilter;
+  }
+
+  /**
+   * Resolves whether the ticket's (incoming) assignee is a technical consultant.
+   * Prefers an explicit assignedToRole, else looks up the assignee's role, else
+   * falls back to the current ticket's assignedToRole.
+   */
+  async _isTechAssignee(data, current) {
+    if (data.assignedToRole) return data.assignedToRole === Roles.CONSULTANT_TECHNIQUE;
+    const assignedTo = data.assignedTo !== undefined ? data.assignedTo : current?.assignedTo;
+    if (assignedTo) {
+      const user = await cds.db.run(
+        SELECT.one.from(ENTITIES.Users).columns('role').where({ ID: assignedTo })
+      );
+      if (user?.role) return user.role === Roles.CONSULTANT_TECHNIQUE;
+    }
+    return current?.assignedToRole === Roles.CONSULTANT_TECHNIQUE;
   }
 
   /**
@@ -127,6 +148,14 @@ class TicketDomainService {
     } else {
       data.status = data.status || 'NEW';
     }
+
+    // A ticket created within a technical consultant's scope starts at NEW —
+    // their board has no approval columns.
+    if ((data.status === 'PENDING_APPROVAL' || data.status === 'APPROVED') &&
+        await this._isTechAssignee(data, null)) {
+      data.status = 'NEW';
+    }
+
     data.effortHours     = data.effortHours  ?? 0;
     data.estimationHours = data.estimationHours ?? 0;
     data.allocatedHours  = data.allocatedHours ?? 0;
@@ -167,6 +196,18 @@ class TicketDomainService {
         req.reject(403, 'createdBy cannot be reassigned to another user');
       }
       data.createdBy = userId;
+    }
+
+    // First assignment into a technical consultant's scope: an approved ticket
+    // lands at NEW (their board has no approval columns), unless the caller is
+    // already changing the status explicitly.
+    if (data.status === undefined && id &&
+        (data.assignedTo !== undefined || data.assignedToRole !== undefined)) {
+      const currentForAssign = await this.repo.findById(id);
+      if (currentForAssign && currentForAssign.status === 'APPROVED' &&
+          await this._isTechAssignee(data, currentForAssign)) {
+        data.status = 'NEW';
+      }
     }
 
     if (data.status !== undefined && id) {

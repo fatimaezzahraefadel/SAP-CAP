@@ -21,6 +21,7 @@
     "pageNotFound": "Page non trouvée",
     "pageNotFoundDesc": "La page que vous avez demandée n'existe pas.",
     "cancel": "Annuler",
+    "ok": "OK",
     "save": "Enregistrer",
     "delete": "Supprimer",
     "actions": "Actions",
@@ -294,6 +295,7 @@
       "title": "Projets",
       "subtitle": "Périmètre fonctionnel, statut des livrables et points d'entrée de collaboration",
       "loading": "Chargement des projets...",
+      "empty": "Aucun projet à afficher.",
       "manager": "Manager",
       "techContact": "Contact Tech",
       "notAssigned": "Non assigné",
@@ -301,10 +303,15 @@
       "changesReq": "Modif. Req.",
       "blockedTickets": "Tickets Bloqués",
       "openTeams": "Ouvrir Chat Teams",
+      "columns": {
+        "project": "Projet"
+      },
       "feedback": {
         "title": "Retour sur le Projet",
         "placeholder": "Partagez vos retours métier, bloqueurs ou ajustements demandés...",
         "submit": "Soumettre le Retour",
+        "history": "Historique",
+        "errorTitle": "Retour invalide",
         "errorShort": "Le retour sur le projet doit contenir au moins 10 caractères",
         "success": "Retour sur le projet soumis",
         "saveFailed": "Échec de l'enregistrement du retour."
@@ -375,6 +382,11 @@
       "project": "Projet",
       "reference": "Référence",
       "feedback": "Retour",
+      "tableHeaders": {
+        "deliverable": "Livrable",
+        "status": "Statut",
+        "date": "Date"
+      },
       "review": "Examiner le Livrable",
       "depositDialog": {
         "title": "Déposer un Livrable",
@@ -386,6 +398,9 @@
         "docTitlePlaceholder": "ex : Scope Def v1.2",
         "fileRef": "Lien / Référence du fichier (Optionnel)",
         "fileRefPlaceholder": "https://sharepoint.com/...",
+        "fileUpload": "Fichier (Optionnel)",
+        "fileUploadCta": "Cliquer pour téléverser un fichier",
+        "fileUploadHint": "PDF, Word, Excel, images...",
         "submitting": "Soumission...",
         "submit": "Soumettre le Livrable"
       },
@@ -401,11 +416,27 @@
         "approve": "Approuver",
         "saving": "Enregistrement..."
       },
+      "editDialog": {
+        "title": "Modifier le Livrable",
+        "desc": "Mettre à jour les informations du livrable et, si besoin, remplacer le fichier joint.",
+        "replaceFile": "Remplacer le fichier (Optionnel)",
+        "replaceFileCta": "Choisir un nouveau fichier",
+        "currentFile": "Fichier actuel",
+        "saving": "Enregistrement..."
+      },
+      "deleteDialog": {
+        "title": "Supprimer le Livrable",
+        "desc": "Êtes-vous sûr de vouloir supprimer « {{name}} » ? Cette action est irréversible.",
+        "deleting": "Suppression...",
+        "approvedBlocked": "Impossible de supprimer un livrable approuvé"
+      },
       "toasts": {
         "loadFailed": "Échec du chargement des livrables.",
         "notAllowed": "Vous n'êtes pas autorisé à examiner les livrables",
         "updated": "Statut du livrable mis à jour",
         "updateFailed": "Échec de la mise à jour du livrable",
+        "deleted": "Livrable supprimé",
+        "deleteFailed": "Échec de la suppression du livrable",
         "requiredFields": "Le projet, le nom et le type sont requis",
         "submitted": "Spécification soumise avec succès",
         "submitFailed": "Échec de la soumission de la spécification"

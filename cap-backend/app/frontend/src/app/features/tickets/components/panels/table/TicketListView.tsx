@@ -215,8 +215,6 @@ export const TicketListView: React.FC<TicketListViewProps> = ({
               <TableHead className="px-4">{t('tickets.list.table.actual')}</TableHead>
               <TableHead className="px-4">{t('tickets.list.table.due')}</TableHead>
               <TableHead className="px-4">{t('tickets.list.table.assigned')}</TableHead>
-              <TableHead className="px-4">{t('tickets.list.table.indicators')}</TableHead>
-              <TableHead className="px-4">{t('tickets.list.table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -254,38 +252,6 @@ export const TicketListView: React.FC<TicketListViewProps> = ({
                     <div>{resolveUserName(ticket.assignedTo)}</div>
                     {ticket.assignedToRole && <span className="block text-xs text-muted-foreground">{t(`roles.${ticket.assignedToRole}`)}</span>}
                     {assignedBy && <span className="mt-0.5 block border-t border-border/50 pt-0.5 text-[10px] text-muted-foreground">{t('tickets.details.assignedBy')}: {assignedBy}</span>}
-                  </TableCell>
-                  <TableCell className="px-4 py-3">
-                    <div className="flex items-center gap-1.5">
-                      {(ticket.commentCount ?? 0) > 0 && (
-                        <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground" title={`${ticket.commentCount} comment(s)`}>
-                          <MessageSquare className="h-3.5 w-3.5" />
-                          {ticket.commentCount}
-                        </span>
-                      )}
-                      {ticket.hasUnresolvedBlockers && (
-                        <span className="inline-flex items-center text-destructive" title="Has unresolved blockers">
-                          <AlertOctagon className="h-3.5 w-3.5" />
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-4 py-3" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
-                    <div className="flex items-center justify-end gap-2">
-                      <TicketActions mode="quick-complete" ticket={ticket} isViewOnly={isViewOnly} onChangeStatus={onChangeStatus} />
-                      {canDeleteTicket && !isViewOnly && (
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onDeleteTicket(ticket.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
                   </TableCell>
                 </TableRow>
               );

@@ -1,9 +1,9 @@
 import type { Deliverable } from './core';
 import type { ODataQueryOptions, ODataRequestOptions } from './core';
-import { listEntities, createEntity, updateEntity, quoteLiteral } from './core';
+import { listEntities, createEntity, updateEntity, deleteEntity, quoteLiteral } from './core';
 
 const SAFE_DELIVERABLE_SELECT =
-  'ID,projectId,type,name,url,fileRef,validationStatus,functionalComment,createdAt';
+  'ID,projectId,type,name,url,fileRef,validationStatus,functionalComment,createdBy,createdAt';
 
 const normalizeDeliverable = (entry: Partial<Deliverable>): Deliverable => ({
   id: String(entry.id ?? ''),
@@ -20,6 +20,7 @@ const normalizeDeliverable = (entry: Partial<Deliverable>): Deliverable => ({
       ? entry.validationStatus
       : 'PENDING',
   functionalComment: typeof entry.functionalComment === 'string' ? entry.functionalComment : undefined,
+  createdBy: typeof entry.createdBy === 'string' ? entry.createdBy : undefined,
   createdAt: String(entry.createdAt ?? ''),
 });
 
@@ -69,5 +70,9 @@ export const DeliverablesAPI = {
     requestOptions?: ODataRequestOptions
   ): Promise<Deliverable> {
     return await updateEntity<Deliverable>('core', 'Deliverables', id, deliverable, requestOptions);
+  },
+
+  async remove(id: string, requestOptions?: ODataRequestOptions): Promise<void> {
+    await deleteEntity('core', 'Deliverables', id, requestOptions);
   },
 };
