@@ -23,13 +23,49 @@ import {
   Priority,
   Project,
   SAP_MODULE_LABELS,
+  SAPModule,
   Ticket,
+  TicketComplexity,
   TicketEvent,
+  TicketNature,
+  TicketStatus,
   TICKET_COMPLEXITY_LABELS,
   TICKET_NATURE_LABELS,
   User,
 } from '../../types/entities';
 import { formatDate, formatDateTime } from '../../utils/date';
+import { delay } from '../../utils/async';
+
+// A ticket can be briefly unreadable right after it is created (read-after-write
+// lag on the backend), which made the details page flash "ticket not found" and
+// redirect before the record became available. Retry a few times before giving up.
+const TICKET_FETCH_RETRIES = 3;
+const TICKET_FETCH_RETRY_DELAY_MS = 400;
+
+const fetchTicketWithRetry = async (ticketId: string): Promise<Ticket | null> => {
+  for (let attempt = 0; attempt < TICKET_FETCH_RETRIES; attempt += 1) {
+    const found = await TicketsAPI.getById(ticketId);
+    if (found) return found;
+    if (attempt < TICKET_FETCH_RETRIES - 1) await delay(TICKET_FETCH_RETRY_DELAY_MS);
+  }
+  return null;
+};
+
+// Mirrors the backend ticket state machine (srv/ticket/tickets.validation.js)
+// so the status dropdown only offers transitions the server will accept.
+const STATUS_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
+  PENDING_APPROVAL: ['NEW', 'REJECTED'],
+  APPROVED: ['NEW', 'IN_PROGRESS', 'REJECTED'],
+  NEW: ['IN_PROGRESS', 'BLOCKED', 'REJECTED'],
+  IN_PROGRESS: ['IN_TEST', 'BLOCKED', 'DONE', 'REJECTED'],
+  IN_TEST: ['DONE', 'IN_PROGRESS', 'REJECTED'],
+  BLOCKED: ['IN_PROGRESS', 'REJECTED'],
+  DONE: [],
+  REJECTED: ['NEW', 'PENDING_APPROVAL'],
+};
+
+const SELECT_CLASS =
+  'mt-1 block w-full rounded-md border border-input bg-input-background px-3 py-2 text-base transition focus-visible:border-ring focus-visible:ring-ring/50';
 
 const canAccessTicket = (ticket: Ticket, userId: string, role: User['role']): boolean => {
   if (role === 'CONSULTANT_TECHNIQUE') {
@@ -59,6 +95,15 @@ export const TicketDetailsPage: React.FC = () => {
     description: '',
     dueDate: '',
     priority: 'MEDIUM' as Priority,
+    nature: 'PROGRAMME' as TicketNature,
+    module: '' as SAPModule | '',
+    complexity: 'SIMPLE' as TicketComplexity,
+    status: 'NEW' as TicketStatus,
+    assignedTo: '',
+    estimationHours: '0',
+    effortHours: '0',
+    effortComment: '',
+    wricefId: '',
   });
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [project, setProject] = useState<Project | null>(null);
@@ -128,32 +173,71 @@ export const TicketDetailsPage: React.FC = () => {
     });
   }, []);
 
+  const buildEditValues = useCallback(
+    (source: Ticket) => ({
+      title: source.title,
+      description: source.description,
+      dueDate: source.dueDate ? source.dueDate.split('T')[0] : '',
+      priority: source.priority,
+      nature: source.nature,
+      module: (source.module ?? '') as SAPModule | '',
+      complexity: source.complexity,
+      status: source.status,
+      assignedTo: source.assignedTo ?? '',
+      estimationHours: String(source.estimationHours ?? 0),
+      effortHours: String(source.effortHours ?? 0),
+      effortComment: source.effortComment ?? '',
+      wricefId: source.wricefId ?? '',
+    }),
+    []
+  );
+
   useEffect(() => {
     if (!ticket) return;
-    setEditValues({
-      title: ticket.title,
-      description: ticket.description,
-      dueDate: ticket.dueDate ? ticket.dueDate.split('T')[0] : '',
-      priority: ticket.priority,
-    });
-  }, [ticket]);
+    setEditValues(buildEditValues(ticket));
+  }, [ticket, buildEditValues]);
 
   const handleSaveTicket = async () => {
     if (!ticket) return;
 
+    if (!editValues.title.trim()) {
+      toast.error(t('tickets.details.titleRequired') || 'Title is required');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const updated = await TicketsAPI.update(ticket.id, {
+      const assignedUser = editValues.assignedTo
+        ? users.find((user) => user.id === editValues.assignedTo)
+        : undefined;
+
+      const payload: Partial<Ticket> = {
         title: editValues.title.trim(),
         description: editValues.description.trim(),
         dueDate: editValues.dueDate || undefined,
         priority: editValues.priority,
-      });
+        nature: editValues.nature,
+        module: editValues.module || null,
+        complexity: editValues.complexity,
+        estimationHours: Number(editValues.estimationHours) || 0,
+        effortHours: Number(editValues.effortHours) || 0,
+        effortComment: editValues.effortComment.trim() || undefined,
+        wricefId: editValues.wricefId.trim() || null,
+        assignedTo: editValues.assignedTo || undefined,
+        assignedToRole: editValues.assignedTo ? assignedUser?.role : undefined,
+      };
+
+      // Status follows the backend state machine — only send it when it changed.
+      if (editValues.status !== ticket.status) {
+        payload.status = editValues.status;
+      }
+
+      const updated = await TicketsAPI.update(ticket.id, payload);
       setTicket(updated);
-      toast.success('Ticket updated successfully');
+      toast.success(t('tickets.details.updateSuccess') || 'Ticket updated successfully');
       setIsEditMode(false);
     } catch {
-      toast.error('Failed to update ticket');
+      toast.error(t('tickets.details.updateFailed') || 'Failed to update ticket');
     } finally {
       setIsSaving(false);
     }
@@ -161,27 +245,25 @@ export const TicketDetailsPage: React.FC = () => {
 
   const handleCancelEdit = () => {
     if (!ticket) return;
-    setEditValues({
-      title: ticket.title,
-      description: ticket.description,
-      dueDate: ticket.dueDate ? ticket.dueDate.split('T')[0] : '',
-      priority: ticket.priority,
-    });
+    setEditValues(buildEditValues(ticket));
     setIsEditMode(false);
   };
 
   useEffect(() => {
     if (!ticketId || !currentUser) return;
 
+    let cancelled = false;
+
     const load = async () => {
       setLoading(true);
       try {
-        const [allTickets, allProjects, allUsers] = await Promise.all([
-          TicketsAPI.getAll(),
+        const [found, allProjects, allUsers] = await Promise.all([
+          fetchTicketWithRetry(ticketId),
           ProjectsAPI.getAll(),
           UsersAPI.getAll(),
         ]);
-        const found = allTickets.find((item) => item.id === ticketId);
+        // The user navigated away (or to another ticket) while we were retrying.
+        if (cancelled) return;
         if (!found) {
           toast.error(t('tickets.details.notFound'));
           navigate(ticketsPath, { replace: true });
@@ -197,11 +279,15 @@ export const TicketDetailsPage: React.FC = () => {
         setProject(allProjects.find((item) => item.id === found.projectId) ?? null);
         setUsers(allUsers);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentUser, navigate, ticketId, ticketsPath, t]);
 
   if (loading) {
@@ -237,6 +323,8 @@ export const TicketDetailsPage: React.FC = () => {
   }
 
   const canEditDocumentation = ticket.status !== 'DONE' && ticket.status !== 'REJECTED';
+  const statusOptions: TicketStatus[] = [ticket.status, ...STATUS_TRANSITIONS[ticket.status]];
+  const assignableUsers = users.filter((user) => user.active);
 
   return (
     <div className="min-h-screen bg-background">
@@ -304,7 +392,36 @@ export const TicketDetailsPage: React.FC = () => {
                   className="mt-1"
                 />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground">
+                    {t('tickets.details.status') || 'Status'}
+                  </label>
+                  <select
+                    value={editValues.status}
+                    onChange={(event) => setEditValues((prev) => ({ ...prev, status: event.target.value as TicketStatus }))}
+                    className={SELECT_CLASS}
+                  >
+                    {statusOptions.map((option) => (
+                      <option key={option} value={option}>{t(`tickets.status.${option}`)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground">
+                    {t('tickets.details.priority')}
+                  </label>
+                  <select
+                    value={editValues.priority}
+                    onChange={(event) => setEditValues((prev) => ({ ...prev, priority: event.target.value as Priority }))}
+                    className={SELECT_CLASS}
+                  >
+                    <option value="LOW">{t('tickets.priority.LOW')}</option>
+                    <option value="MEDIUM">{t('tickets.priority.MEDIUM')}</option>
+                    <option value="HIGH">{t('tickets.priority.HIGH')}</option>
+                    <option value="CRITICAL">{t('tickets.priority.CRITICAL')}</option>
+                  </select>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-muted-foreground">
                     {t('tickets.details.dueDate')}
@@ -318,47 +435,145 @@ export const TicketDetailsPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-muted-foreground">
-                    {t('tickets.details.priority')}
+                    {t('common.nature') || t('tickets.details.nature') || 'Nature'}
                   </label>
                   <select
-                    value={editValues.priority}
-                    onChange={(event) => setEditValues((prev) => ({ ...prev, priority: event.target.value as Priority }))}
-                    className="mt-1 block w-full rounded-md border border-input bg-input-background px-3 py-2 text-base transition focus-visible:border-ring focus-visible:ring-ring/50"
+                    value={editValues.nature}
+                    onChange={(event) => setEditValues((prev) => ({ ...prev, nature: event.target.value as TicketNature }))}
+                    className={SELECT_CLASS}
                   >
-                    <option value="LOW">{t('tickets.priority.LOW')}</option>
-                    <option value="MEDIUM">{t('tickets.priority.MEDIUM')}</option>
-                    <option value="HIGH">{t('tickets.priority.HIGH')}</option>
-                    <option value="CRITICAL">{t('tickets.priority.CRITICAL')}</option>
+                    {(Object.keys(TICKET_NATURE_LABELS) as TicketNature[]).map((option) => (
+                      <option key={option} value={option}>{TICKET_NATURE_LABELS[option]}</option>
+                    ))}
                   </select>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground">
+                    {t('common.module') || 'Module'}
+                  </label>
+                  <select
+                    value={editValues.module}
+                    onChange={(event) => setEditValues((prev) => ({ ...prev, module: event.target.value as SAPModule | '' }))}
+                    className={SELECT_CLASS}
+                  >
+                    <option value="">-</option>
+                    {(Object.keys(SAP_MODULE_LABELS) as SAPModule[]).map((option) => (
+                      <option key={option} value={option}>{SAP_MODULE_LABELS[option]}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground">
+                    {t('common.complexity') || 'Complexity'}
+                  </label>
+                  <select
+                    value={editValues.complexity}
+                    onChange={(event) => setEditValues((prev) => ({ ...prev, complexity: event.target.value as TicketComplexity }))}
+                    className={SELECT_CLASS}
+                  >
+                    {(Object.keys(TICKET_COMPLEXITY_LABELS) as TicketComplexity[]).map((option) => (
+                      <option key={option} value={option}>{TICKET_COMPLEXITY_LABELS[option]}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground">
+                    {t('tickets.details.assignedTo')}
+                  </label>
+                  <select
+                    value={editValues.assignedTo}
+                    onChange={(event) => setEditValues((prev) => ({ ...prev, assignedTo: event.target.value }))}
+                    className={SELECT_CLASS}
+                  >
+                    <option value="">-</option>
+                    {assignableUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name} ({t(`roles.${user.role}`)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground">
+                    {t('tickets.details.estimation')}
+                  </label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    value={editValues.estimationHours}
+                    onChange={(event) => setEditValues((prev) => ({ ...prev, estimationHours: event.target.value }))}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground">
+                    {t('tickets.details.effort')}
+                  </label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    value={editValues.effortHours}
+                    onChange={(event) => setEditValues((prev) => ({ ...prev, effortHours: event.target.value }))}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground">
+                    {t('tickets.details.wricef')}
+                  </label>
+                  <Input
+                    value={editValues.wricefId}
+                    onChange={(event) => setEditValues((prev) => ({ ...prev, wricefId: event.target.value }))}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground">
+                  {t('tickets.details.effortNote')}
+                </label>
+                <Textarea
+                  value={editValues.effortComment}
+                  onChange={(event) => setEditValues((prev) => ({ ...prev, effortComment: event.target.value }))}
+                  className="mt-1"
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-2 rounded-md bg-muted/30 p-3 text-xs text-muted-foreground sm:grid-cols-3">
+                <div>{t('tickets.details.project')} {project?.name ?? ticket.projectId}</div>
+                <div>{t('tickets.details.ticketId')} {ticket.ticketCode}</div>
+                <div>{t('tickets.details.createdBy')} {userName(ticket.createdBy)}</div>
               </div>
             </div>
           ) : (
             <div className="text-sm text-muted-foreground">{ticket.description || '-'}</div>
           )}
 
-          <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-            <div><span className="text-muted-foreground">{t('tickets.details.project')}</span> {project?.name ?? ticket.projectId}</div>
-            <div><span className="text-muted-foreground">{t('tickets.details.wricef')}</span> {ticket.wricefId ?? '-'}</div>
-            <div><span className="text-muted-foreground">{t('tickets.details.ticketId')}</span> {ticket.ticketCode}</div>
-            <div><span className="text-muted-foreground">{t('tickets.details.createdBy')}</span> {userName(ticket.createdBy)}</div>
-            <div><span className="text-muted-foreground">{t('tickets.details.assignedTo')}</span> {userName(ticket.assignedTo)}</div>
-            <div>
-              <span className="text-muted-foreground">{t('tickets.details.assignedRole')}</span>{' '}
-              {ticket.assignedToRole ? t(`roles.${ticket.assignedToRole}`) : '-'}
+          {!isEditMode && (
+            <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+              <div><span className="text-muted-foreground">{t('tickets.details.project')}</span> {project?.name ?? ticket.projectId}</div>
+              <div><span className="text-muted-foreground">{t('tickets.details.wricef')}</span> {ticket.wricefId ?? '-'}</div>
+              <div><span className="text-muted-foreground">{t('tickets.details.ticketId')}</span> {ticket.ticketCode}</div>
+              <div><span className="text-muted-foreground">{t('tickets.details.createdBy')}</span> {userName(ticket.createdBy)}</div>
+              <div><span className="text-muted-foreground">{t('tickets.details.assignedTo')}</span> {userName(ticket.assignedTo)}</div>
+              <div>
+                <span className="text-muted-foreground">{t('tickets.details.assignedRole')}</span>{' '}
+                {ticket.assignedToRole ? t(`roles.${ticket.assignedToRole}`) : '-'}
+              </div>
+              <div><span className="text-muted-foreground">{t('tickets.details.estimation')}</span> {ticket.estimationHours}h</div>
+              <div><span className="text-muted-foreground">{t('tickets.details.effort')}</span> {ticket.effortHours}h</div>
+              <div><span className="text-muted-foreground">{t('tickets.details.dueDate')}</span> {ticket.dueDate ? formatDate(ticket.dueDate, i18n.language) : '-'}</div>
+              <div><span className="text-muted-foreground">{t('tickets.details.createdAt')}</span> {formatDateTime(ticket.createdAt, i18n.language)}</div>
+              <div><span className="text-muted-foreground">{t('tickets.details.updatedAt')}</span> {ticket.updatedAt ? formatDateTime(ticket.updatedAt, i18n.language) : '-'}</div>
+              <div>
+                <span className="text-muted-foreground">{t('tickets.details.estimatedViaAbaque')}</span>{' '}
+                {ticket.estimatedViaAbaque ? t('tickets.details.yes') : t('tickets.details.no')}
+              </div>
             </div>
-            <div><span className="text-muted-foreground">{t('tickets.details.estimation')}</span> {ticket.estimationHours}h</div>
-            <div><span className="text-muted-foreground">{t('tickets.details.effort')}</span> {ticket.effortHours}h</div>
-            <div><span className="text-muted-foreground">{t('tickets.details.dueDate')}</span> {ticket.dueDate ? formatDate(ticket.dueDate, i18n.language) : '-'}</div>
-            <div><span className="text-muted-foreground">{t('tickets.details.createdAt')}</span> {formatDateTime(ticket.createdAt, i18n.language)}</div>
-            <div><span className="text-muted-foreground">{t('tickets.details.updatedAt')}</span> {ticket.updatedAt ? formatDateTime(ticket.updatedAt, i18n.language) : '-'}</div>
-            <div>
-              <span className="text-muted-foreground">{t('tickets.details.estimatedViaAbaque')}</span>{' '}
-              {ticket.estimatedViaAbaque ? t('tickets.details.yes') : t('tickets.details.no')}
-            </div>
-          </div>
+          )}
 
-          {ticket.effortComment && (
+          {!isEditMode && ticket.effortComment && (
             <div className="text-sm">
               <span className="text-muted-foreground">{t('tickets.details.effortNote')}</span> {ticket.effortComment}
             </div>

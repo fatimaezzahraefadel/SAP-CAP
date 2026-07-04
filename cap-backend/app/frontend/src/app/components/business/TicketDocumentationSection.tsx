@@ -48,7 +48,7 @@ interface TicketDocumentationSectionProps {
 }
 
 const byRecentUpdate = (a: DocumentationObject, b: DocumentationObject) =>
-  (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt);
+  (b.updatedAt ?? b.createdAt ?? '').localeCompare(a.updatedAt ?? a.createdAt ?? '');
 
 export const TicketDocumentationSection: React.FC<TicketDocumentationSectionProps> = ({
   ticket,

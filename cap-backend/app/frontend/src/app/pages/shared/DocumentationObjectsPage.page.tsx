@@ -177,7 +177,7 @@ export const DocumentationObjectsPage: React.FC = () => {
         ]);
 
         setDocumentationObjects(
-          [...docData].sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
+          [...docData].sort((a, b) => (b.updatedAt ?? b.createdAt ?? '').localeCompare(a.updatedAt ?? a.createdAt ?? ''))
         );
         setProjects(projectData);
         setTickets(ticketData);
@@ -372,7 +372,7 @@ export const DocumentationObjectsPage: React.FC = () => {
         setDocumentationObjects((prev) =>
           prev
             .map((d) => (d.id === editingId ? updated : d))
-            .sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
+            .sort((a, b) => (b.updatedAt ?? b.createdAt ?? '').localeCompare(a.updatedAt ?? a.createdAt ?? ''))
         );
         toast.success(t('documentation.success.updated'));
       } else {
@@ -388,7 +388,7 @@ export const DocumentationObjectsPage: React.FC = () => {
           sourceSystem: 'MANUAL',
         });
         setDocumentationObjects((prev) =>
-          [created, ...prev].sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
+          [created, ...prev].sort((a, b) => (b.updatedAt ?? b.createdAt ?? '').localeCompare(a.updatedAt ?? a.createdAt ?? ''))
         );
         toast.success(t('documentation.success.created'));
       }

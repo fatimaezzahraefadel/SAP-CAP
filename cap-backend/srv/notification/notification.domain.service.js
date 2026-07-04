@@ -14,9 +14,10 @@ class NotificationDomainService {
       req.reject(403, 'Not authorized to create notifications');
     }
     assertRequiredValue(req.data.userId, 'userId', req);
-    if (ctx.role !== 'ADMIN' && String(req.data.userId) !== ctx.userId) {
-      req.reject(403, 'Not authorized to create notifications for other users');
-    }
+    // Notifications are a workflow side effect: any authenticated user can
+    // notify the relevant counterpart (a manager allocating a consultant, a
+    // consultant submitting a deliverable to a manager, etc.). We only require
+    // that the recipient is a real user.
     await assertEntityExists(ENTITIES.Users, req.data.userId, 'userId', req);
   }
 

@@ -249,21 +249,24 @@ export const TechDashboard: React.FC = () => {
             <CardTitle className="text-lg">{t('consultant.techDashboard.productivity.title')}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-border/70 bg-surface-1 p-4">
+            <div className="relative overflow-hidden rounded-xl border border-blue-500/25 bg-gradient-to-br from-blue-500/10 to-transparent p-4 transition-transform duration-300 hover:-translate-y-0.5">
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-400" />
               <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">{t('consultant.techDashboard.productivity.thisWeek')}</p>
               <p className="mt-2 inline-flex items-center gap-2 text-2xl font-semibold text-foreground">
                 <Clock3 className="h-5 w-5 text-blue-500" />
                 {hoursThisWeek}h
               </p>
             </div>
-            <div className="rounded-xl border border-border/70 bg-surface-1 p-4">
+            <div className="relative overflow-hidden rounded-xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/10 to-transparent p-4 transition-transform duration-300 hover:-translate-y-0.5">
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-emerald-500 to-teal-400" />
               <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">{t('consultant.techDashboard.productivity.ticketsCompleted')}</p>
               <p className="mt-2 inline-flex items-center gap-2 text-2xl font-semibold text-foreground">
                 <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                 {doneTickets}
               </p>
             </div>
-            <div className="rounded-xl border border-border/70 bg-surface-1 p-4">
+            <div className="relative overflow-hidden rounded-xl border border-purple-500/25 bg-gradient-to-br from-purple-500/10 to-transparent p-4 transition-transform duration-300 hover:-translate-y-0.5">
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-purple-500 to-fuchsia-400" />
               <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">{t('consultant.techDashboard.productivity.completionRate')}</p>
               <p className="mt-2 text-2xl font-semibold text-primary">{completionRate.toFixed(0)}%</p>
             </div>

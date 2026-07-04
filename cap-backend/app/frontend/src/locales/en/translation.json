@@ -848,6 +848,7 @@
     "manual": "Manual Assignment",
     "aiSuggest": "AI Suggest",
     "selectPlaceholder": "Select a consultant...",
+    "noConsultants": "No technical consultant available. Check that consultant users exist and are active.",
     "analyzing": "Analyzing...",
     "noRecommendations": "No recommendations found.",
     "availability": "Availability",
@@ -1834,7 +1835,65 @@
       "WRICEF Review": "WRICEF Review",
       "Deliverables": "Deliverables",
       "AI Dispatch": "AI Dispatch",
-      "Workload": "Workload"
+      "Workload": "Workload",
+      "Evaluations": "Evaluations"
+    }
+  },
+  "evaluations": {
+    "title": "Evaluations",
+    "subtitleTickets": "Score consultant performance from their tickets (on time, late, difficulty)",
+    "form": {
+      "title": "New evaluation",
+      "consultant": "Consultant",
+      "selectConsultant": "Select a consultant",
+      "period": "Period",
+      "periodPlaceholder": "e.g. 2026-S1",
+      "computedScore": "Score (auto)",
+      "feedback": "Feedback",
+      "add": "Save evaluation",
+      "saving": "Saving..."
+    },
+    "summary": {
+      "onTime": "On time: {{count}}",
+      "late": "Late: {{count}}",
+      "overdueOpen": "Overdue: {{count}}",
+      "pending": "Pending: {{count}}",
+      "computedTotal": "Computed score: {{total}}"
+    },
+    "categories": {
+      "ON_TIME": "On time",
+      "LATE": "Late",
+      "OVERDUE_OPEN": "Overdue",
+      "PENDING": "Pending",
+      "NO_DUE_DATE": "No due date",
+      "EXCLUDED": "Excluded"
+    },
+    "breakdown": {
+      "title": "Ticket breakdown",
+      "ticket": "Ticket",
+      "complexity": "Complexity",
+      "nature": "Nature",
+      "status": "Status",
+      "points": "Points",
+      "bonus": "bonus +{{bonus}}",
+      "selectPrompt": "Select a consultant to see their tickets.",
+      "empty": "This consultant has no tickets."
+    },
+    "list": {
+      "title": "Saved evaluations",
+      "consultant": "Consultant",
+      "period": "Period",
+      "score": "Score",
+      "feedback": "Feedback",
+      "empty": "No evaluations yet."
+    },
+    "toasts": {
+      "loadFailed": "Failed to load evaluations",
+      "ticketsFailed": "Failed to load the consultant's tickets",
+      "requiredFields": "Consultant and period are required",
+      "invalidScore": "Score must be a number",
+      "created": "Evaluation saved",
+      "createFailed": "Failed to save evaluation"
     }
   },
   "imputations": {

@@ -1,7 +1,7 @@
 import type { Evaluation } from './core';
 import { listEntities, createEntity } from './core';
 
-type EvaluationGrid = Evaluation['qualitativeGrid'];
+type EvaluationGrid = NonNullable<Evaluation['qualitativeGrid']>;
 
 interface EvaluationRaw extends Omit<Evaluation, 'score' | 'qualitativeGrid'> {
   score: number | string;
@@ -103,7 +103,11 @@ export const EvaluationsAPI = {
     return await listWithGridFallback();
   },
 
-  async create(evaluation: Omit<Evaluation, 'id'>): Promise<Evaluation> {
+  async create(
+    evaluation: Omit<Evaluation, 'id' | 'createdAt' | 'qualitativeGrid'>
+  ): Promise<Evaluation> {
+    // Ticket-based evaluations persist a computed score + feedback per period;
+    // the qualitative grid is no longer captured here.
     const created = await createEntity<EvaluationRaw>('time', 'Evaluations', evaluation);
     return normalizeEvaluation(created);
   },

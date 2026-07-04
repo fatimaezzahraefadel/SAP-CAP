@@ -40,6 +40,39 @@ cds.on('bootstrap', (app) => {
 	}
 });
 
+cds.on('served', async () => {
+	// Ensure the canonical reference users exist even when the HDI CSV import
+	// did not run (e.g. first HANA deploy while the DB was unavailable). Skipped
+	// under Jest so test fixtures stay in full control of their data.
+	if (process.env.JEST_WORKER_ID === undefined) {
+		try {
+			const { ensureReferenceUsers } = require('./srv/shared/seed/ensure-reference-users');
+			const { ensureSampleTickets } = require('./srv/shared/seed/ensure-sample-tickets');
+			const { ensureDemoData } = require('./srv/shared/seed/ensure-demo-data');
+			const { getLogger } = require('./srv/shared/logging/logger');
+			const seeded = await ensureReferenceUsers();
+			if (seeded > 0) {
+				getLogger('seed').info(`Seeded ${seeded} reference user(s)`);
+			}
+			// Sample evaluation tickets depend on the reference users existing, so
+			// seed them right after. Idempotent: only missing rows are inserted.
+			const seededTickets = await ensureSampleTickets();
+			if (seededTickets > 0) {
+				getLogger('seed').info(`Seeded ${seededTickets} sample evaluation ticket(s)`);
+			}
+			// Full demo dataset (projects, allocations, WRICEF, docs, notifications,
+			// leaves, imputations, evaluations, deliverables, reference data...).
+			// Depends on the reference users, projects and sample tickets above.
+			const seededDemo = await ensureDemoData();
+			if (seededDemo > 0) {
+				getLogger('seed').info(`Seeded ${seededDemo} demo row(s)`);
+			}
+		} catch (e) {
+			console.warn('reference user seed skipped:', e.message);
+		}
+	}
+});
+
 cds.on('served', () => {
 	// Register scheduled background jobs after the server is served. This must
 	// happen regardless of the SPA build: in production (gen/srv behind the

@@ -2,11 +2,11 @@ _schema-version: "3.3"
 ID: ticket-cap
 description: Ticket-CAP performance dashboard — CAP backend, Approuter, and SPA
 version: 1.0.0
-
+ 
 parameters:
   enable-parallel-deployments: true
   deploy_mode: dist
-
+ 
 # -----------------------------------------------------------------------------
 # Build pipeline — runs once before any module is built.
 #   1. Install backend deps (cap-backend root)
@@ -23,7 +23,7 @@ build-parameters:
         - npm ci
         - npm ci --prefix app/frontend
         - npm run build
-
+ 
 # =============================================================================
 # MODULES — each becomes one CF app
 # =============================================================================
@@ -54,7 +54,7 @@ modules:
     requires:
       - name: ticket-cap-db
       - name: ticket-cap-uaa
-
+ 
   # ---------------------------------------------------------------------------
   # 2. HANA HDI deployer — applies the CDS-generated schema on every deploy
   # ---------------------------------------------------------------------------
@@ -73,7 +73,7 @@ modules:
         - "node_modules/"
     requires:
       - name: ticket-cap-db
-
+ 
   # ---------------------------------------------------------------------------
   # 3. Approuter — public entry point, OAuth, reverse proxy, SPA host
   # ---------------------------------------------------------------------------
@@ -104,7 +104,7 @@ modules:
           strictSSL: true
           timeout: 60000
       - name: ticket-cap-uaa
-
+ 
 # =============================================================================
 # RESOURCES — BTP service instances bound to the modules above
 # =============================================================================
@@ -115,7 +115,7 @@ resources:
     parameters:
       service: hana
       service-plan: hdi-shared
-
+ 
   # XSUAA — issues JWTs, enforces scopes defined in xs-security.json
   - name: ticket-cap-uaa
     type: org.cloudfoundry.managed-service
@@ -126,8 +126,3 @@ resources:
       config:
         xsappname: ticket-cap-${space}
         tenant-mode: dedicated
-        oauth2-configuration:
-          redirect-uris:
-            - https://*.cfapps.eu10.hana.ondemand.com/**
-            - https://*.cfapps.us10.hana.ondemand.com/**
-            - https://*.cfapps.us10-001.hana.ondemand.com/**

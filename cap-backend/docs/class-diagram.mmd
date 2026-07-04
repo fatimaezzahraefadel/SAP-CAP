@@ -1,0 +1,162 @@
+classDiagram
+    direction LR
+
+    class Users {
+        +UUID ID
+        +String name
+        +String email
+        +UserRole role
+        +Boolean active
+        +Integer availabilityPercent
+    }
+    class Projects {
+        +UUID ID
+        +String name
+        +ProjectType projectType
+        +ProjectStatus status
+        +Priority priority
+        +Integer progress
+        +Complexity complexity
+    }
+    class Tickets {
+        +UUID ID
+        +String ticketCode
+        +String title
+        +TicketStatus status
+        +Priority priority
+        +TicketNature nature
+        +TicketComplexity complexity
+        +SAPModule module
+        +Decimal effortHours
+        +Date dueDate
+    }
+    class Wricefs {
+        +UUID ID
+        +String projectId
+        +WricefStatus status
+        +Boolean autoCreated
+    }
+    class WricefObjects {
+        +UUID ID
+        +WricefType type
+        +String title
+        +TicketComplexity complexity
+        +SAPModule module
+        +WricefStatus status
+    }
+    class Deliverables {
+        +UUID ID
+        +String name
+        +String type
+        +DeliverableValidation validationStatus
+    }
+    class TicketComments {
+        +UUID ID
+        +LargeString message
+        +CommentType commentType
+        +Boolean resolved
+    }
+    class Evaluations {
+        +UUID ID
+        +String period
+        +Decimal score
+        +LargeString feedback
+    }
+    class Allocations {
+        +UUID ID
+        +Integer allocationPercent
+        +Date startDate
+        +Date endDate
+    }
+    class Timesheets {
+        +UUID ID
+        +Date date
+        +Decimal hours
+    }
+    class TimeLogs {
+        +UUID ID
+        +Date date
+        +Integer durationMinutes
+        +Boolean sentToStraTIME
+    }
+    class Imputations {
+        +UUID ID
+        +Date date
+        +Decimal hours
+        +ImputationStatus validationStatus
+        +String periodKey
+    }
+    class ImputationPeriods {
+        +UUID ID
+        +String periodKey
+        +ImputationStatus status
+        +Decimal totalHours
+    }
+    class LeaveRequests {
+        +UUID ID
+        +Date startDate
+        +Date endDate
+        +LeaveStatus status
+    }
+    class Notifications {
+        +UUID ID
+        +String type
+        +String title
+        +Boolean read
+    }
+    class ProjectFeedback {
+        +UUID ID
+        +LargeString content
+    }
+    class DocumentationObjects {
+        +UUID ID
+        +String title
+        +DocObjectType type
+        +LargeString content
+    }
+    class Attachments {
+        +UUID ID
+        +String parentType
+        +String parentId
+        +String fileName
+        +String mimeType
+        +Integer sizeBytes
+    }
+
+    %% ---- Relations principales ----
+    Users "1" --> "*" Projects : gère
+    Users "1" --> "*" Tickets : crée
+    Users "1" --> "*" Tickets : assigné à
+    Projects "1" --> "*" Tickets : contient
+    Projects "1" --> "*" Wricefs : possède
+    Wricefs "1" *-- "*" WricefObjects : compose
+    Projects "1" --> "*" WricefObjects
+    Projects "1" --> "*" Deliverables
+    Tickets "1" --> "*" Deliverables
+    Tickets "1" *-- "*" TicketComments : compose
+    Users "1" --> "*" TicketComments : auteur
+    Users "1" --> "*" Evaluations : évalué
+    Users "1" --> "*" Evaluations : évaluateur
+    Projects "1" --> "*" Evaluations
+    Users "1" --> "*" Allocations
+    Projects "1" --> "*" Allocations
+    Users "1" --> "*" Timesheets
+    Projects "1" --> "*" Timesheets
+    Tickets "1" --> "*" Timesheets
+    Users "1" --> "*" TimeLogs
+    Tickets "1" --> "*" TimeLogs
+    Projects "1" --> "*" TimeLogs
+    Users "1" --> "*" Imputations
+    Tickets "1" --> "*" Imputations
+    Projects "1" --> "*" Imputations
+    Users "1" --> "*" ImputationPeriods
+    Users "1" --> "*" LeaveRequests : consultant
+    Users "1" --> "*" LeaveRequests : manager
+    Users "1" --> "*" Notifications
+    Projects "1" --> "*" ProjectFeedback
+    Users "1" --> "*" ProjectFeedback : auteur
+    Projects "1" --> "*" DocumentationObjects
+    Users "1" --> "*" DocumentationObjects : auteur
+    Attachments ..> Tickets : parentType/parentId
+    Attachments ..> DocumentationObjects : parentType/parentId
+    Attachments ..> Deliverables : parentType/parentId

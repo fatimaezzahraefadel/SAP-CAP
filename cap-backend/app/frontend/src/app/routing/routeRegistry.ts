@@ -198,6 +198,12 @@ export const ROLE_ROUTE_REGISTRY: Record<UserRole, RoleRouteGroup> = {
         lazy: lazyNamed(() => import('../pages/manager/WricefManagement.page'), 'WricefManagement'),
         nav: { label: 'WRICEF', iconKey: 'wrench' },
       },
+      {
+        id: 'manager-evaluations',
+        path: 'evaluations',
+        lazy: lazyNamed(() => import('../pages/manager/EvaluationsManagement.page'), 'EvaluationsManagement'),
+        nav: { label: 'Evaluations', iconKey: 'gauge' },
+      },
     ],
   }),
   CONSULTANT_TECHNIQUE: makeRoleGroup({
@@ -362,6 +368,12 @@ export const ROLE_ROUTE_REGISTRY: Record<UserRole, RoleRouteGroup> = {
         path: 'wricef-validation',
         lazy: lazyNamed(() => import('../pages/project-manager/WricefValidation.page'), 'WricefValidation'),
         nav: { label: 'WRICEF Review', iconKey: 'shield' },
+      },
+      {
+        id: 'pm-evaluations',
+        path: 'evaluations',
+        lazy: lazyNamed(() => import('../pages/manager/EvaluationsManagement.page'), 'EvaluationsManagement'),
+        nav: { label: 'Evaluations', iconKey: 'gauge' },
       },
     ],
   }),

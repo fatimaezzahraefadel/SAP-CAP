@@ -10,6 +10,19 @@ import { AllocationsAPI } from '../../services/odata/allocationsApi';
 import { TicketsAPI } from '../../services/odata/ticketsApi';
 import { UsersAPI } from '../../services/odata/usersApi';
 import { Allocation, Ticket, TicketStatus, User } from '../../types/entities';
+import { computeProductivityMetrics, computeTace } from '../../features/dashboard/model';
+
+/** A distinct accent colour for each ticket status used in the delivery snapshot. */
+const STATUS_DOT: Record<TicketStatus, string> = {
+  PENDING_APPROVAL: 'bg-amber-500',
+  APPROVED: 'bg-sky-500',
+  NEW: 'bg-blue-500',
+  IN_PROGRESS: 'bg-indigo-500',
+  IN_TEST: 'bg-purple-500',
+  BLOCKED: 'bg-rose-500',
+  DONE: 'bg-emerald-500',
+  REJECTED: 'bg-slate-400',
+};
 
 export const ManagerDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -43,42 +56,12 @@ export const ManagerDashboard: React.FC = () => {
     void loadData();
   }, [loadData]);
 
-  const tace = useMemo(() => {
-    const techConsultants = users.filter((u) => u.role === 'CONSULTANT_TECHNIQUE' && u.active);
-    if (techConsultants.length === 0) return 0;
+  const tace = useMemo(
+    () => computeTace(users, allocations, new Date().toISOString().slice(0, 10)),
+    [users, allocations]
+  );
 
-    const today = new Date().toISOString().slice(0, 10);
-    const rates = techConsultants.map((consultant) => {
-      const currentAllocations = allocations.filter(
-        (a) => a.userId === consultant.id && a.startDate <= today && a.endDate >= today
-      );
-      return Math.min(currentAllocations.reduce((sum, a) => sum + a.allocationPercent, 0), 100);
-    });
-
-    return Math.round(rates.reduce((sum, r) => sum + r, 0) / techConsultants.length);
-  }, [users, allocations]);
-
-  const productivityMetrics = useMemo(() => {
-    const completed = tickets.filter((ticket) => ticket.status === 'DONE');
-    const throughput = tickets.length ? (completed.length / tickets.length) * 100 : 0;
-    const criticalIssues = tickets.filter(
-      (ticket) => ticket.priority === 'CRITICAL' || ticket.status === 'BLOCKED'
-    ).length;
-
-    const onTime = completed.filter((ticket) => {
-      if (!ticket.updatedAt || !ticket.dueDate) return false;
-      return ticket.updatedAt <= ticket.dueDate;
-    }).length;
-    const slaRate = completed.length ? (onTime / completed.length) * 100 : 100;
-
-    return {
-      throughputRate: throughput,
-      criticalIssues,
-      slaRate,
-      slaOnTime: onTime,
-      slaTotal: completed.length,
-    };
-  }, [tickets]);
+  const productivityMetrics = useMemo(() => computeProductivityMetrics(tickets), [tickets]);
 
   const ticketBreakdown = useMemo(() => {
     const counts = tickets.reduce<Record<TicketStatus, number>>(
@@ -102,6 +85,7 @@ export const ManagerDashboard: React.FC = () => {
       .filter(([, count]) => count > 0)
       .sort((a, b) => b[1] - a[1])
       .map(([status, count]) => ({
+        status,
         label: t(`entities.ticketStatus.${status}`),
         count,
       }));
@@ -251,9 +235,15 @@ export const ManagerDashboard: React.FC = () => {
                 <p className="text-sm text-muted-foreground">{t('dashboard.manager.deliverySnapshot.noData')}</p>
               ) : (
                 ticketBreakdown.map((entry) => (
-                  <div key={entry.label} className="flex items-center justify-between rounded-md border border-border/70 p-3">
-                    <span className="text-sm text-foreground">{entry.label}</span>
-                    <span className="text-sm font-semibold text-foreground">{entry.count}</span>
+                  <div
+                    key={entry.label}
+                    className="flex items-center justify-between rounded-lg border border-border/70 bg-surface-1 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"
+                  >
+                    <span className="flex items-center gap-2.5 text-sm text-foreground">
+                      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${STATUS_DOT[entry.status]}`} />
+                      {entry.label}
+                    </span>
+                    <span className="text-sm font-bold text-foreground">{entry.count}</span>
                   </div>
                 ))
               )}

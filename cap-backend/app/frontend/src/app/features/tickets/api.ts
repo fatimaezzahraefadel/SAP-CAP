@@ -37,6 +37,10 @@ export const ManagerTicketsAPI = {
     return { projects, users, tickets, errors };
   },
 
+  async listTickets(requestOptions?: ODataRequestOptions): Promise<Ticket[]> {
+    return await ODataTicketsAPI.list({ $orderby: 'createdAt desc', $top: 500 }, requestOptions);
+  },
+
   async updateTicket(id: string, payload: Partial<Ticket>): Promise<Ticket> {
     return await ODataTicketsAPI.update(id, payload);
   },

@@ -9,12 +9,16 @@ import { UsersAPI } from '../services/odata/usersApi';
 interface AuthContextType {
   currentUser: User | null;
   login: (_email?: string, _password?: string) => Promise<void>;
+  /** Local/dev-only credential login (mocked auth). No-op path on BTP/XSUAA. */
+  loginWithCredentials: (email: string, password: string) => Promise<void>;
   logout: () => void;
   switchUser: (userId: string) => Promise<void>;
   isAuthenticated: boolean;
   isAuthLoading: boolean;
   directLogin: (_role: UserRole) => void;
   isDirectLoginEnabled: boolean;
+  /** True when running the Vite dev server (no XSUAA) → show demo login. */
+  isDevLogin: boolean;
 }
 
 // Persist context reference across Vite HMR reloads so the Provider and
@@ -80,11 +84,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await loadCurrentUser();
   }, [loadCurrentUser]);
 
+  // Local demo login (mocked auth). Authenticates against the backend's demo
+  // accounts and stores the returned bearer token for subsequent OData calls.
+  const loginWithCredentials = useCallback(async (email: string, password: string) => {
+    setIsAuthLoading(true);
+    try {
+      const session = await AuthAPI.authenticate(email, password);
+      setODataAuthToken(session.token);
+      setCurrentUser(session.user.active ? session.user : null);
+    } finally {
+      setIsAuthLoading(false);
+    }
+  }, []);
+
   const logout = useCallback(() => {
     setCurrentUser(null);
     setODataAuthToken(null);
     clearLegacyAuthStorage();
-    window.location.assign('/do/logout');
+    // XSUAA (BTP) requires the App Router `/do/logout` endpoint to also drop the
+    // IdP session. In local demo/dev (mocked auth) that endpoint does not exist,
+    // so navigating there just reloads the SPA and strands the user. The bearer
+    // token is already cleared above, so returning to /login is enough to land
+    // on the demo role picker and switch profiles.
+    if (import.meta.env.DEV) {
+      window.location.assign('/login');
+    } else {
+      window.location.assign('/do/logout');
+    }
   }, []);
 
   const directLogin = useCallback((_role: UserRole) => {
@@ -102,14 +128,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     () => ({
       currentUser,
       login,
+      loginWithCredentials,
       logout,
       switchUser,
       isAuthenticated: Boolean(currentUser),
       isAuthLoading,
       directLogin,
       isDirectLoginEnabled: false,
+      isDevLogin: Boolean(import.meta.env.DEV),
     }),
-    [currentUser, directLogin, isAuthLoading, login, logout, switchUser]
+    [currentUser, directLogin, isAuthLoading, login, loginWithCredentials, logout, switchUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

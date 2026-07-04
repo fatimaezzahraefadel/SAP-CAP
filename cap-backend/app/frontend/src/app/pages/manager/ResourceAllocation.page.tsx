@@ -164,19 +164,25 @@ export const ResourceAllocation: React.FC = () => {
       const created = await AllocationsAPI.create({ ...form });
       setAllocations((prev) => [created, ...prev]);
 
-      const projectName = projects.find((project) => project.id === form.projectId)?.name ?? t('resourceAllocation.generic.project');
-      const allocatedUser = users.find((user) => user.id === form.userId);
-      await NotificationsAPI.create({
-        userId: form.userId,
-        type: 'ALLOCATION_UPDATED',
-        title: t('resourceAllocation.notification.title'),
-        message: t('resourceAllocation.notification.message', {
-          percent: form.allocationPercent,
-          project: projectName,
-        }),
-        targetPath: getAllocationNotificationTarget(allocatedUser?.role),
-        read: false,
-      });
+      // The allocation is already persisted; a failed notification must not
+      // surface as an allocation failure, so it gets its own try/catch.
+      try {
+        const projectName = projects.find((project) => project.id === form.projectId)?.name ?? t('resourceAllocation.generic.project');
+        const allocatedUser = users.find((user) => user.id === form.userId);
+        await NotificationsAPI.create({
+          userId: form.userId,
+          type: 'ALLOCATION_UPDATED',
+          title: t('resourceAllocation.notification.title'),
+          message: t('resourceAllocation.notification.message', {
+            percent: form.allocationPercent,
+            project: projectName,
+          }),
+          targetPath: getAllocationNotificationTarget(allocatedUser?.role),
+          read: false,
+        });
+      } catch {
+        // Allocation succeeded — swallow notification errors silently.
+      }
 
       setForm(EMPTY_FORM);
       toast.success(t('resourceAllocation.toasts.created'));
