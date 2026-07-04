@@ -11,6 +11,23 @@ export const STATUS_ORDER: TicketStatus[] = [
   'REJECTED',
 ];
 
+// Allowed status transitions — mirrors the backend state machine
+// (srv/ticket/tickets.domain.js TICKET_STATUS_TRANSITIONS). Used to block
+// invalid Kanban drops client-side before hitting the server.
+export const TICKET_STATUS_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
+  PENDING_APPROVAL: ['APPROVED', 'REJECTED'],
+  APPROVED: ['NEW', 'IN_PROGRESS', 'REJECTED'],
+  NEW: ['IN_PROGRESS', 'BLOCKED', 'REJECTED'],
+  IN_PROGRESS: ['IN_TEST', 'BLOCKED', 'DONE', 'REJECTED'],
+  IN_TEST: ['DONE', 'IN_PROGRESS', 'REJECTED'],
+  BLOCKED: ['IN_PROGRESS', 'REJECTED'],
+  DONE: [],
+  REJECTED: ['NEW', 'PENDING_APPROVAL'],
+};
+
+export const isStatusTransitionAllowed = (from: TicketStatus, to: TicketStatus): boolean =>
+  from === to || (TICKET_STATUS_TRANSITIONS[from] ?? []).includes(to);
+
 export const statusColor: Record<TicketStatus, string> = {
   PENDING_APPROVAL: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
   APPROVED: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',

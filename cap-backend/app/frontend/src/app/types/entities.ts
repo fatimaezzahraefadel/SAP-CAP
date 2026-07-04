@@ -286,6 +286,11 @@ export interface Certification {
   dateObtained: string;
   expiryDate?: string;
   status: CertificationStatus;
+  // Extended fields from the dedicated Certificates entity
+  userId?: string;
+  credentialId?: string;
+  credentialUrl?: string;
+  description?: string;
 }
 
 // ---------------------------------------------------------------------------

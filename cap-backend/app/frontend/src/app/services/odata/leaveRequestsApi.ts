@@ -1,5 +1,5 @@
 import type { LeaveRequest } from './core';
-import { listEntities, createEntity, updateEntity, quoteLiteral } from './core';
+import { listEntities, createEntity, updateEntity, deleteEntity, quoteLiteral } from './core';
 
 export const LeaveRequestsAPI = {
   async getAll(): Promise<LeaveRequest[]> {
@@ -18,5 +18,9 @@ export const LeaveRequestsAPI = {
 
   async update(id: string, data: Partial<LeaveRequest>): Promise<LeaveRequest> {
     return await updateEntity<LeaveRequest>('user', 'LeaveRequests', id, data);
+  },
+
+  async delete(id: string): Promise<void> {
+    await deleteEntity('user', 'LeaveRequests', id);
   },
 };

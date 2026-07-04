@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageHeader } from '../../components/common/PageHeader';
+import { CertificatesAPI } from '../../services/odata/certificatesApi';
 import { UsersAPI } from '../../services/odata/usersApi';
 import { Certification, CertificationStatus, User } from '../../types/entities';
 import { Award } from 'lucide-react';
@@ -28,9 +29,14 @@ const statusColor: Record<CertificationStatus, string> = {
   EXPIRED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
 };
 
+interface CertRow {
+  consultantName: string;
+  cert: Certification & { userId: string };
+}
+
 export const CertifiedConsultants: React.FC = () => {
   const { t } = useTranslation();
-  const [users, setUsers] = useState<User[]>([]);
+  const [rows, setRows] = useState<CertRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<CertificationStatus | 'ALL'>('ALL');
@@ -42,54 +48,48 @@ export const CertifiedConsultants: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await UsersAPI.getAll();
-      setUsers(data.filter((u) => u.role !== 'ADMIN' && u.role !== 'MANAGER'));
+      const [certs, users] = await Promise.all([
+        CertificatesAPI.getAll(),
+        UsersAPI.getAll(),
+      ]);
+
+      const userMap = new Map<string, User>(users.map((u) => [u.id, u]));
+      const consultantRoles = new Set(['CONSULTANT_TECHNIQUE', 'CONSULTANT_FONCTIONNEL', 'DEV_COORDINATOR', 'PROJECT_MANAGER']);
+
+      const mapped: CertRow[] = certs
+        .filter((c) => {
+          const user = userMap.get(c.userId);
+          return user && consultantRoles.has(user.role);
+        })
+        .map((c) => ({
+          consultantName: userMap.get(c.userId)?.name ?? c.userId,
+          cert: c,
+        }));
+
+      setRows(mapped);
     } finally {
       setLoading(false);
     }
   };
 
-  const rows = useMemo(() => {
+  const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    const items: {
-      user: User;
-      certName: string;
-      issuingBody: string;
-      dateObtained: string;
-      expiryDate?: string;
-      status: CertificationStatus;
-    }[] = [];
-
-    users.forEach((user) => {
-      (user.certifications ?? []).forEach((raw) => {
-        // Guard against stale localStorage where certs were plain strings
-        if (typeof raw !== 'object' || raw === null || !('id' in raw)) return;
-        const cert = raw as Certification;
-        if (statusFilter !== 'ALL' && cert.status !== statusFilter) return;
-        if (
-          q &&
-          !cert.name.toLowerCase().includes(q) &&
-          !user.name.toLowerCase().includes(q) &&
-          !cert.issuingBody.toLowerCase().includes(q)
-        )
-          return;
-        items.push({
-          user,
-          certName: cert.name,
-          issuingBody: cert.issuingBody,
-          dateObtained: cert.dateObtained,
-          expiryDate: cert.expiryDate,
-          status: cert.status,
-        });
-      });
+    return rows.filter(({ consultantName, cert }) => {
+      if (statusFilter !== 'ALL' && cert.status !== statusFilter) return false;
+      if (
+        q &&
+        !cert.name.toLowerCase().includes(q) &&
+        !consultantName.toLowerCase().includes(q) &&
+        !cert.issuingBody.toLowerCase().includes(q)
+      )
+        return false;
+      return true;
     });
+  }, [rows, search, statusFilter]);
 
-    return items;
-  }, [users, search, statusFilter]);
-
-  const certCount = rows.length;
-  const validCount = rows.filter((r) => r.status === 'VALID').length;
-  const expiringCount = rows.filter((r) => r.status === 'EXPIRING_SOON').length;
+  const certCount = filtered.length;
+  const validCount = filtered.filter((r) => r.cert.status === 'VALID').length;
+  const expiringCount = filtered.filter((r) => r.cert.status === 'EXPIRING_SOON').length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -170,32 +170,32 @@ export const CertifiedConsultants: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((row, i) => (
-                  <TableRow key={`${row.user.id}-${row.certName}-${i}`}>
-                    <TableCell className="px-4 py-3 font-medium">{row.user.name}</TableCell>
+                {filtered.map(({ consultantName, cert }, i) => (
+                  <TableRow key={`${cert.id}-${i}`}>
+                    <TableCell className="px-4 py-3 font-medium">{consultantName}</TableCell>
                     <TableCell className="px-4 py-3 text-sm">
                       <div className="flex items-center gap-2">
                         <Award className="h-4 w-4 text-primary" />
-                        {row.certName}
+                        {cert.name}
                       </div>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-sm text-muted-foreground">
-                      {row.issuingBody}
+                      {cert.issuingBody}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-sm">
-                      {new Date(row.dateObtained).toLocaleDateString()}
+                      {cert.dateObtained ? new Date(cert.dateObtained).toLocaleDateString() : '-'}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-sm">
-                      {row.expiryDate ? new Date(row.expiryDate).toLocaleDateString() : '-'}
+                      {cert.expiryDate ? new Date(cert.expiryDate).toLocaleDateString() : '-'}
                     </TableCell>
                     <TableCell className="px-4 py-3">
-                      <Badge className={statusColor[row.status]}>
-                        {t(`entities.certificationStatus.${row.status}`)}
+                      <Badge className={statusColor[cert.status]}>
+                        {t(`entities.certificationStatus.${cert.status}`)}
                       </Badge>
                     </TableCell>
                   </TableRow>
                 ))}
-                {rows.length === 0 && (
+                {filtered.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                       {t('dashboard.certifications.table.noCerts')}

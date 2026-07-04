@@ -21,8 +21,9 @@ type DeliverableValidation : String(30) enum { PENDING; APPROVED; CHANGES_REQUES
 type UserRole         : String(40) enum { ADMIN; MANAGER; CONSULTANT_TECHNIQUE; CONSULTANT_FONCTIONNEL; PROJECT_MANAGER; DEV_COORDINATOR; };
 type ProjectType      : String(20) enum { TMA; BUILD; };
 type DocObjectType    : String(30) enum { SFD; GUIDE; ARCHITECTURE_DOC; GENERAL; };
-type WricefType       : String(10) enum { W; R; I; C; E; F; };
-type Complexity       : String(20) enum { LOW; MEDIUM; HIGH; CRITICAL; };
+type WricefType         : String(10) enum { W; R; I; C; E; F; };
+type Complexity         : String(20) enum { LOW; MEDIUM; HIGH; CRITICAL; };
+type CertificateStatus  : String(20) enum { ACTIVE; EXPIRED; REVOKED; };
 
 // ---------------------------------------------------------------------------
 // Users
@@ -381,7 +382,10 @@ entity DocumentationObjects : cuid, managed {
 entity DocAttachedFiles : cuid {
   docObject : Association to DocumentationObjects;
   fileName  : String(200);
-  fileUrl   : String(500);
+  // Stores either a short reference (e.g. /attachments/:id) or an inline base64
+  // data URL. LargeString avoids CAP's input length validation (a data URL for
+  // even a small file far exceeds 500 chars and would otherwise 400 on create).
+  fileUrl   : LargeString;
   fileSize  : Integer;
 }
 
@@ -407,6 +411,22 @@ entity Attachments : cuid, managed {
   status          : String(20) default 'ACTIVE'; // ACTIVE | DELETED | ORPHANED
   deletedAt       : DateTime;
   deletedBy       : String(50);
+}
+
+// ---------------------------------------------------------------------------
+// Certificates
+// ---------------------------------------------------------------------------
+entity Certificates : cuid, managed {
+  userId        : String(50)        not null;
+  user          : Association to Users on user.ID = userId;
+  title         : String(200)       not null;
+  issuingOrg    : String(200);
+  issuedDate    : Date;
+  expiryDate    : Date;
+  credentialId  : String(200);
+  credentialUrl : String(500);
+  status        : CertificateStatus default 'ACTIVE';
+  description   : LargeString;
 }
 
 // ---------------------------------------------------------------------------

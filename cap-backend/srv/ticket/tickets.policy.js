@@ -45,8 +45,15 @@ const NON_APPROVED_STATUSES = new Set(['PENDING_APPROVAL', 'NEW', 'REJECTED']);
 
 const getTicket = (resource) => resource?.current ?? resource ?? null;
 const getChanges = (resource) => resource?.changes ?? {};
+
+// CAP merges the entity key (ID) into req.data for UPDATE/PATCH, so it shows up
+// in `changes` even though the client never sends it. Ignore key/system fields
+// when checking which business fields a role is allowed to modify.
+const IGNORED_CHANGE_FIELDS = new Set(['ID']);
 const hasOnlyFields = (changes, allowedFields) =>
-  Object.keys(changes ?? {}).every((field) => allowedFields.has(field));
+  Object.keys(changes ?? {})
+    .filter((field) => !IGNORED_CHANGE_FIELDS.has(field))
+    .every((field) => allowedFields.has(field));
 
 const isStaff = (ctx) => RoleSets.STAFF.has(ctx.role);
 const isAssignedTech = (ctx, ticket) =>

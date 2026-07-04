@@ -847,6 +847,7 @@
     "manual": "Manual",
     "open": "Open",
     "createTitle": "Create Documentation Object",
+    "editTitle": "Edit Documentation Object",
     "titleLabel": "Title *",
     "titlePlaceholder": "Documentation object title",
     "typeLabel": "Type",
@@ -862,8 +863,13 @@
     "noTicketsFound": "No tickets found for this project.",
     "cancel": "Cancel",
     "creating": "Creating...",
+    "saving": "Saving...",
     "createObject": "Create Object",
     "defaultTitle": "Documentation Object",
+    "deleteConfirm": {
+      "title": "Delete documentation object?",
+      "description": "Are you sure you want to delete \"{{title}}\"? This action cannot be undone."
+    },
     "source": {
       "wricef": "WRICEF"
     },
@@ -895,10 +901,15 @@
       "titleRequired": "Title is required",
       "projectRequired": "Project is required",
       "contentRequired": "Content is required",
-      "createFailed": "Failed to create object"
+      "createFailed": "Failed to create object",
+      "updateFailed": "Failed to update object",
+      "deleteFailed": "Failed to delete object",
+      "fileUnavailable": "File unavailable"
     },
     "success": {
-      "created": "Object created"
+      "created": "Object created",
+      "updated": "Object updated",
+      "deleted": "Object deleted"
     },
     "section": {
       "title": "Related Documentation",
@@ -1893,11 +1904,16 @@
       "errors": {
         "dateRequired": "Start and end date are required",
         "endAfterStart": "End date must be after start date",
+        "managerRequired": "Please select a manager",
         "createFailed": "Failed to submit request"
       },
       "toasts": {
         "requestSuccess": "Leave request submitted",
-        "requestFailed": "Failed to submit leave request"
+        "requestFailed": "Failed to submit leave request",
+        "updateSuccess": "Leave request updated",
+        "updateFailed": "Failed to update leave request",
+        "deleteSuccess": "Leave request deleted",
+        "deleteFailed": "Failed to delete leave request"
       },
       "status": {
         "PENDING": "Pending",
@@ -1907,10 +1923,17 @@
       "empty": "No leave requests yet.",
       "dialog": {
         "title": "New Leave Request",
+        "editTitle": "Edit Leave Request",
         "startDate": "Start Date *",
         "endDate": "End Date *",
+        "manager": "Manager *",
+        "managerPlaceholder": "Select a manager",
         "reason": "Reason",
         "reasonPlaceholder": "Optional reason..."
+      },
+      "deleteConfirm": {
+        "title": "Delete leave request?",
+        "description": "Are you sure you want to delete this leave request? This action cannot be undone."
       }
     },
     "certifications": {
@@ -1927,7 +1950,9 @@
         "issuingBody": "Issuing Body",
         "obtained": "Date Obtained",
         "expires": "Expiry Date",
-        "status": "Status"
+        "status": "Status",
+        "document": "Document",
+        "viewDocument": "View document"
       },
       "status": {
         "VALID": "Valid",
@@ -1943,7 +1968,12 @@
         "issuingBodyPlaceholder": "e.g. Amazon Web Services",
         "dateObtained": "Date Obtained",
         "expiryDate": "Expiry Date",
-        "status": "Status"
+        "status": "Status",
+        "document": "Document (PDF, image)"
+      },
+      "deleteConfirm": {
+        "title": "Delete certification?",
+        "description": "Are you sure you want to delete the certification \"{{name}}\"? This action cannot be undone."
       },
       "add": "Add",
       "toasts": {

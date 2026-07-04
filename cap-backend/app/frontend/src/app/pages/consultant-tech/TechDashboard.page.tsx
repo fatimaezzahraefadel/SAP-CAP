@@ -1,18 +1,41 @@
 import React, { useEffect, useState } from 'react';
-import { CalendarClock, CheckCircle2, Clock3, FolderKanban } from 'lucide-react';
+import { AlertTriangle, CalendarClock, CheckCircle2, Clock3, FolderKanban, Ticket as TicketIcon } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { PageHeader } from '../../components/common/PageHeader';
-import { KPICard } from '../../components/common/KPICard';
-import { useAuth } from '../../context/AuthContext';import { ProjectsAPI } from '../../services/odata/projectsApi';
+import { useAuth } from '../../context/AuthContext';
+import { ProjectsAPI } from '../../services/odata/projectsApi';
 import { TicketsAPI } from '../../services/odata/ticketsApi';
 import { TimesheetsAPI } from '../../services/odata/timesheetsApi';
-import { Project, Ticket, Timesheet } from '../../types/entities';
+import { Project, Priority, ProjectStatus, Ticket, Timesheet } from '../../types/entities';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Progress } from '../../components/ui/progress';
 import { getFridayOfWeek, getMondayOfWeek, toLocalDateKey } from '../../utils/date';
+
+// Per-KPI colour styling (local to this dashboard).
+const accentStyles = {
+  blue: { value: 'text-blue-600', chip: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300', bar: 'bg-blue-500' },
+  red: { value: 'text-red-600', chip: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300', bar: 'bg-red-500' },
+  green: { value: 'text-emerald-600', chip: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300', bar: 'bg-emerald-500' },
+  amber: { value: 'text-amber-600', chip: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300', bar: 'bg-amber-500' },
+} as const;
+
+const priorityColor: Record<Priority, string> = {
+  LOW: 'bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300',
+  MEDIUM: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  HIGH: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  CRITICAL: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+};
+
+const projectStatusColor: Record<ProjectStatus, string> = {
+  PLANNED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  ACTIVE: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  ON_HOLD: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  COMPLETED: 'bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300',
+  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+};
 
 export const TechDashboard: React.FC = () => {
   const { t } = useTranslation();
@@ -110,15 +133,28 @@ export const TechDashboard: React.FC = () => {
           </Card>
         )}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <KPICard title={t('consultant.techDashboard.kpi.myTickets')} value={myTicketsCount} icon="ticket" color="blue" />
-          <KPICard title={t('consultant.techDashboard.kpi.overdueTickets')} value={overdueTickets} icon="alert" color="red" />
-          <KPICard title={t('consultant.techDashboard.kpi.hoursThisWeek')} value={hoursThisWeek} icon="timesheet" color="green" />
-          <KPICard
-            title={t('consultant.techDashboard.kpi.activeProjects')}
-            value={activeProjects}
-            icon="project-definition-triangle-2"
-            color="yellow"
-          />
+          {([
+            { key: 'myTickets', label: t('consultant.techDashboard.kpi.myTickets'), value: myTicketsCount, Icon: TicketIcon, accent: 'blue' as const },
+            { key: 'overdue', label: t('consultant.techDashboard.kpi.overdueTickets'), value: overdueTickets, Icon: AlertTriangle, accent: 'red' as const },
+            { key: 'hours', label: t('consultant.techDashboard.kpi.hoursThisWeek'), value: `${hoursThisWeek}h`, Icon: Clock3, accent: 'green' as const },
+            { key: 'projects', label: t('consultant.techDashboard.kpi.activeProjects'), value: activeProjects, Icon: FolderKanban, accent: 'amber' as const },
+          ]).map(({ key, label, value, Icon, accent }) => {
+            const style = accentStyles[accent];
+            return (
+              <Card key={key} className="relative overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                <div className={`absolute inset-y-0 left-0 w-1 ${style.bar}`} />
+                <CardContent className="flex items-center justify-between p-5 pl-6">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+                    <p className={`mt-2 text-3xl font-semibold tracking-tight ${style.value}`}>{value}</p>
+                  </div>
+                  <span className={`inline-flex h-11 w-11 items-center justify-center rounded-xl ${style.chip}`}>
+                    <Icon className="h-5 w-5" />
+                  </span>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_1fr]">
@@ -147,7 +183,7 @@ export const TechDashboard: React.FC = () => {
                         <p className="font-semibold text-foreground">{ticket.title}</p>
                         <p className="mt-1 text-xs text-muted-foreground">{ticket.description}</p>
                       </div>
-                      <span className="rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${priorityColor[ticket.priority] ?? priorityColor.MEDIUM}`}>
                         {ticket.priority}
                       </span>
                     </div>
@@ -189,7 +225,7 @@ export const TechDashboard: React.FC = () => {
                           {project.description}
                         </p>
                       </div>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/12 px-2 py-1 text-xs font-medium text-primary">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${projectStatusColor[project.status] ?? projectStatusColor.PLANNED}`}>
                         <FolderKanban className="h-3.5 w-3.5" />
                         {project.status}
                       </span>
@@ -216,20 +252,20 @@ export const TechDashboard: React.FC = () => {
             <div className="rounded-xl border border-border/70 bg-surface-1 p-4">
               <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">{t('consultant.techDashboard.productivity.thisWeek')}</p>
               <p className="mt-2 inline-flex items-center gap-2 text-2xl font-semibold text-foreground">
-                <Clock3 className="h-5 w-5 text-primary" />
+                <Clock3 className="h-5 w-5 text-blue-500" />
                 {hoursThisWeek}h
               </p>
             </div>
             <div className="rounded-xl border border-border/70 bg-surface-1 p-4">
               <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">{t('consultant.techDashboard.productivity.ticketsCompleted')}</p>
               <p className="mt-2 inline-flex items-center gap-2 text-2xl font-semibold text-foreground">
-                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                 {doneTickets}
               </p>
             </div>
             <div className="rounded-xl border border-border/70 bg-surface-1 p-4">
               <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">{t('consultant.techDashboard.productivity.completionRate')}</p>
-              <p className="mt-2 text-2xl font-semibold text-foreground">{completionRate.toFixed(0)}%</p>
+              <p className="mt-2 text-2xl font-semibold text-primary">{completionRate.toFixed(0)}%</p>
             </div>
           </CardContent>
         </Card>

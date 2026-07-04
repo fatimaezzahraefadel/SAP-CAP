@@ -13,6 +13,12 @@ cds.on('bootstrap', (app) => {
 	const { getLogger } = require('./srv/shared/logging/logger');
 	const logger = getLogger('server');
 
+	// Parse JSON bodies with a high limit BEFORE CAP mounts its own parsers, so
+	// base64 file uploads (e.g. uploadCertificateDocument / uploadAttachment)
+	// don't hit the default ~100kb cap and return 413. CAP's downstream parser
+	// skips re-parsing once express.json has set req._body.
+	app.use(express.json({ limit: '50mb' }));
+
 	app.use((req, res, next) => {
 		req.traceId = req.headers['x-trace-id'] || crypto.randomUUID();
 		res.setHeader('X-Trace-Id', req.traceId);
