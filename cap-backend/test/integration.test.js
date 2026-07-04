@@ -336,6 +336,64 @@ describe('Ticket CRUD', () => {
     expect(data.status).toBe('IN_PROGRESS');
   });
 
+  test('PATCH /Tickets stamps completedAt when status enters DONE', async () => {
+    const { data: ticket } = await POST(
+      '/odata/v4/ticket/Tickets',
+      {
+        projectId: requireSeedId('project1Id'),
+        createdBy: requireSeedId('managerId'),
+        title: 'PATCH completion timestamp test',
+        nature: 'PROGRAMME',
+        priority: 'LOW',
+      },
+      withAuth()
+    );
+
+    const { data: completed } = await PATCH(
+      `/odata/v4/ticket/Tickets('${ticket.ID}')`,
+      { status: 'DONE' },
+      withAuth()
+    );
+
+    expect(completed.status).toBe('DONE');
+    expect(completed.completedAt).toBeTruthy();
+  });
+
+  test('completeTicket action stamps completedAt', async () => {
+    const { data: ticket } = await POST(
+      '/odata/v4/ticket/Tickets',
+      {
+        projectId: requireSeedId('project1Id'),
+        createdBy: requireSeedId('managerId'),
+        title: 'Action completion timestamp test',
+        nature: 'PROGRAMME',
+        priority: 'LOW',
+      },
+      withAuth()
+    );
+
+    await PATCH(
+      `/odata/v4/ticket/Tickets('${ticket.ID}')`,
+      { status: 'IN_PROGRESS' },
+      withAuth()
+    );
+    await PATCH(
+      `/odata/v4/ticket/Tickets('${ticket.ID}')`,
+      { status: 'IN_TEST' },
+      withAuth()
+    );
+
+    const { data: completed } = await POST(
+      `/odata/v4/ticket/Tickets('${ticket.ID}')/completeTicket`,
+      {},
+      withAuth()
+    );
+
+    expect(completed.status).toBe('DONE');
+    expect(completed.completedAt).toBeTruthy();
+    expect(completed.updatedAt).toBe(completed.completedAt);
+  });
+
   test('POST /Tickets with missing required fields returns 400', async () => {
     try {
       await POST('/odata/v4/ticket/Tickets', { title: 'Missing fields' }, withAuth());

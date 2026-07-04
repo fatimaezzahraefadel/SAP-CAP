@@ -4,6 +4,7 @@ const cds = require('@sap/cds');
 const DeliverableRepo = require('./deliverable.repo');
 const { assertEntityExists, ENTITIES, MANAGER_ROLES, requireRole, requireOwnerOrRole } = require('../shared/services/validation');
 const { getRequestContext } = require('../_shared/auth/request-context');
+const { writeAuditEntry } = require('../shared/services/audit');
 
 const DELIVERABLE_TRANSITIONS = {
   PENDING: new Set(['APPROVED', 'CHANGES_REQUESTED']),
@@ -36,9 +37,8 @@ class DeliverableDomainService {
 
   /**
    * Notify the project manager that a new deliverable was submitted for review.
-   * Generated server-side (trusted) because a consultant cannot POST a
-   * Notification targeting another user — that path is blocked as recipient
-   * spoofing in notification.domain.service.js. A notification failure must
+   * Generated server-side so the notification carries trusted, consistent
+   * content regardless of the submitting client. A notification failure must
    * never roll back a successfully created deliverable.
    */
   async afterCreate(data, req) {
@@ -59,14 +59,30 @@ class DeliverableDomainService {
         : null;
       const author = submitter?.name || ctx.email || 'Un consultant';
 
-      await cds.db.run(INSERT.into(ENTITIES.Notifications).entries({
+      const notification = {
+        ID: cds.utils.uuid(),
         userId: project.managerId,
         type: 'DELIVERABLE_SUBMITTED',
         title: 'Nouvelle spécification fonctionnelle',
         message: `${author} a soumis « ${data.name} » pour validation.`,
         targetPath: `{roleBasePath}/projects/${data.projectId}`,
         read: false,
-      }));
+      };
+      await cds.db.run(INSERT.into(ENTITIES.Notifications).entries(notification));
+
+      // Direct cds.db inserts bypass the service-level audit handler; record
+      // the side effect explicitly so the audit trail stays complete.
+      await writeAuditEntry({
+        userId: ctx.userId || null,
+        userRole: ctx.role || null,
+        action: 'notifyDeliverableSubmitted',
+        entityName: ENTITIES.Notifications,
+        entityId: notification.ID,
+        details: {
+          deliverableId: data.ID,
+          notification,
+        },
+      });
     } catch (err) {
       req.warn?.(`Failed to create DELIVERABLE_SUBMITTED notification: ${err.message}`);
     }

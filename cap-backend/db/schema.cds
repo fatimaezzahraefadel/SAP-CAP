@@ -149,7 +149,8 @@ entity Evaluations : cuid, managed {
   projectId       : String(50);
   project         : Association to Projects on project.ID = projectId;
   period          : String(20);
-  score           : Decimal(4,2) default 0;
+  // Wide enough for unbounded ticket-based scores (can exceed +/-100).
+  score           : Decimal(6,2) default 0;
   qualitativeGrid : Composition of many EvaluationQualitativeGrids on qualitativeGrid.evaluation = $self;
   feedback        : LargeString;
 }
@@ -209,6 +210,10 @@ entity Tickets : cuid, managed {
   comments                : Composition of many TicketComments on comments.ticket = $self;
   allocatedHours          : Decimal(6,2)     default 0;
   updatedAt               : DateTime;
+  // Stamped when the ticket enters DONE, cleared if it moves back to a working
+  // status. Gives evaluations a stable completion date that later edits to the
+  // ticket cannot shift (unlike updatedAt).
+  completedAt             : DateTime;
 }
 
 entity TicketTags : cuid {

@@ -409,6 +409,8 @@ export interface Ticket {
   dueDate?: string;
   createdAt: string;
   updatedAt?: string;
+  /** Stamped when the ticket enters DONE; cleared if it moves back. */
+  completedAt?: string;
   history: TicketEvent[];
   /** Manual effort hours logged by the consultant */
   effortHours: number;

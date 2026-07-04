@@ -142,6 +142,31 @@ const persistAuditRow = async (logEntry) => {
 };
 
 /**
+ * Write a single audit row outside the CAP handler flow - for server-generated
+ * side effects (e.g. workflow notifications inserted directly via cds.db) that
+ * would otherwise bypass the service-level audit handler below.
+ */
+const writeAuditEntry = async ({
+  userId = null,
+  userRole = null,
+  action,
+  entityName,
+  entityId = null,
+  details = null,
+}) => {
+  await ensureAuditTable();
+  await persistAuditRow({
+    timestamp: new Date().toISOString(),
+    userId,
+    userRole,
+    action,
+    entityName,
+    entityId: entityId !== null && entityId !== undefined ? String(entityId) : null,
+    details: summarise(details),
+  });
+};
+
+/**
  * Register an after-handler on the given CDS service that audits every CUD
  * operation AND every custom action — except the read-style skip list above.
  */
@@ -174,4 +199,4 @@ const attachAuditLog = (srv) => {
   });
 };
 
-module.exports = { attachAuditLog, AUDIT_SKIPPED_EVENTS, shouldAudit };
+module.exports = { attachAuditLog, writeAuditEntry, AUDIT_SKIPPED_EVENTS, shouldAudit };

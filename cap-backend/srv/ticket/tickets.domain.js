@@ -159,6 +159,7 @@ class TicketDomainService {
     data.effortHours     = data.effortHours  ?? 0;
     data.estimationHours = data.estimationHours ?? 0;
     data.allocatedHours  = data.allocatedHours ?? 0;
+    if (data.status === 'DONE' && !data.completedAt) data.completedAt = nowIso();
     // createdAt is auto-set by the `managed` mixin; no need to set it here
 
     if (data.history !== undefined) {
@@ -217,6 +218,14 @@ class TicketDomainService {
           ticketStateMachine.assertTransition(current.status, data.status, 'ticket');
         } catch (err) {
           req.reject(err.code || 400, err.message);
+        }
+        // Stamp the completion date when the ticket enters DONE and clear it
+        // when it moves back to a working status, so evaluations read a stable
+        // completion date that later edits cannot shift.
+        if (data.status === 'DONE') {
+          data.completedAt = nowIso();
+        } else if (current.status === 'DONE') {
+          data.completedAt = null;
         }
       }
     }
@@ -321,9 +330,11 @@ class TicketDomainService {
       req.reject(409, 'Ticket must be IN_TEST to complete it');
       return;
     }
+    const completedAt = nowIso();
     const updated = await this.repo.update(id, {
       status: 'DONE',
-      updatedAt: nowIso(),
+      completedAt,
+      updatedAt: completedAt,
     });
     this.afterRead(updated);
     return updated;
@@ -430,10 +441,13 @@ class TicketDomainService {
         req
       );
 
-      await tx.run(UPDATE(ENTITIES.Tickets).where({ ID: id }).with({
+      const changes = {
         status: TICKET_STATUS.REJECTED,
         updatedAt: nowIso(),
-      }));
+      };
+      if (ticket.status === TICKET_STATUS.DONE) changes.completedAt = null;
+
+      await tx.run(UPDATE(ENTITIES.Tickets).where({ ID: id }).with(changes));
 
       // Notify the creator (atomic part of the transaction)
       if (ticket.createdBy) {

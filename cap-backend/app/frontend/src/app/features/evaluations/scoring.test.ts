@@ -43,6 +43,21 @@ describe('scoreTicket', () => {
     expect(line.points).toBe(6);
   });
 
+  it('prefers completedAt over updatedAt when judging timeliness', () => {
+    // Completed on time, but the ticket was edited after the due date -
+    // updatedAt alone would wrongly classify it as LATE.
+    const line = scoreTicket(
+      createTicket({
+        status: 'DONE',
+        completedAt: '2026-06-09T18:00:00Z',
+        updatedAt: '2026-06-12T10:00:00Z',
+        dueDate: '2026-06-10',
+      }),
+      TODAY
+    );
+    expect(line.category).toBe('ON_TIME');
+  });
+
   it('adds the nature bonus on top of the complexity bonus for a completed ticket', () => {
     const line = scoreTicket(
       createTicket({

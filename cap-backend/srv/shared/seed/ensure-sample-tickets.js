@@ -50,8 +50,12 @@ const build = (consultantId, role, seq, title, projectId, priority, dim) => {
     createdAt: T('2026-06-01'),
   };
   if (dueDate) row.dueDate = dueDate;
-  // updatedAt is the completion timestamp the scoring uses for on-time/late.
-  if (status === 'DONE' && completedDate) row.updatedAt = T(completedDate);
+  // completedAt is the completion timestamp the scoring uses for on-time/late
+  // (updatedAt is kept in sync for anything still reading the legacy field).
+  if (status === 'DONE' && completedDate) {
+    row.completedAt = T(completedDate);
+    row.updatedAt = T(completedDate);
+  }
   return row;
 };
 

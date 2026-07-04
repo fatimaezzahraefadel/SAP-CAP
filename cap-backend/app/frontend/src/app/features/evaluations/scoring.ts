@@ -117,7 +117,12 @@ export const scoreTicket = (ticket: Ticket, today: string): TicketScoreLine => {
       // Can't assess timeliness without a due date.
       return line('NO_DUE_DATE', 0, false);
     }
-    const completed = dateKey(ticket.updatedAt) || dateKey(ticket.createdAt);
+    // Prefer the dedicated completion stamp; fall back to updatedAt/createdAt
+    // for tickets completed before completedAt existed.
+    const completed =
+      dateKey(ticket.completedAt) ||
+      dateKey(ticket.updatedAt) ||
+      dateKey(ticket.createdAt);
     const onTime = completed !== '' && completed <= due;
     return onTime ? line('ON_TIME', ON_TIME_POINTS, true) : line('LATE', LATE_POINTS, true);
   }
