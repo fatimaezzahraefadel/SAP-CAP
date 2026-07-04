@@ -23,8 +23,13 @@ module.exports = (srv) => {
         const file = await domain.getFile(req.params.id);
         if (!file) return res.status(404).send('Not found');
 
+        // originalName is stored as uploaded; strip characters that would break
+        // or terminate the header value before embedding it.
+        const downloadName = String(file.originalName || file.fileName || 'download')
+          .replace(/[\r\n"\\;]/g, '_');
+
         res.setHeader('Content-Type', file.mimeType || 'application/octet-stream');
-        res.setHeader('Content-Disposition', `attachment; filename="${file.originalName || file.fileName}"`);
+        res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
 
         const body = file.content;
 

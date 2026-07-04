@@ -286,6 +286,9 @@ export interface Certification {
   dateObtained: string;
   expiryDate?: string;
   status: CertificationStatus;
+  // Raw backend status (ACTIVE | EXPIRED | REVOKED) — REVOKED displays as
+  // EXPIRED but must survive a load-edit-save round trip.
+  backendStatus?: string;
   // Extended fields from the dedicated Certificates entity
   userId?: string;
   credentialId?: string;

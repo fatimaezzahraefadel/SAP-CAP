@@ -4,9 +4,9 @@ const crypto = require('node:crypto');
 const AttachmentsRepo = require('./attachments.repo');
 const { nowIso } = require('../shared/utils/timestamp');
 const { getRequestContext } = require('../_shared/auth/request-context');
+const { isAllowedMimeType } = require('../shared/utils/mime');
 
 const MAX_SIZE_MB = Number(process.env.ATTACHMENT_MAX_SIZE_MB || 25);
-const ALLOWED_MIME = (process.env.ATTACHMENT_ALLOWED_MIME_TYPES || 'pdf,png,jpg,jpeg,docx,xlsx,txt').split(',').map(s => s.trim().toLowerCase());
 
 const safeFileName = (name) => name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 250);
 
@@ -25,8 +25,7 @@ class AttachmentsDomainService {
       return req.error(400, 'Missing upload parameters');
     }
 
-    const normalizedMime = String(mimeType || '').toLowerCase();
-    if (!ALLOWED_MIME.includes(normalizedMime.split('/').pop()) && !ALLOWED_MIME.includes(normalizedMime)) {
+    if (!isAllowedMimeType(mimeType)) {
       return req.error(400, 'MIME type not allowed');
     }
 

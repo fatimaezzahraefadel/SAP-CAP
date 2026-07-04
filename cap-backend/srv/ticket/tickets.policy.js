@@ -126,13 +126,12 @@ async function canDeleteTicket(ctx, ticket) {
   if (!isFunctionalOwner(ctx, ticket)) return false;
   if (!NON_APPROVED_STATUSES.has(ticket.status)) return false;
 
-  const [hasTime, hasValidatedDeliverable, hasLockedFiles] = await Promise.all([
+  const [hasTime, hasValidatedDeliverable] = await Promise.all([
     hasImputedTime(ticket.ID),
     hasApprovedDeliverable(ticket.ID),
-    hasLockedAttachment(ticket.ID),
   ]);
 
-  return !hasTime && !hasValidatedDeliverable && !hasLockedFiles;
+  return !hasTime && !hasValidatedDeliverable;
 }
 
 function canApproveOrReject(ctx) {
@@ -169,22 +168,6 @@ async function hasApprovedDeliverable(ticketId) {
     })
   );
   return Boolean(deliverable);
-}
-
-async function hasLockedAttachment(ticketId) {
-  if (!ticketId) return false;
-  const attachments = await cds.db.run(
-    SELECT.from(ENTITIES.Attachments).where({
-      parentType: 'TICKET',
-      parentId: ticketId,
-    })
-  );
-
-  return attachments.some((attachment) =>
-    attachment.locked === true ||
-    attachment.isLocked === true ||
-    String(attachment.status ?? '').toUpperCase() === 'LOCKED'
-  );
 }
 
 policies.register(Actions.TICKET_CREATE, canCreateTicket);

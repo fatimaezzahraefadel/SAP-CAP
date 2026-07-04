@@ -14,12 +14,11 @@ const {
   requireOwnerOrRole,
 } = require('../shared/services/validation');
 const crypto = require('node:crypto');
+const { isAllowedMimeType } = require('../shared/utils/mime');
 
 const CERTIFICATE_STATUSES = ['ACTIVE', 'EXPIRED', 'REVOKED'];
 
 const MAX_DOC_SIZE_MB = Number(process.env.ATTACHMENT_MAX_SIZE_MB || 25);
-const ALLOWED_MIME = (process.env.ATTACHMENT_ALLOWED_MIME_TYPES || 'pdf,png,jpg,jpeg,docx,xlsx,txt')
-  .split(',').map(s => s.trim().toLowerCase());
 
 const safeFileName = (name) => name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 250);
 const extractId = (req) => req.params?.[0]?.ID ?? req.params?.[0] ?? req.data?.ID;
@@ -100,8 +99,7 @@ class CertificateDomainService {
 
     requireOwnerOrRole(req, cert.userId, MANAGER_ROLES, 'You can only upload documents to your own certificates');
 
-    const normalizedMime = String(mimeType).toLowerCase();
-    if (!ALLOWED_MIME.includes(normalizedMime.split('/').pop()) && !ALLOWED_MIME.includes(normalizedMime)) {
+    if (!isAllowedMimeType(mimeType)) {
       return req.error(400, 'MIME type not allowed');
     }
 

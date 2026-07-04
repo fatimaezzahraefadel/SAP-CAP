@@ -64,6 +64,7 @@ export const normalizeCertificate = (
     dateObtained: String(raw.issuedDate ?? ''),
     expiryDate: raw.expiryDate ?? undefined,
     status: toFrontendStatus(raw),
+    backendStatus: String(raw.status ?? 'ACTIVE').toUpperCase(),
     credentialId: raw.credentialId,
     credentialUrl: raw.credentialUrl,
     description: raw.description,
@@ -84,7 +85,13 @@ const toBackendPayload = (
   if (cert.issuingBody !== undefined) payload.issuingOrg = cert.issuingBody;
   if (cert.dateObtained !== undefined) payload.issuedDate = cert.dateObtained;
   if (cert.expiryDate !== undefined) payload.expiryDate = cert.expiryDate || null;
-  if (cert.status !== undefined) payload.status = toBackendStatus(cert.status);
+  // Prefer the raw backend status (preserves REVOKED, which the frontend
+  // CertificationStatus cannot represent and would otherwise rewrite as EXPIRED).
+  if (cert.backendStatus !== undefined) {
+    payload.status = cert.backendStatus;
+  } else if (cert.status !== undefined) {
+    payload.status = toBackendStatus(cert.status);
+  }
   if ((cert as unknown as Record<string, unknown>).credentialId !== undefined)
     payload.credentialId = (cert as unknown as Record<string, unknown>).credentialId;
   if ((cert as unknown as Record<string, unknown>).credentialUrl !== undefined)

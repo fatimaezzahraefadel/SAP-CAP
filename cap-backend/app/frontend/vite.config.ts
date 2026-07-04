@@ -10,6 +10,23 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, '../dist'),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        // Keep the biggest stable dependencies out of the main app chunk so
+        // app code changes don't invalidate the whole bundle cache.
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router'],
+          'vendor-charts': ['recharts'],
+          'vendor-motion': ['motion'],
+          'vendor-i18n': [
+            'i18next',
+            'react-i18next',
+            'i18next-browser-languagedetector',
+            'i18next-http-backend',
+          ],
+        },
+      },
+    },
   },
   resolve: {
     alias: {
