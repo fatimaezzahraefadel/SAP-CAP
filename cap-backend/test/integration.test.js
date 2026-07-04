@@ -501,8 +501,11 @@ describe('Validation and state-machine guards', () => {
   });
 
   test('Ticket invalid status transition returns 409', async () => {
+    // Working statuses (NEW, IN_PROGRESS, IN_TEST, BLOCKED, DONE) are freely
+    // interchangeable on the Kanban board, but re-entering the approval gate
+    // (NEW -> APPROVED) stays forbidden.
     try {
-      await PATCH(`/odata/v4/ticket/Tickets('${requireSeedId('newStatusTicketId')}')`, { status: 'DONE' }, withAuth());
+      await PATCH(`/odata/v4/ticket/Tickets('${requireSeedId('newStatusTicketId')}')`, { status: 'APPROVED' }, withAuth());
       fail('Should have thrown');
     } catch (err) {
       expect(err.response?.status ?? err.status).toBe(409);
@@ -618,22 +621,40 @@ describe('Validation and state-machine guards', () => {
     }
   });
 
-  test('Notification create rejects cross-user recipient spoofing', async () => {
+  test('Notification create allows notifying another user, rejects unknown recipients', async () => {
     await ensureConsultantAuth();
+
+    // Notifications are workflow side effects (e.g. a consultant submitting a
+    // deliverable notifies the manager), so cross-user creation is allowed.
+    // The response is 204 rather than 201 because the post-create reselect is
+    // read-scoped to the sender, who cannot see the recipient's notification.
+    const { status } = await POST(
+      '/odata/v4/user/Notifications',
+      {
+        userId: requireSeedId('managerId'),
+        type: 'TEST',
+        title: 'Workflow notification',
+        message: 'Deliverable submitted',
+      },
+      withConsultantAuth()
+    );
+    expect([201, 204]).toContain(status);
+
+    // ...but the recipient must be a real user.
     try {
       await POST(
         '/odata/v4/user/Notifications',
         {
-          userId: requireSeedId('managerId'),
+          userId: 'nonexistent-user-id',
           type: 'TEST',
-          title: 'Spoofed notification',
+          title: 'Ghost notification',
           message: 'Should fail',
         },
         withConsultantAuth()
       );
       fail('Should have thrown');
     } catch (err) {
-      expect(err.response?.status ?? err.status).toBe(403);
+      expect(err.response?.status ?? err.status).toBe(400);
     }
   });
 
