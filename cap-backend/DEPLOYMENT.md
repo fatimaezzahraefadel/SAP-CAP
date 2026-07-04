@@ -90,6 +90,23 @@ The first deploy creates three services in your space:
 The approuter URL is the public entry point — open it in a browser to trigger
 the XSUAA OAuth flow.
 
+### Environment variables (after the first deploy)
+
+Some features read configuration from the backend app's environment. Set them
+once with `cf set-env` and restage:
+
+```bash
+# Required only if the AI dispatch feature is used (otherwise it returns 500)
+cf set-env ticket-cap-srv OPENROUTER_API_KEY <your-key>
+
+# Optional overrides (defaults shown)
+cf set-env ticket-cap-srv CLEANUP_CRON "0 2 * * *"          # orphan-attachment purge schedule
+cf set-env ticket-cap-srv ATTACHMENT_MAX_SIZE_MB 25          # upload size limit
+cf set-env ticket-cap-srv ATTACHMENT_ALLOWED_MIME_TYPES "pdf,png,jpg,jpeg,docx,xlsx,txt"
+
+cf restage ticket-cap-srv
+```
+
 ## Assigning roles to users (one-time per user)
 
 1. Open the **BTP Cockpit → your subaccount → Security → Role Collections**.
@@ -107,7 +124,7 @@ the XSUAA OAuth flow.
 
 | File | Local default | Production override |
 |---|---|---|
-| `package.json` | `auth: "mocked"`, `db: sqlite` | `[production]: { auth: xsuaa, db: hana-cloud }` |
+| `package.json` | `auth: "dummy"`, `db: sqlite` | `[production]: { auth: xsuaa, db: hana-cloud }` |
 | `srv/_shared/auth/request-context.js` | Reads `req._authClaims` (mocked JWT) | Falls back to `req.user` (XSUAA scopes mapped to internal roles) |
 | Tests | All use mocked auth — no XSUAA wiring needed | n/a |
 

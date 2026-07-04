@@ -41,9 +41,9 @@ cds.on('bootstrap', (app) => {
 });
 
 cds.on('served', () => {
-	if (!fs.existsSync(webAppIndex) || !cds.app) return;
-
-	// Register scheduled background jobs after the server is served
+	// Register scheduled background jobs after the server is served. This must
+	// happen regardless of the SPA build: in production (gen/srv behind the
+	// approuter) app/dist is not packaged, but the cleanup job still has to run.
 	try {
 		const { registerCleanupJob } = require('./srv/documentation/cleanup-job');
 		registerCleanupJob();
@@ -51,6 +51,8 @@ cds.on('served', () => {
 		// non-fatal if job cannot be registered
 		console.warn('cleanup job registration skipped:', e.message);
 	}
+
+	if (!fs.existsSync(webAppIndex) || !cds.app) return;
 
 	cds.app.use((req, res, next) => {
 		if (req.method !== 'GET' && req.method !== 'HEAD') return next();
