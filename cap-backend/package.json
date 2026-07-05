@@ -68,6 +68,9 @@
           "kind": "xsuaa"
         }
       },
+      "[development]": {
+        "auth": "dummy"
+      },
       "[test]": {
         "auth": "dummy"
       }
