@@ -74,12 +74,11 @@ The app was moved to the proper SAP/BTP model:
 
 `srv/auth/auth.domain.service.js`
 
-- Supports production XSUAA mode without requiring `MOCK_JWT_SECRET`.
+- Uses XSUAA/CAP request context for runtime authentication.
 - Uses `getRequestContext(req)` to read the authenticated SAP/XSUAA principal.
 - Implements `currentUser(req)`:
   - reads the XSUAA-derived role,
-  - optionally matches the SAP user email to a local active user,
-  - otherwise falls back to the active seeded user for that role,
+  - provisions or updates the local app user from the XSUAA principal,
   - returns the app's `AuthUser` shape to the frontend.
 
 `srv/_shared/auth/request-context.js`
@@ -95,7 +94,7 @@ The app was moved to the proper SAP/BTP model:
 
 `srv/auth/auth.repo.js`
 
-- Adds lookup by role for resolving the active local app profile from an XSUAA role.
+- Provisions or updates local users from XSUAA principals.
 - Removes the unused quick access user listing.
 
 `srv/shared/services/audit.js`
@@ -123,9 +122,9 @@ The app was moved to the proper SAP/BTP model:
 
 `app/frontend/src/app/services/odata/authApi.ts`
 
-- Adds `currentUser()`.
+- Keeps `currentUser()`.
 - Removes the quick access API helper.
-- Leaves the old `authenticate()` helper for backward compatibility/tests, but the frontend login flow no longer uses it.
+- Removes the old `authenticate()` helper.
 
 `app/frontend/src/app/services/odata/core.ts`
 
@@ -147,8 +146,9 @@ The app was moved to the proper SAP/BTP model:
 
 `test/auth.domain.service.test.js`
 
-- Verifies production XSUAA mode does not require `MOCK_JWT_SECRET`.
-- Verifies `currentUser()` maps an XSUAA role to an active local app user.
+- Verifies runtime authentication uses CAP/XSUAA request context.
+- Verifies test-only principals work only under Jest.
+- Verifies `currentUser()` provisions an XSUAA-backed local app user.
 
 `test/request-context.test.js`
 

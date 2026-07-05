@@ -1,9 +1,9 @@
 # Ticket-CAP — BTP Cloud Foundry Deployment
 
 This guide covers deploying the application to SAP BTP using
-**Multi-Target Application (MTA)** packaging. Local development is unchanged —
-the production wiring lives in profile-gated config and never activates
-unless you build with `--production`.
+**Multi-Target Application (MTA)** packaging. The application is wired for
+XSUAA by default so local and deployed runtimes use the same authentication
+model. Jest tests use a test-only dummy-auth profile.
 
 ## Architecture on BTP
 
@@ -120,17 +120,18 @@ cf restage ticket-cap-srv
 3. Edit a collection → **Users** tab → add the user's IdP email.
 4. The user logs out and back in; the new role takes effect.
 
-## How local dev stays unaffected
+## Local auth model
 
-| File | Local default | Production override |
+| File | Runtime default | Production override |
 |---|---|---|
-| `package.json` | `auth: "dummy"`, `db: sqlite` | `[production]: { auth: xsuaa, db: hana-cloud }` |
-| `srv/_shared/auth/request-context.js` | Reads `req._authClaims` (mocked JWT) | Falls back to `req.user` (XSUAA scopes mapped to internal roles) |
-| Tests | All use mocked auth — no XSUAA wiring needed | n/a |
+| `package.json` | `auth: xsuaa`, `db: sqlite` | `[production]: { auth: xsuaa, db: hana-cloud }` |
+| `srv/_shared/auth/request-context.js` | Reads CAP/XSUAA user context from `req.user` | Same role mapping, backed by BTP XSUAA |
+| Tests | `[test]` profile uses dummy auth plus explicit `x-test-user-*` headers | n/a |
 
 CAP activates the `[production]` profile when `NODE_ENV=production` (the
-Cloud Foundry buildpack sets this automatically). On your laptop, nothing
-changes — `npm run watch` and `npm test` keep working exactly as before.
+Cloud Foundry buildpack sets this automatically). For local runtime testing,
+bind XSUAA credentials or run through the approuter. `npm test` keeps using the
+test profile and does not need a live XSUAA service.
 
 ## Re-deploys and updates
 

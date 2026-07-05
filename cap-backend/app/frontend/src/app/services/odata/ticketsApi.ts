@@ -53,6 +53,24 @@ const asAction = (value: unknown): TicketEvent['action'] | undefined => {
 
 const isDefined = <T>(value: T | null): value is T => value !== null;
 
+const unwrapHistoryRecord = (candidate: Record<string, unknown>): Record<string, unknown> => {
+  const detailsRecord = asRecord(parseJsonIfString(candidate.details));
+  if (detailsRecord) {
+    const rest = { ...candidate };
+    delete rest.details;
+    return unwrapHistoryRecord({ ...rest, ...detailsRecord });
+  }
+
+  const commentRecord = asRecord(parseJsonIfString(candidate.comment));
+  if (commentRecord) {
+    const rest = { ...candidate };
+    delete rest.comment;
+    return unwrapHistoryRecord({ ...rest, ...commentRecord });
+  }
+
+  return candidate;
+};
+
 const normalizeTags = (value: unknown): string[] =>
   parseRows(value)
     .map((entry) => {
@@ -79,15 +97,19 @@ const normalizeHistory = (value: unknown): TicketEvent[] =>
       const candidate = asRecord(entry);
       if (!candidate) return null;
 
-      const directAction = asAction(candidate.action);
+      const normalized = unwrapHistoryRecord(candidate);
+      const directAction = asAction(normalized.action);
       if (directAction) {
-        const fromValue = asString(candidate.fromValue);
-        const toValue = asString(candidate.toValue);
-        const comment = asString(candidate.comment);
+        const fromValue = asString(normalized.fromValue);
+        const toValue = asString(normalized.toValue);
+        const comment = asString(normalized.comment ?? normalized.details);
         return {
-          id: asString(candidate.id) ?? asString(candidate.ID) ?? `te-${index}`,
-          timestamp: asString(candidate.timestamp) ?? asString(candidate.createdAt) ?? new Date().toISOString(),
-          userId: asString(candidate.userId) ?? asString(candidate.createdBy) ?? 'system',
+          id: asString(normalized.id) ?? asString(normalized.ID) ?? asString(candidate.ID) ?? `te-${index}`,
+          timestamp:
+            asString(normalized.timestamp) ??
+            asString(candidate.createdAt) ??
+            new Date().toISOString(),
+          userId: asString(normalized.userId) ?? asString(candidate.createdBy) ?? 'system',
           action: directAction,
           ...(fromValue ? { fromValue } : {}),
           ...(toValue ? { toValue } : {}),
@@ -95,25 +117,22 @@ const normalizeHistory = (value: unknown): TicketEvent[] =>
         };
       }
 
-      const event = asString(candidate.event);
-      const detailsRaw = candidate.details;
-      const parsedDetails = parseJsonIfString(detailsRaw);
-      const detailRecord = asRecord(parsedDetails);
-      const detailAction = asAction(detailRecord?.action ?? event);
-      const fromValue = asString(detailRecord?.fromValue);
-      const toValue = asString(detailRecord?.toValue);
+      const event = asString(normalized.event ?? candidate.event);
+      const detailAction = asAction(normalized.action ?? event);
+      const fromValue = asString(normalized.fromValue);
+      const toValue = asString(normalized.toValue);
       const comment =
-        asString(detailRecord?.comment) ??
-        (typeof detailsRaw === 'string' ? detailsRaw : undefined);
+        asString(normalized.comment) ??
+        asString(normalized.details);
 
       return {
-        id: asString(detailRecord?.id) ?? asString(candidate.ID) ?? `te-${index}`,
+        id: asString(normalized.id) ?? asString(candidate.ID) ?? `te-${index}`,
         timestamp:
-          asString(detailRecord?.timestamp) ??
+          asString(normalized.timestamp) ??
           asString(candidate.createdAt) ??
           asString(candidate.modifiedAt) ??
           new Date().toISOString(),
-        userId: asString(detailRecord?.userId) ?? asString(candidate.createdBy) ?? 'system',
+        userId: asString(normalized.userId) ?? asString(candidate.createdBy) ?? 'system',
         action: detailAction ?? 'COMMENT',
         ...(fromValue ? { fromValue } : {}),
         ...(toValue ? { toValue } : {}),
@@ -136,7 +155,19 @@ const toHistoryRows = (value: unknown): Array<{ event: string; details: string }
         asString(candidate.action) ??
         asString(candidate.event) ??
         'UPDATE';
-      const detailsSource = candidate.details !== undefined ? candidate.details : candidate;
+      const detailFields = {
+        ...(asString(candidate.fromValue) ? { fromValue: asString(candidate.fromValue) } : {}),
+        ...(asString(candidate.toValue) ? { toValue: asString(candidate.toValue) } : {}),
+      };
+      const hasDetailFields = Object.keys(detailFields).length > 0;
+      const detailsSource =
+        candidate.details !== undefined
+          ? candidate.details
+          : candidate.comment !== undefined
+            ? candidate.comment
+            : hasDetailFields
+              ? detailFields
+              : '';
       const details =
         typeof detailsSource === 'string'
           ? detailsSource

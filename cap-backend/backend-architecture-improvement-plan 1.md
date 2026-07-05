@@ -167,7 +167,7 @@ await policies.require(ctx, Actions.TICKET_DELETE, ticket);
 - Ajouter les hooks `before DELETE` manquants pour `ReferenceData`, `Allocations`, `Evaluations`, `DocumentationObjects`, `Deliverables`, `ProjectFeedback`.
 - Ajouter ou completer les hooks `before UPDATE` pour `Evaluations` et `ProjectFeedback`.
 - Restreindre `AuditLogs` a `ADMIN`.
-- Desactiver `quickAccessAccounts` et les mots de passe demo hors environnement local.
+- Supprimer les acces demo et conserver uniquement l'authentification XSUAA.
 - Corriger la suppression ticket selon la regle metier.
 
 ## Plan pieces jointes

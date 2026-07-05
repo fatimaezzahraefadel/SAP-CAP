@@ -10,6 +10,7 @@
 process.env.CDS_REQUIRES_DB_KIND = 'sqlite';
 process.env.CDS_REQUIRES_DB_CREDENTIALS_DATABASE = ':memory:';
 const cds = require('@sap/cds');
+const { USERS, auth } = require('./support/test-auth');
 
 cds.env.requires = cds.env.requires || {};
 cds.env.requires.db = {
@@ -18,14 +19,9 @@ cds.env.requires.db = {
   credentials: { ...((cds.env.requires.db && cds.env.requires.db.credentials) || {}), database: ':memory:' },
 };
 
-const { POST, GET } = cds.test('serve', 'all', '--in-memory').in(__dirname + '/..');
+const { GET } = cds.test('serve', 'all', '--in-memory').in(__dirname + '/..');
 
 const AUDIT = 'sap.performance.dashboard.db.AuditLogs';
-
-const login = async (email, password) => {
-  const { data } = await POST('/odata/v4/user/authenticate', { email, password });
-  return data.token;
-};
 
 const seedAuditRow = (overrides = {}) => cds.db.run(
   INSERT.into(AUDIT).entries({
@@ -49,49 +45,43 @@ const seedAuditRow = (overrides = {}) => cds.db.run(
 describe('AuditLogs policy', () => {
   test('non-ADMIN cannot read AuditLogs collection (403)', async () => {
     await seedAuditRow();
-    const techToken = await login('theo.tech@inetum.com', 'Tech#2026');
     await expect(
-      GET('/odata/v4/core/AuditLogs', { headers: { Authorization: `Bearer ${techToken}` } })
+      GET('/odata/v4/core/AuditLogs', auth(USERS.tech))
     ).rejects.toMatchObject({ response: { status: 403 } });
   });
 
   test('non-ADMIN cannot read a single AuditLog by id (403)', async () => {
     const id = require('crypto').randomUUID();
     await seedAuditRow({ ID: id });
-    const techToken = await login('theo.tech@inetum.com', 'Tech#2026');
     await expect(
-      GET(`/odata/v4/core/AuditLogs(${id})`, { headers: { Authorization: `Bearer ${techToken}` } })
+      GET(`/odata/v4/core/AuditLogs(${id})`, auth(USERS.tech))
     ).rejects.toMatchObject({ response: { status: 403 } });
   });
 
   test('non-ADMIN cannot bypass via $count or $filter (403)', async () => {
     await seedAuditRow();
-    const techToken = await login('theo.tech@inetum.com', 'Tech#2026');
-    const headers = { Authorization: `Bearer ${techToken}` };
     await expect(
-      GET('/odata/v4/core/AuditLogs/$count', { headers })
+      GET('/odata/v4/core/AuditLogs/$count', auth(USERS.tech))
     ).rejects.toMatchObject({ response: { status: 403 } });
     await expect(
-      GET("/odata/v4/core/AuditLogs?$filter=action eq 'UPDATE'", { headers })
+      GET("/odata/v4/core/AuditLogs?$filter=action eq 'UPDATE'", auth(USERS.tech))
     ).rejects.toMatchObject({ response: { status: 403 } });
   });
 
   test('MANAGER also cannot read AuditLogs (403) — ADMIN-only', async () => {
     await seedAuditRow();
-    const mgrToken = await login('marc.manager@inetum.com', 'Manager#2026');
     await expect(
-      GET('/odata/v4/core/AuditLogs', { headers: { Authorization: `Bearer ${mgrToken}` } })
+      GET('/odata/v4/core/AuditLogs', auth(USERS.manager))
     ).rejects.toMatchObject({ response: { status: 403 } });
   });
 
   test('ADMIN can read AuditLogs and sensitive fields are redacted', async () => {
     const id = require('crypto').randomUUID();
     await seedAuditRow({ ID: id, entityId: 'e-mask' });
-    const adminToken = await login('alice.admin@inetum.com', 'Admin#2026');
 
     const { data } = await GET(
       `/odata/v4/core/AuditLogs(${id})`,
-      { headers: { Authorization: `Bearer ${adminToken}` } }
+      auth(USERS.admin)
     );
 
     expect(data).toBeTruthy();
@@ -178,9 +168,6 @@ describe('Audit masking unit', () => {
 describe('Audit write-time masking', () => {
   test('CREATE payloads with sensitive fields persist redacted, never cleartext', async () => {
     const cdsRef = require('@sap/cds');
-    // Login as admin so we can read AuditLogs back through the OData service.
-    const adminToken = await login('alice.admin@inetum.com', 'Admin#2026');
-
     // Manually insert an audit row via the writer's summarise()-equivalent path
     // by exercising the audit module directly. We simulate what attachAuditLog
     // would build for a payload that contains a password and a token.

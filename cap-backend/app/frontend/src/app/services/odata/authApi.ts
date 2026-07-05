@@ -2,18 +2,6 @@ import type { User } from './core';
 import type { ODataRequestOptions } from './core';
 import { normalizeEntityRecord, odataFetch } from './core';
 
-export interface AuthSession {
-  token: string;
-  expiresAt: string;
-  user: User;
-}
-
-interface AuthSessionResponse {
-  token: string;
-  expiresAt: string;
-  user: User;
-}
-
 const parseJsonArray = <T,>(value: unknown): T[] => {
   if (Array.isArray(value)) return value as T[];
   if (typeof value === 'string' && value.trim().startsWith('[')) {
@@ -42,31 +30,6 @@ export const AuthAPI = {
       skills: parseJsonArray<string>(user.skills),
       certifications: parseJsonArray<User['certifications'][number]>(user.certifications),
       availabilityPercent: user.availabilityPercent ?? 100,
-    };
-  },
-
-  async authenticate(
-    email: string,
-    password: string,
-    requestOptions?: ODataRequestOptions
-  ): Promise<AuthSession> {
-    const data = await odataFetch<AuthSessionResponse>('user', '/authenticate', {
-      ...requestOptions,
-      method: 'POST',
-      body: JSON.stringify({ email: email.trim(), password }),
-    });
-    if (!data) throw new Error('Authentication failed: no response from server');
-
-    const user = normalizeEntityRecord<User>(data.user);
-    return {
-      token: data.token,
-      expiresAt: data.expiresAt,
-      user: {
-        ...user,
-        skills: parseJsonArray<string>(user.skills),
-        certifications: parseJsonArray<User['certifications'][number]>(user.certifications),
-        availabilityPercent: user.availabilityPercent ?? 100,
-      },
     };
   },
 };

@@ -11,6 +11,7 @@ const cds = require('@sap/cds');
 const fs = require('fs').promises;
 const os = require('os');
 const path = require('path');
+const { USERS, auth } = require('./support/test-auth');
 cds.env.requires = cds.env.requires || {};
 cds.env.requires.db = {
   ...(cds.env.requires.db || {}),
@@ -26,67 +27,14 @@ const { GET, POST, PATCH, DELETE, expect: _expect } = cds
   .test('serve', 'all', '--in-memory')
   .in(__dirname + '/..');
 
-// Helper: create an auth header (the service expects Bearer tokens)
-// Since these are integration tests hitting the service directly via cds.test,
-// we authenticate via the service's own /authenticate action.
-let authToken = null;
-let adminAuthToken = null;
-let consultantAuthToken = null;
-let functionalConsultantAuthToken = null;
-
-const withAuth = () => ({
-  headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
-});
-
-const withAdminAuth = () => ({
-  headers: adminAuthToken ? { Authorization: `Bearer ${adminAuthToken}` } : {},
-});
-
-const withConsultantAuth = () => ({
-  headers: consultantAuthToken ? { Authorization: `Bearer ${consultantAuthToken}` } : {},
-});
-
-const withFunctionalConsultantAuth = () => ({
-  headers: functionalConsultantAuthToken
-    ? { Authorization: `Bearer ${functionalConsultantAuthToken}` }
-    : {},
-});
-
-const ensureAuth = async () => {
-  if (authToken) return;
-  const { data } = await POST('/odata/v4/user/authenticate', {
-    email: 'marc.manager@inetum.com',
-    password: 'Manager#2026',
-  });
-  authToken = data.token;
-};
-
-const ensureAdminAuth = async () => {
-  if (adminAuthToken) return;
-  const { data } = await POST('/odata/v4/user/authenticate', {
-    email: 'alice.admin@inetum.com',
-    password: 'Admin#2026',
-  });
-  adminAuthToken = data.token;
-};
-
-const ensureConsultantAuth = async () => {
-  if (consultantAuthToken) return;
-  const { data } = await POST('/odata/v4/user/authenticate', {
-    email: 'theo.tech@inetum.com',
-    password: 'Tech#2026',
-  });
-  consultantAuthToken = data.token;
-};
-
-const ensureFunctionalConsultantAuth = async () => {
-  if (functionalConsultantAuthToken) return;
-  const { data } = await POST('/odata/v4/user/authenticate', {
-    email: 'fatima.fonc@inetum.com',
-    password: 'Func#2026',
-  });
-  functionalConsultantAuthToken = data.token;
-};
+const withAuth = () => auth(USERS.manager);
+const withAdminAuth = () => auth(USERS.admin);
+const withConsultantAuth = () => auth(USERS.tech);
+const withFunctionalConsultantAuth = () => auth(USERS.functional);
+const ensureAuth = async () => undefined;
+const ensureAdminAuth = async () => undefined;
+const ensureConsultantAuth = async () => undefined;
+const ensureFunctionalConsultantAuth = async () => undefined;
 
 // ---------------------------------------------------------------------------
 // Dynamic seed ID resolution – avoids hardcoded DB IDs tied to specific CSV rows.
@@ -177,64 +125,21 @@ beforeAll(async () => {
 }, 30000);
 
 describe('Authentication', () => {
-  test('POST /authenticate with valid credentials returns token + user', async () => {
-    const { status, data } = await POST('/odata/v4/user/authenticate', {
-      email: 'marc.manager@inetum.com',
-      password: 'Manager#2026',
-    });
+  test('POST /currentUser returns the XSUAA principal profile', async () => {
+    const { status, data } = await POST('/odata/v4/user/currentUser', {}, withAuth());
     expect(status).toBe(200);
-    expect(data.token).toBeTruthy();
-    expect(data.user).toBeTruthy();
-    expect(data.user.email).toBe('marc.manager@inetum.com');
-    expect(data.user.role).toBe('MANAGER');
-    expect(data.expiresAt).toBeTruthy();
-
-    // Store token for subsequent tests
-    authToken = data.token;
+    expect(data.email).toBe('marc.manager@inetum.com');
+    expect(data.role).toBe('MANAGER');
+    expect(data.active).toBe(true);
   });
 
-  test('POST /authenticate works for every seeded demo account', async () => {
-    const demoAccounts = [
-      ['alice.admin@inetum.com', 'Admin#2026', 'ADMIN'],
-      ['marc.manager@inetum.com', 'Manager#2026', 'MANAGER'],
-      ['theo.tech@inetum.com', 'Tech#2026', 'CONSULTANT_TECHNIQUE'],
-      ['fatima.fonc@inetum.com', 'Func#2026', 'CONSULTANT_FONCTIONNEL'],
-      ['pierre.pm@inetum.com', 'PM#2026', 'PROJECT_MANAGER'],
-      ['diana.devco@inetum.com', 'DevCo#2026', 'DEV_COORDINATOR'],
-    ];
-
-    for (const [email, password, role] of demoAccounts) {
-      const { status, data } = await POST('/odata/v4/user/authenticate', {
-        email,
-        password,
-      });
-
-      expect(status).toBe(200);
-      expect(data.token).toBeTruthy();
-      expect(data.user.email).toBe(email);
-      expect(data.user.role).toBe(role);
-    }
-  });
-
-  test('POST /authenticate with bad password returns 401', async () => {
+  test('POST /currentUser without XSUAA context returns 401', async () => {
     try {
-      await POST('/odata/v4/user/authenticate', {
-        email: 'marc.manager@inetum.com',
-        password: 'wrong',
-      });
+      await POST('/odata/v4/user/currentUser', {});
       fail('Should have thrown');
     } catch (err) {
       expect(err.response?.status ?? err.status).toBe(401);
     }
-  });
-
-  test('POST /quickAccessAccounts returns demo accounts', async () => {
-    const { status, data } = await POST('/odata/v4/user/quickAccessAccounts', {});
-    expect(status).toBe(200);
-    const accounts = data.value ?? data;
-    expect(Array.isArray(accounts)).toBe(true);
-    expect(accounts.length).toBeGreaterThan(0);
-    expect(accounts.some((a) => a.email === 'alice.admin@inetum.com')).toBe(true);
   });
 });
 

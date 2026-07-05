@@ -21,17 +21,13 @@ const SQLITE_AUDIT_TABLE = 'sap_performance_dashboard_db_AuditLogs';
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 
-const CUD_EVENTS = new Set(['CREATE', 'UPDATE', 'DELETE']);
-
 // Events that are read-style or public and would only add noise to the audit:
 //   - READ            : every list / detail GET, far too frequent
-//   - authenticate    : login attempt, already logged by the auth service itself
 //   - listAttachments / downloadAttachment : read-style, no state change
 //   - cleanupOrphanAttachments / purgeDeletedAttachments / cleanupDuplicateAttachments / reconcileStorage :
 //     scheduled maintenance jobs — they have their own logging
 const AUDIT_SKIPPED_EVENTS = new Set([
   'READ',
-  'authenticate',
   'listAttachments',
   'downloadAttachment',
   'cleanupOrphanAttachments',

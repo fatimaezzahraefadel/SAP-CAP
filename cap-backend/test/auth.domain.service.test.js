@@ -1,24 +1,16 @@
 'use strict';
 
 describe('AuthDomainService in XSUAA mode', () => {
-  const originalNodeEnv = process.env.NODE_ENV;
-  const originalMockJwtSecret = process.env.MOCK_JWT_SECRET;
+  const originalJestWorkerId = process.env.JEST_WORKER_ID;
 
   afterEach(() => {
     jest.resetModules();
     jest.dontMock('@sap/cds');
-    process.env.NODE_ENV = originalNodeEnv;
-    if (originalMockJwtSecret === undefined) {
-      delete process.env.MOCK_JWT_SECRET;
-    } else {
-      process.env.MOCK_JWT_SECRET = originalMockJwtSecret;
-    }
+    if (originalJestWorkerId === undefined) delete process.env.JEST_WORKER_ID;
+    else process.env.JEST_WORKER_ID = originalJestWorkerId;
   });
 
-  test('does not require MOCK_JWT_SECRET and accepts CAP XSUAA user context', () => {
-    process.env.NODE_ENV = 'production';
-    delete process.env.MOCK_JWT_SECRET;
-
+  test('accepts CAP XSUAA user context', () => {
     jest.doMock('@sap/cds', () => ({
       env: {
         requires: {
@@ -32,9 +24,6 @@ describe('AuthDomainService in XSUAA mode', () => {
       const domain = new AuthDomainService();
 
       const claims = domain.authenticateRequest({
-        headers: {
-          authorization: 'Bearer xsuaa-token-from-approuter',
-        },
         user: {
           id: 'xsuaa-user-1',
           roles: ['ticket-cap.Manager'],
@@ -54,10 +43,35 @@ describe('AuthDomainService in XSUAA mode', () => {
     });
   });
 
-  test('currentUser provisions an XSUAA user profile with the assigned BTP role', async () => {
-    process.env.NODE_ENV = 'production';
-    delete process.env.MOCK_JWT_SECRET;
+  test('accepts explicit test principal headers only under Jest', () => {
+    process.env.JEST_WORKER_ID = '1';
 
+    jest.isolateModules(() => {
+      const AuthDomainService = require('../srv/auth/auth.domain.service');
+      const domain = new AuthDomainService();
+
+      const claims = domain.authenticateRequest({
+        headers: {
+          'x-test-user-id': 'u-admin',
+          'x-test-user-role': 'ADMIN',
+          'x-test-user-email': 'alice.admin@inetum.com',
+        },
+        reject: (status, message) => {
+          throw new Error(`${status}: ${message}`);
+        },
+      });
+
+      expect(claims).toEqual(expect.objectContaining({
+        sub: 'u-admin',
+        userId: 'u-admin',
+        role: 'ADMIN',
+        email: 'alice.admin@inetum.com',
+        test: true,
+      }));
+    });
+  });
+
+  test('currentUser provisions an XSUAA user profile with the assigned BTP role', async () => {
     jest.doMock('@sap/cds', () => ({
       env: {
         requires: {

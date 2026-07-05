@@ -3,26 +3,15 @@
 process.env.CDS_REQUIRES_DB_KIND = 'sqlite';
 process.env.CDS_REQUIRES_DB_CREDENTIALS_DATABASE = ':memory:';
 const cds = require('@sap/cds');
+const { USERS, auth } = require('./support/test-auth');
 
 const { POST, GET, expect: _expect } = cds
   .test('serve', 'all', '--in-memory')
   .in(__dirname + '/..');
 
-let authToken = null;
-const withAuth = () => ({
-  headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
-});
+const withAuth = () => auth(USERS.tech);
 
 describe('Upload Performance Test (Simulated Large Payload)', () => {
-  beforeAll(async () => {
-    // Authenticate as a technical consultant for deliverables
-    const { data } = await POST('/odata/v4/user/authenticate', {
-      email: 'theo.tech@inetum.com',
-      password: 'Tech#2026',
-    });
-    authToken = data.token;
-  });
-
   test('Upload simulated 5MB payload performance', async () => {
     // Generate a 5MB base64 string
     const size = 5 * 1024 * 1024;

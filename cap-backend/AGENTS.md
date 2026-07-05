@@ -35,4 +35,4 @@ Recent history mostly uses Conventional Commit-style subjects, for example `feat
 Pull requests should include a short scope summary, linked issue or ticket when available, test evidence, and screenshots or recordings for visible UI changes. Note any database, seed data, or environment configuration changes explicitly.
 
 ## Security & Configuration Tips
-Do not commit secrets, generated build output, local SQLite files, or uploaded attachment data. Backend development uses mocked auth and SQLite configured in `cap-backend/package.json`; verify production settings before deployment.
+Do not commit secrets, generated build output, local SQLite files, or uploaded attachment data. Runtime authentication uses XSUAA; backend tests use test-only dummy auth configured in `cap-backend/package.json`. Verify production settings before deployment.

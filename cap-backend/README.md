@@ -67,5 +67,6 @@ npm run check
 
 - The backend is pinned to Node 22 in `.node-version`.
 - OData services are exposed under `/odata/v4`.
-- Local development uses mocked auth and SQLite.
+- Local and production runtimes use XSUAA authentication; backend tests use a
+  test-only dummy-auth profile with explicit test principals.
 - Production deployment uses XSUAA and HANA via the `[production]` CAP profile.

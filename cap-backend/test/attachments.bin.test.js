@@ -7,6 +7,7 @@ process.env.CDS_REQUIRES_DB_KIND = 'sqlite';
 process.env.CDS_REQUIRES_DB_CREDENTIALS_DATABASE = ':memory:';
 const cds = require('@sap/cds');
 const crypto = require('crypto');
+const { USERS, auth } = require('./support/test-auth');
 
 cds.env.requires = cds.env.requires || {};
 cds.env.requires.db = {
@@ -20,25 +21,14 @@ const { POST, GET } = cds.test('serve', 'all', '--in-memory').in(__dirname + '/.
 const E = 'sap.performance.dashboard.db.Attachments';
 const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
 
-let adminToken = null;
-const ensureAdmin = async () => {
-  if (adminToken) return;
-  const { data } = await POST('/odata/v4/user/authenticate', {
-    email: 'alice.admin@inetum.com',
-    password: 'Admin#2026',
-  });
-  adminToken = data.token;
-};
-
 describe('Attachments binary lifecycle', () => {
   test('upload persists content and the download route returns identical bytes', async () => {
-    await ensureAdmin();
     const original = Buffer.from('%PDF-1.4\n' + 'Z'.repeat(20000) + '\n%%EOF\n', 'latin1');
 
     const { data: row } = await POST('/odata/v4/core/uploadAttachment', {
       parentType: 'DOCUMENT', parentId: 'doc-x', fileName: 'sample.pdf',
       mimeType: 'application/pdf', contentBase64: original.toString('base64'),
-    }, { headers: { Authorization: `Bearer ${adminToken}` } });
+    }, auth(USERS.admin));
 
     // metadata response must not leak the binary
     expect('content' in row).toBe(false);
@@ -56,16 +46,13 @@ describe('Attachments binary lifecycle', () => {
   });
 
   test('deleted attachments are no longer downloadable', async () => {
-    await ensureAdmin();
     const original = Buffer.from('%PDF-1.4 to-be-deleted-' + 'x'.repeat(500));
     const { data: row } = await POST('/odata/v4/core/uploadAttachment', {
       parentType: 'DOCUMENT', parentId: 'doc-del', fileName: 'd.pdf',
       mimeType: 'application/pdf', contentBase64: original.toString('base64'),
-    }, { headers: { Authorization: `Bearer ${adminToken}` } });
+    }, auth(USERS.admin));
 
-    await POST('/odata/v4/core/deleteAttachment', { id: row.ID }, {
-      headers: { Authorization: `Bearer ${adminToken}` },
-    });
+    await POST('/odata/v4/core/deleteAttachment', { id: row.ID }, auth(USERS.admin));
 
     await expect(GET(`/attachments/${row.ID}`)).rejects.toMatchObject({
       response: { status: 404 },

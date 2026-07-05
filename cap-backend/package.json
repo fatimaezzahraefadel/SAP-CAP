@@ -46,7 +46,9 @@
   },
   "cds": {
     "requires": {
-      "auth": "dummy",
+      "auth": {
+        "kind": "xsuaa"
+      },
       "db": {
         "kind": "sqlite",
         "credentials": {
@@ -65,6 +67,9 @@
         "auth": {
           "kind": "xsuaa"
         }
+      },
+      "[test]": {
+        "auth": "dummy"
       }
     }
   }

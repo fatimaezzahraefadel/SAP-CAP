@@ -1,102 +1,14 @@
 'use strict';
 
-const crypto = require('node:crypto');
-const cds = require('@sap/cds');
 const AuthRepo = require('./auth.repo');
 const { getRequestContext } = require('../_shared/auth/request-context');
 
-const DEMO_PASSWORD_BY_EMAIL = Object.freeze({
-  'alice.admin@inetum.com': 'Admin#2026',
-  'marc.manager@inetum.com': 'Manager#2026',
-  'theo.tech@inetum.com': 'Tech#2026',
-  'fatima.fonc@inetum.com': 'Func#2026',
-  'pierre.pm@inetum.com': 'PM#2026',
-  'diana.devco@inetum.com': 'DevCo#2026',
-});
-
-const DEMO_ROLE_BY_EMAIL = Object.freeze({
-  'alice.admin@inetum.com': 'ADMIN',
-  'marc.manager@inetum.com': 'MANAGER',
-  'theo.tech@inetum.com': 'CONSULTANT_TECHNIQUE',
-  'fatima.fonc@inetum.com': 'CONSULTANT_FONCTIONNEL',
-  'pierre.pm@inetum.com': 'PROJECT_MANAGER',
-  'diana.devco@inetum.com': 'DEV_COORDINATOR',
-});
-
-const DEMO_EMAIL_BY_ROLE = Object.freeze(
-  Object.fromEntries(Object.entries(DEMO_ROLE_BY_EMAIL).map(([email, role]) => [role, email]))
-);
-
-const DEFAULT_DEV_JWT_SECRET = 'dev-local-mock-jwt-secret-change-me';
-const authConfig = cds.env?.requires?.auth;
-const XSUAA_AUTH_ENABLED = authConfig?.kind === 'xsuaa' || authConfig?.strategy === 'xsuaa';
-const LOCAL_AUTH_ENABLED = !XSUAA_AUTH_ENABLED;
-
-const JWT_SECRET = process.env.MOCK_JWT_SECRET || DEFAULT_DEV_JWT_SECRET;
-if (LOCAL_AUTH_ENABLED && !process.env.MOCK_JWT_SECRET) {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('[auth] FATAL: MOCK_JWT_SECRET must be set in production. Refusing to start with default secret.');
-  }
-  console.warn('[auth] MOCK_JWT_SECRET is not set; using development fallback secret.');
-}
-
-const JWT_TTL_SECONDS = Number(process.env.MOCK_JWT_TTL_SECONDS || 8 * 60 * 60);
 const REVIEWER_ROLES = new Set(['ADMIN', 'MANAGER', 'PROJECT_MANAGER']);
-const PUBLIC_EVENTS = new Set(['authenticate', 'quickAccessAccounts']);
-const MOCKED_ANONYMOUS_IDS = new Set(['anonymous', 'unauthenticated-user']);
+const PUBLIC_EVENTS = new Set();
 
 const normalizeEmail = (value) => String(value ?? '').trim().toLowerCase();
-
-const safeEqual = (left, right) => {
-  const leftBuffer = Buffer.from(String(left ?? ''), 'utf8');
-  const rightBuffer = Buffer.from(String(right ?? ''), 'utf8');
-  if (leftBuffer.length !== rightBuffer.length) return false;
-  return crypto.timingSafeEqual(leftBuffer, rightBuffer);
-};
-
-const toBase64Url = (value) =>
-  Buffer.from(value, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-
-const fromBase64Url = (value) => {
-  const normalized = String(value).replace(/-/g, '+').replace(/_/g, '/');
-  const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
-  return Buffer.from(padded, 'base64').toString('utf8');
-};
-
-const signMockJwt = (claims) => {
-  const header = toBase64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const payload = toBase64Url(JSON.stringify(claims));
-  const signature = crypto
-    .createHmac('sha256', JWT_SECRET)
-    .update(`${header}.${payload}`)
-    .digest('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '');
-  return `${header}.${payload}.${signature}`;
-};
-
-const verifyMockJwt = (token) => {
-  if (!token || typeof token !== 'string') return null;
-  const parts = token.split('.');
-  if (parts.length !== 3) return null;
-  const [header, payload, signature] = parts;
-  const expected = crypto
-    .createHmac('sha256', JWT_SECRET)
-    .update(`${header}.${payload}`)
-    .digest('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '');
-  if (!safeEqual(signature, expected)) return null;
-  try {
-    const decoded = JSON.parse(fromBase64Url(payload));
-    if (decoded.exp && Number(decoded.exp) <= Math.floor(Date.now() / 1000)) return null;
-    return decoded;
-  } catch {
-    return null;
-  }
-};
+const normalizeString = (value) => String(value ?? '').trim();
+const isTestRuntime = () => Boolean(process.env.JEST_WORKER_ID) || process.env.NODE_ENV === 'test';
 
 const getHeader = (req, name) => {
   const lowerName = String(name).toLowerCase();
@@ -104,34 +16,21 @@ const getHeader = (req, name) => {
   return headers[name] ?? headers[lowerName] ?? '';
 };
 
-const extractBearerToken = (req) => {
-  const authHeader = String(getHeader(req, 'authorization') || '');
-  const [scheme, token] = authHeader.split(' ');
-  if (!/^Bearer$/i.test(scheme) || !token) return null;
-  return token.trim();
-};
+const getTestClaims = (req) => {
+  if (!isTestRuntime()) return null;
 
-const claimsFromMockedUser = (req) => {
-  const reqUser = req?.user;
-  const reqUserId = String(reqUser?.id ?? reqUser?.ID ?? '').trim();
-  const reqUserEmail = String(reqUser?.email ?? '').trim();
-  const reqUserRole = String(reqUser?.role ?? '').trim();
+  const userId = normalizeString(getHeader(req, 'x-test-user-id'));
+  const role = normalizeString(getHeader(req, 'x-test-user-role'));
+  if (!userId || !role) return null;
 
-  // In CAP mocked mode, req.user may be sparse; ensure stable fallback claims.
   return {
-    sub: reqUserId,
-    email: reqUserEmail || 'mocked.dev@local',
-    role: reqUserRole || 'DEV_COORDINATOR',
-    name: reqUser?.name || 'Mocked Dev User',
-    mocked: true,
+    sub: userId,
+    userId,
+    email: normalizeEmail(getHeader(req, 'x-test-user-email')),
+    role,
+    name: normalizeString(getHeader(req, 'x-test-user-name')),
+    test: true,
   };
-};
-
-const hasMockedPrincipal = (req) => {
-  const reqUser = req?.user;
-  const id = String(reqUser?.id ?? reqUser?.ID ?? '').trim();
-  if (!id) return false;
-  return !MOCKED_ANONYMOUS_IDS.has(id.toLowerCase());
 };
 
 class AuthDomainService {
@@ -143,21 +42,12 @@ class AuthDomainService {
     return PUBLIC_EVENTS.has(event);
   }
 
-  verify(token) {
-    return verifyMockJwt(token);
-  }
-
   authenticateRequest(req) {
-    const token = extractBearerToken(req);
+    const testClaims = getTestClaims(req);
+    if (testClaims) return testClaims;
 
-    if (LOCAL_AUTH_ENABLED && token) {
-      const claims = this.verify(token);
-      if (!claims?.sub || !claims?.role) req.reject(401, 'Invalid or expired token');
-      return claims;
-    }
-
-    if (LOCAL_AUTH_ENABLED && hasMockedPrincipal(req)) {
-      return claimsFromMockedUser(req);
+    if (isTestRuntime() && req?._?.req) {
+      req.reject(401, 'Missing authenticated test principal');
     }
 
     const ctx = getRequestContext(req);
@@ -165,7 +55,7 @@ class AuthDomainService {
       return { sub: ctx.userId, userId: ctx.userId, role: ctx.role, email: ctx.email };
     }
 
-    req.reject(401, 'Missing Bearer token');
+    req.reject(401, 'Missing authenticated XSUAA user');
   }
 
   getRequestClaims(req) {
@@ -204,22 +94,6 @@ class AuthDomainService {
     };
   }
 
-  toDemoUser(email) {
-    const role = DEMO_ROLE_BY_EMAIL[email];
-    return {
-      ID: `demo-${role}`,
-      name: email.split('@')[0].replace(/[._-]+/g, ' '),
-      email,
-      role,
-      active: true,
-      skills: '[]',
-      certifications: '[]',
-      availabilityPercent: 100,
-      teamId: null,
-      avatarUrl: null,
-    };
-  }
-
   async currentUser(req) {
     const claims = this.getRequestClaims(req);
     if (!claims?.role) req.reject(403, 'No Ticket-CAP role collection assigned to this SAP user');
@@ -227,111 +101,28 @@ class AuthDomainService {
     const xsuaaUser = req?.user ?? {};
     const attr = xsuaaUser.attr ?? {};
     const email = normalizeEmail(claims.email || attr.email);
-    const displayName = String(
+    const displayName = normalizeString(
       xsuaaUser.name ||
       attr.displayName ||
       [attr.given_name, attr.family_name].filter(Boolean).join(' ') ||
-      email ||
-      ''
-    ).trim();
+      claims.name ||
+      email
+    );
 
-    if (XSUAA_AUTH_ENABLED) {
-      const user = await this.repo.upsertUserFromXsuaa({
-        id: claims.userId || claims.sub,
-        email,
-        name: displayName,
-        role: claims.role,
-      });
-
-      return this.toAuthUser(user, {
-        email: email || user.email,
-        name: displayName || user.name,
-      });
-    }
-
-    const user =
-      (email ? await this.repo.findUserByEmail(email) : null) ||
-      await this.repo.findUserByRole(claims.role);
-
-    if (!user && LOCAL_AUTH_ENABLED) {
-      const demoEmail = DEMO_ROLE_BY_EMAIL[email] === claims.role
-        ? email
-        : DEMO_EMAIL_BY_ROLE[claims.role];
-      if (demoEmail) return this.toAuthUser(this.toDemoUser(demoEmail));
-    }
-
-    if (!user) req.reject(403, `No active local app user is configured for role ${claims.role}`);
+    const user = await this.repo.upsertUserFromXsuaa({
+      id: claims.userId || claims.sub,
+      email,
+      name: displayName,
+      role: claims.role,
+    });
 
     return this.toAuthUser(user, {
       email: email || user.email,
       name: displayName || user.name,
     });
   }
-
-  async authenticate(req) {
-    const email = normalizeEmail(req.data?.email);
-    const password = String(req.data?.password ?? '');
-
-    if (!email || !password) req.reject(401, 'Invalid credentials');
-    const expectedPassword = DEMO_PASSWORD_BY_EMAIL[email];
-    if (!expectedPassword || !safeEqual(password, expectedPassword)) {
-      req.reject(401, 'Invalid credentials');
-    }
-
-    const user =
-      await this.repo.findUserByEmail(email) ||
-      await this.repo.findUserByRole(DEMO_ROLE_BY_EMAIL[email]) ||
-      this.toDemoUser(email);
-    if (!user) req.reject(401, 'Invalid credentials');
-
-    const issuedAt = Math.floor(Date.now() / 1000);
-    const expiresAtEpoch = issuedAt + JWT_TTL_SECONDS;
-    const token = signMockJwt({
-      iss: 'sap-performance-dashboard',
-      aud: 'sap-performance-dashboard-ui',
-      iat: issuedAt,
-      exp: expiresAtEpoch,
-      sub: user.ID,
-      email,
-      role: DEMO_ROLE_BY_EMAIL[email] || user.role,
-      name: user.name,
-    });
-
-    return {
-      token,
-      expiresAt: new Date(expiresAtEpoch * 1000).toISOString(),
-      user: this.toAuthUser(
-        { ...user, role: DEMO_ROLE_BY_EMAIL[email] || user.role },
-        { email }
-      ),
-    };
-  }
-
-  quickAccessAccounts() {
-    return Object.keys(DEMO_PASSWORD_BY_EMAIL).map((email) => ({
-      id: email,
-      name: email.split('@')[0].replace(/[._-]+/g, ' '),
-      email,
-      role: DEMO_ROLE_BY_EMAIL[email],
-      active: true,
-      skills: '[]',
-      certifications: '[]',
-      availabilityPercent: 100,
-      teamId: null,
-      avatarUrl: null,
-    }));
-  }
-
 }
 
 module.exports = AuthDomainService;
-module.exports.DEMO_PASSWORD_BY_EMAIL = DEMO_PASSWORD_BY_EMAIL;
-module.exports.DEMO_ROLE_BY_EMAIL = DEMO_ROLE_BY_EMAIL;
-module.exports.JWT_TTL_SECONDS = JWT_TTL_SECONDS;
 module.exports.REVIEWER_ROLES = REVIEWER_ROLES;
 module.exports.PUBLIC_EVENTS = PUBLIC_EVENTS;
-module.exports.signMockJwt = signMockJwt;
-module.exports.verifyMockJwt = verifyMockJwt;
-module.exports.safeEqual = safeEqual;
-module.exports.toBase64Url = toBase64Url;
-module.exports.fromBase64Url = fromBase64Url;

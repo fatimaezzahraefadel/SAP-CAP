@@ -160,9 +160,8 @@ export const DocumentationObjectModal: React.FC<DocumentationObjectModalProps> =
               reader.readAsDataURL(f.file as File);
             });
 
-            // Route through odataFetch so the Bearer token is attached; a raw
-            // fetch sends no Authorization header and CAP's mocked auth then
-            // challenges the browser with a native Basic-auth login popup.
+            // Route through odataFetch so the request uses the same XSUAA
+            // session/cookie handling as the rest of the OData client.
             let json: { ID?: string; id?: string; value?: { ID?: string; id?: string } } | undefined;
             try {
               json = await odataFetch('core', '/uploadAttachment', {

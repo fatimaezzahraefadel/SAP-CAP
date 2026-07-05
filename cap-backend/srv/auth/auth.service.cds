@@ -14,13 +14,5 @@ extend UserService with definitions {
     avatarUrl          : String(500);
   }
 
-  type AuthSession {
-    token    : String(4096);
-    expiresAt: DateTime;
-    user     : AuthUser;
-  }
-
   action currentUser() returns AuthUser;
-  action authenticate(email: String, password: String) returns AuthSession;
-  action quickAccessAccounts() returns array of AuthUser;
 };

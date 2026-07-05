@@ -3,27 +3,18 @@
 process.env.CDS_REQUIRES_DB_KIND = 'sqlite';
 process.env.CDS_REQUIRES_DB_CREDENTIALS_DATABASE = ':memory:';
 const cds = require('@sap/cds');
+const { USERS, auth } = require('./support/test-auth');
 
 const { POST, GET, expect: _expect } = cds
   .test('serve', 'all', '--in-memory')
   .in(__dirname + '/..');
 
-let authToken = null;
-const withAuth = () => ({
-  headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
-});
+const withAuth = () => auth(USERS.tech);
 
 describe('Download Performance Test (Concurrent Requests)', () => {
   let createdDeliverableId;
 
   beforeAll(async () => {
-    // Authenticate
-    const { data } = await POST('/odata/v4/user/authenticate', {
-      email: 'theo.tech@inetum.com',
-      password: 'Tech#2026',
-    });
-    authToken = data.token;
-
     // Setup: create a deliverable to download
     const { data: projects } = await GET('/odata/v4/core/Projects', withAuth());
     const projectId = projects.value[0]?.ID;

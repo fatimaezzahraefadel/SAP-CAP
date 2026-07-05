@@ -58,7 +58,6 @@ export {
   deleteEntity,
 } from './odata/core';
 
-export type { AuthSession } from './odata/authApi';
 export { AuthAPI } from './odata/authApi';
 
 export { AllocationsAPI } from './odata/allocationsApi';

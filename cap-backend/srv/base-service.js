@@ -49,13 +49,13 @@ module.exports = function (srv) {
     // Attach claims synchronously BEFORE any async enrichment so that
     // downstream before-handlers (authz, read-scoping) always observe the
     // authenticated principal. Enriching dbUserId via an awaited DB lookup
-    // first would leave a gap where handlers fall back to the mocked user.
+    // first would leave a gap where handlers fall back to CAP's default user.
     req._authClaims = claims;
     if (claims && claims.role) {
       try {
         const authUser = await auth.currentUser(req);
         if (authUser && authUser.id) claims.dbUserId = authUser.id;
-      } catch (e) {
+      } catch {
         // Ignore if user cannot be fetched (e.g. invalid role)
       }
     }

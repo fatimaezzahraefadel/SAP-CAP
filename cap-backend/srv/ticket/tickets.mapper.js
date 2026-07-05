@@ -51,6 +51,26 @@ const asAction = (value) => {
   return value.trim();
 };
 
+const unwrapHistoryRecord = (candidate) => {
+  const details = parseJsonIfString(candidate.details);
+  const detailsRecord = asRecord(details);
+  if (detailsRecord) {
+    const rest = { ...candidate };
+    delete rest.details;
+    return unwrapHistoryRecord({ ...rest, ...detailsRecord });
+  }
+
+  const comment = parseJsonIfString(candidate.comment);
+  const commentRecord = asRecord(comment);
+  if (commentRecord) {
+    const rest = { ...candidate };
+    delete rest.comment;
+    return unwrapHistoryRecord({ ...rest, ...commentRecord });
+  }
+
+  return candidate;
+};
+
 const normalizeHistory = (value) =>
   parseRows(value)
     .map((entry, index) => {
@@ -60,18 +80,19 @@ const normalizeHistory = (value) =>
         return text ? { id: `te-${index}`, timestamp: new Date().toISOString(), userId: 'system', action: 'COMMENT', comment: text } : null;
       }
 
-      const action = asAction(candidate.action ?? candidate.event);
-      const fromValue = asString(candidate.fromValue);
-      const toValue = asString(candidate.toValue);
-      const comment = asString(candidate.comment ?? candidate.details);
+      const normalized = unwrapHistoryRecord(candidate);
+      const action = asAction(normalized.action ?? normalized.event ?? candidate.event);
+      const fromValue = asString(normalized.fromValue);
+      const toValue = asString(normalized.toValue);
+      const comment = asString(normalized.comment ?? normalized.details);
 
       return {
-        id: asString(candidate.id ?? candidate.ID) ?? `te-${index}`,
+        id: asString(normalized.id ?? normalized.ID ?? candidate.ID) ?? `te-${index}`,
         timestamp:
-          asString(candidate.timestamp) ??
+          asString(normalized.timestamp) ??
           asString(candidate.createdAt) ??
           new Date().toISOString(),
-        userId: asString(candidate.userId) ?? asString(candidate.createdBy) ?? 'system',
+        userId: asString(normalized.userId) ?? asString(candidate.createdBy) ?? 'system',
         action: action ?? 'COMMENT',
         ...(fromValue ? { fromValue } : {}),
         ...(toValue ? { toValue } : {}),
@@ -97,7 +118,19 @@ const toHistoryRows = (value) =>
       if (!candidate) return null;
 
       const event = asString(candidate.action) ?? asString(candidate.event) ?? 'UPDATE';
-      const detailsSource = candidate.details !== undefined ? candidate.details : candidate;
+      const detailFields = {
+        ...(asString(candidate.fromValue) ? { fromValue: asString(candidate.fromValue) } : {}),
+        ...(asString(candidate.toValue) ? { toValue: asString(candidate.toValue) } : {}),
+      };
+      const hasDetailFields = Object.keys(detailFields).length > 0;
+      const detailsSource =
+        candidate.details !== undefined
+          ? candidate.details
+          : candidate.comment !== undefined
+            ? candidate.comment
+            : hasDetailFields
+              ? detailFields
+              : '';
       const details = typeof detailsSource === 'string' ? detailsSource : JSON.stringify(detailsSource);
       if (!details.trim()) return null;
       return { event, details };

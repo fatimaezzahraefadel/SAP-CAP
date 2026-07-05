@@ -7,6 +7,7 @@ process.env.CDS_REQUIRES_DB_KIND = 'sqlite';
 process.env.CDS_REQUIRES_DB_CREDENTIALS_DATABASE = ':memory:';
 const cds = require('@sap/cds');
 const crypto = require('crypto');
+const { USERS, auth } = require('./support/test-auth');
 
 cds.env.requires = cds.env.requires || {};
 cds.env.requires.db = {
@@ -21,21 +22,6 @@ const AUDIT = 'sap.performance.dashboard.db.AuditLogs';
 const REF = 'sap.performance.dashboard.db.ReferenceData';
 const DEL = 'sap.performance.dashboard.db.Deliverables';
 const FB = 'sap.performance.dashboard.db.ProjectFeedback';
-
-const login = async (email, password) => {
-  const { data } = await POST('/odata/v4/user/authenticate', { email, password });
-  return data.token;
-};
-
-const auth = (token) => ({ headers: { Authorization: `Bearer ${token}` } });
-
-let adminToken, techToken, mgrToken, foncToken;
-beforeAll(async () => {
-  adminToken = await login('alice.admin@inetum.com', 'Admin#2026');
-  mgrToken = await login('marc.manager@inetum.com', 'Manager#2026');
-  techToken = await login('theo.tech@inetum.com', 'Tech#2026');
-  foncToken = await login('fatima.fonc@inetum.com', 'Func#2026');
-});
 
 // ============================================================================
 // 1. ReferenceData DELETE — ADMIN only
@@ -52,21 +38,21 @@ describe('ReferenceData DELETE hook', () => {
 
   test('ADMIN can delete ReferenceData', async () => {
     const id = await seedRef();
-    const res = await DELETE(`/odata/v4/core/ReferenceData(${id})`, auth(adminToken));
+    const res = await DELETE(`/odata/v4/core/ReferenceData(${id})`, auth(USERS.admin));
     expect(res.status).toBeLessThan(300);
   });
 
   test('non-ADMIN (MANAGER) is rejected with 403', async () => {
     const id = await seedRef();
     await expect(
-      DELETE(`/odata/v4/core/ReferenceData(${id})`, auth(mgrToken))
+      DELETE(`/odata/v4/core/ReferenceData(${id})`, auth(USERS.manager))
     ).rejects.toMatchObject({ response: { status: 403 } });
   });
 
   test('CONSULTANT_TECHNIQUE is rejected with 403', async () => {
     const id = await seedRef();
     await expect(
-      DELETE(`/odata/v4/core/ReferenceData(${id})`, auth(techToken))
+      DELETE(`/odata/v4/core/ReferenceData(${id})`, auth(USERS.tech))
     ).rejects.toMatchObject({ response: { status: 403 } });
   });
 });
@@ -90,34 +76,34 @@ describe('Deliverables DELETE hook', () => {
 
   test('MANAGER can delete a PENDING deliverable', async () => {
     const id = await seedDeliverable('PENDING');
-    const res = await DELETE(`/odata/v4/core/Deliverables(${id})`, auth(mgrToken));
+    const res = await DELETE(`/odata/v4/core/Deliverables(${id})`, auth(USERS.manager));
     expect(res.status).toBeLessThan(300);
   });
 
   test('MANAGER cannot delete an APPROVED deliverable (409)', async () => {
     const id = await seedDeliverable('APPROVED');
     await expect(
-      DELETE(`/odata/v4/core/Deliverables(${id})`, auth(mgrToken))
+      DELETE(`/odata/v4/core/Deliverables(${id})`, auth(USERS.manager))
     ).rejects.toMatchObject({ response: { status: 409 } });
   });
 
   test('CONSULTANT_TECHNIQUE is rejected with 403', async () => {
     const id = await seedDeliverable('PENDING');
     await expect(
-      DELETE(`/odata/v4/core/Deliverables(${id})`, auth(techToken))
+      DELETE(`/odata/v4/core/Deliverables(${id})`, auth(USERS.tech))
     ).rejects.toMatchObject({ response: { status: 403 } });
   });
 
   test('author (CONSULTANT) can delete their own PENDING deliverable', async () => {
     const id = await seedDeliverable('PENDING', 'u-fonc');
-    const res = await DELETE(`/odata/v4/core/Deliverables(${id})`, auth(foncToken));
+    const res = await DELETE(`/odata/v4/core/Deliverables(${id})`, auth(USERS.functional));
     expect(res.status).toBeLessThan(300);
   });
 
   test('author (CONSULTANT) cannot delete their own APPROVED deliverable (409)', async () => {
     const id = await seedDeliverable('APPROVED', 'u-fonc');
     await expect(
-      DELETE(`/odata/v4/core/Deliverables(${id})`, auth(foncToken))
+      DELETE(`/odata/v4/core/Deliverables(${id})`, auth(USERS.functional))
     ).rejects.toMatchObject({ response: { status: 409 } });
   });
 });
@@ -140,7 +126,7 @@ describe('ProjectFeedback UPDATE + DELETE hooks', () => {
   test('author can UPDATE their own feedback', async () => {
     const id = await seedFeedback('u-fonc');
     const res = await PATCH(`/odata/v4/core/ProjectFeedback(${id})`,
-      { content: 'edited' }, auth(foncToken));
+      { content: 'edited' }, auth(USERS.functional));
     expect(res.status).toBeLessThan(300);
   });
 
@@ -148,14 +134,14 @@ describe('ProjectFeedback UPDATE + DELETE hooks', () => {
     const id = await seedFeedback('u-manager'); // owned by manager
     await expect(
       PATCH(`/odata/v4/core/ProjectFeedback(${id})`,
-        { content: 'hijack' }, auth(foncToken))
+        { content: 'hijack' }, auth(USERS.functional))
     ).rejects.toMatchObject({ response: { status: 403 } });
   });
 
   test('staff (MANAGER) can UPDATE any feedback', async () => {
     const id = await seedFeedback('u-fonc');
     const res = await PATCH(`/odata/v4/core/ProjectFeedback(${id})`,
-      { content: 'moderated' }, auth(mgrToken));
+      { content: 'moderated' }, auth(USERS.manager));
     expect(res.status).toBeLessThan(300);
   });
 
@@ -163,20 +149,20 @@ describe('ProjectFeedback UPDATE + DELETE hooks', () => {
     const id = await seedFeedback('u-fonc');
     await expect(
       PATCH(`/odata/v4/core/ProjectFeedback(${id})`,
-        { authorId: 'u-admin' }, auth(foncToken))
+        { authorId: 'u-admin' }, auth(USERS.functional))
     ).rejects.toMatchObject({ response: { status: 400 } });
   });
 
   test('author can DELETE their own feedback', async () => {
     const id = await seedFeedback('u-fonc');
-    const res = await DELETE(`/odata/v4/core/ProjectFeedback(${id})`, auth(foncToken));
+    const res = await DELETE(`/odata/v4/core/ProjectFeedback(${id})`, auth(USERS.functional));
     expect(res.status).toBeLessThan(300);
   });
 
   test('non-author CONSULTANT cannot DELETE foreign feedback (403)', async () => {
     const id = await seedFeedback('u-manager');
     await expect(
-      DELETE(`/odata/v4/core/ProjectFeedback(${id})`, auth(foncToken))
+      DELETE(`/odata/v4/core/ProjectFeedback(${id})`, auth(USERS.functional))
     ).rejects.toMatchObject({ response: { status: 403 } });
   });
 });
@@ -190,7 +176,7 @@ describe('Audit writer covers custom actions', () => {
     const { data: row } = await POST('/odata/v4/core/uploadAttachment', {
       parentType: 'DOCUMENT', parentId: 'audit-doc',
       fileName: 'a.txt', mimeType: 'application/pdf', contentBase64: content,
-    }, auth(adminToken));
+    }, auth(USERS.admin));
 
     const auditRow = await cds.db.run(
       SELECT.one.from(AUDIT)
@@ -211,9 +197,9 @@ describe('Audit writer covers custom actions', () => {
     const { data: row } = await POST('/odata/v4/core/uploadAttachment', {
       parentType: 'DOCUMENT', parentId: 'audit-del',
       fileName: 'd.txt', mimeType: 'application/pdf', contentBase64: content,
-    }, auth(adminToken));
+    }, auth(USERS.admin));
 
-    await POST('/odata/v4/core/deleteAttachment', { id: row.ID }, auth(adminToken));
+    await POST('/odata/v4/core/deleteAttachment', { id: row.ID }, auth(USERS.admin));
 
     const auditRow = await cds.db.run(
       SELECT.one.from(AUDIT)
@@ -229,7 +215,7 @@ describe('Audit writer covers custom actions', () => {
     const before = await cds.db.run(
       SELECT.one`count(*) as cnt`.from(AUDIT).where({ action: 'READ' })
     );
-    await GET('/odata/v4/core/Users', auth(adminToken));
+    await GET('/odata/v4/core/Users', auth(USERS.admin));
     const after = await cds.db.run(
       SELECT.one`count(*) as cnt`.from(AUDIT).where({ action: 'READ' })
     );
@@ -238,7 +224,7 @@ describe('Audit writer covers custom actions', () => {
 
   test('skipped events (listAttachments, downloadAttachment) are NOT audited', async () => {
     await POST('/odata/v4/core/listAttachments',
-      { parentType: 'DOCUMENT', parentId: 'no-such' }, auth(adminToken));
+      { parentType: 'DOCUMENT', parentId: 'no-such' }, auth(USERS.admin));
     const row = await cds.db.run(
       SELECT.one.from(AUDIT).where({ action: 'listAttachments' })
     );
@@ -254,7 +240,6 @@ describe('shouldAudit() predicate', () => {
 
   test('rejects READ and skipped events', () => {
     expect(shouldAudit('READ')).toBe(false);
-    expect(shouldAudit('authenticate')).toBe(false);
     expect(shouldAudit('listAttachments')).toBe(false);
     expect(shouldAudit('downloadAttachment')).toBe(false);
   });
@@ -275,6 +260,6 @@ describe('shouldAudit() predicate', () => {
 
   test('skip list contains the documented events', () => {
     expect(AUDIT_SKIPPED_EVENTS.has('READ')).toBe(true);
-    expect(AUDIT_SKIPPED_EVENTS.has('authenticate')).toBe(true);
+    expect(AUDIT_SKIPPED_EVENTS.has('listAttachments')).toBe(true);
   });
 });
