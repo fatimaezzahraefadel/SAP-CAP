@@ -1,11 +1,51 @@
 'use strict';
 
 const cds = require('@sap/cds');
+const { extractRecommendations } = require('./ai.parse');
+const { requireRole, ALL_NON_CONSULTANT_ROLES } = require('../shared/services/validation');
+
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const AI_MODEL = process.env.AI_DISPATCH_MODEL || 'google/gemini-2.5-flash';
+const AI_TIMEOUT_MS = Number(process.env.AI_DISPATCH_TIMEOUT_MS || 15000);
+
+const buildSystemPrompt = (language) => `You are an AI dispatch system for an IT consulting company. Your role is to recommend the 5 best technical consultants to assign to a specific ticket.
+Return the result as a raw JSON array (do NOT wrap it in a markdown \`\`\`json block).
+Each object of the array must strictly follow this structure:
+{
+  "userId": "the candidate's id exactly as given in the input",
+  "userName": "Candidate name",
+  "userRole": "Candidate role",
+  "score": 85.5,
+  "factors": {
+    "availabilityScore": 90,
+    "skillsMatchScore": 80,
+    "performanceScore": 70,
+    "similarTicketsScore": 60
+  },
+  "explanation": "Brief explanation, written in ${language}, of why this candidate is recommended — mention availability, matching skills, delivery track record and similar past tickets."
+}
+Base your recommendation on:
+1. The ticket's need.
+2. The candidate's skills and technologies.
+3. Their availability.
+4. performanceScore: their delivery track record — the share of their past tickets that are DONE.
+5. similarTicketsScore: whether they already worked on tickets similar to this one (same nature/module/topic).
+Prioritise candidates with matching skills, high availability and relevant experience on similar tickets.
+Return EXACTLY 5 recommendations (or one per candidate if fewer than 5 exist), ranked best to worst.
+`;
 
 module.exports = (srv) => {
+  // The action only exists on TicketService; base-service wires every impl
+  // into all services, so skip the ones that do not declare it.
+  if (!cds.model?.definitions?.[`${srv.name}.recommendAssignees`]) return;
+
   srv.on('recommendAssignees', async (req) => {
     const { ticketId } = req.data;
     if (!ticketId) return req.reject(400, 'ticketId is required');
+
+    // Dispatching consultants is a staff activity; consultants cannot burn
+    // paid LLM tokens from their own accounts.
+    requireRole(req, ALL_NON_CONSULTANT_ROLES, 'Only staff can request AI dispatch recommendations');
 
     const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
     if (!OPENROUTER_API_KEY) {
@@ -19,7 +59,7 @@ module.exports = (srv) => {
       );
       if (!ticket) return req.reject(404, 'Ticket not found');
 
-      // 2. Fetch candidates (active users, excluding ADMIN and MANAGER)
+      // 2. Fetch candidates (active technical consultants)
       const users = await cds.db.run(
         SELECT.from('sap.performance.dashboard.db.Users', u => {
           u.ID, u.name, u.role, u.availabilityPercent, u.skills(s => { s.skill })
@@ -55,29 +95,8 @@ module.exports = (srv) => {
         pastAndCurrentTickets: ticketsByUser[u.ID] || []
       }));
 
-      const systemPrompt = `Tu es un système d'IA de dispatch pour une société de conseil informatique. Ton rôle est de recommander les 5 meilleurs consultants techniques à assigner à un ticket spécifique.
-Tu dois retourner le résultat sous forme de tableau JSON brut (NE PAS l'entourer d'un bloc markdown \`\`\`json).
-Chaque objet du tableau doit strictement respecter cette structure :
-{
-  "userId": "uuid-de-l-utilisateur",
-  "userName": "Nom de l'utilisateur",
-  "userRole": "Rôle de l'utilisateur",
-  "score": 85.5,
-  "factors": {
-    "availabilityScore": 90,
-    "skillsMatchScore": 80,
-    "similarTicketsScore": 60
-  },
-  "explanation": "Explication brève EN FRANÇAIS de pourquoi cet utilisateur est recommandé, mentionnant sa disponibilité, ses compétences correspondantes, et ses tickets similaires passés."
-}
-Analyse le besoin du ticket et les candidats. Tu DOIS baser ta recommandation sur :
-1. Le besoin du ticket.
-2. Les compétences et technologies maîtrisées par les consultants.
-3. Leur disponibilité.
-4. S'ils ont déjà travaillé sur un sujet similaire au ticket.
-Donne la priorité à ceux qui ont des compétences correspondantes, une haute disponibilité, et une expérience pertinente sur des tickets similaires.
-RETOURNE EXACTEMENT 5 recommandations, classées du meilleur au moins bon.
-`;
+      // Explanations follow the caller's UI language (Accept-Language).
+      const language = String(req.locale || 'en').toLowerCase().startsWith('fr') ? 'French' : 'English';
 
       const userPrompt = `
 Ticket to assign:
@@ -93,12 +112,10 @@ ${JSON.stringify(candidatesInfo, null, 2)}
 `;
 
       // 4. Call OpenRouter API
-      const openRouterUrl = 'https://openrouter.ai/api/v1/chat/completions';
-      
       const payload = {
-        model: 'google/gemini-2.5-flash',
+        model: AI_MODEL,
         messages: [
-          { role: 'system', content: systemPrompt },
+          { role: 'system', content: buildSystemPrompt(language) },
           { role: 'user', content: userPrompt }
         ],
         temperature: 0.2,
@@ -106,16 +123,17 @@ ${JSON.stringify(candidatesInfo, null, 2)}
       };
 
       const abortController = new AbortController();
-      const timeoutId = setTimeout(() => abortController.abort(), 15000); // 15 seconds timeout
+      const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
 
       let response;
       try {
-        response = await fetch(openRouterUrl, {
+        response = await fetch(OPENROUTER_URL, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
             'Content-Type': 'application/json',
-            'HTTP-Referer': 'http://localhost:5173', // Adjust as needed
+            // Optional OpenRouter attribution headers.
+            'HTTP-Referer': process.env.AI_DISPATCH_REFERER || 'https://ticket-cap.local',
             'X-Title': 'Ticket-CAP Performance Dashboard'
           },
           body: JSON.stringify(payload),
@@ -127,48 +145,31 @@ ${JSON.stringify(candidatesInfo, null, 2)}
 
       if (!response.ok) {
         const errText = await response.text();
-        console.error('OpenRouter API Error:', errText);
-        return req.reject(500, 'Error calling AI API');
+        console.error('OpenRouter API Error:', response.status, errText);
+        return req.reject(502, 'The AI service is unavailable. Please try again.');
       }
 
       const data = await response.json();
       const rawText = data.choices?.[0]?.message?.content;
-      
+
       if (!rawText) {
-        return req.reject(500, 'AI returned an empty response');
+        return req.reject(502, 'The AI returned an empty response. Please try again.');
       }
 
-      // Try to parse the JSON
-      let recommendations = [];
       try {
-        // Sanitize JSON by removing markdown block wrappers
-        let sanitizedText = rawText.trim();
-        if (sanitizedText.startsWith('```json')) {
-          sanitizedText = sanitizedText.replace(/^```json/, '').replace(/```$/, '').trim();
-        } else if (sanitizedText.startsWith('```')) {
-          sanitizedText = sanitizedText.replace(/^```/, '').replace(/```$/, '').trim();
-        }
-        
-        // As a fallback, try extracting the array substring directly if it's still invalid
-        if (!sanitizedText.startsWith('[')) {
-            const firstBracket = sanitizedText.indexOf('[');
-            const lastBracket = sanitizedText.lastIndexOf(']');
-            if (firstBracket !== -1 && lastBracket !== -1) {
-                sanitizedText = sanitizedText.substring(firstBracket, lastBracket + 1);
-            }
-        }
-
-        recommendations = JSON.parse(sanitizedText);
+        return extractRecommendations(rawText);
       } catch (err) {
         console.error('Failed to parse AI JSON:', rawText, 'Error:', err.message);
-        return req.reject(500, 'AI returned invalid JSON format');
+        return req.reject(502, 'The AI returned an unexpected format. Please try again.');
       }
-
-      return recommendations;
-
     } catch (error) {
+      // req.reject throws — let deliberate rejections (404/502 above) through.
+      const code = Number(error?.code ?? error?.status);
+      if (code >= 400 && code < 600) throw error;
+
+      // AbortError (timeout) and network failures land here.
       console.error('Error in recommendAssignees:', error);
-      return req.reject(500, error.message || error.toString());
+      return req.reject(502, 'AI recommendation failed. Please try again.');
     }
   });
 };
