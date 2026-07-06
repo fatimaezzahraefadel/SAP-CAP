@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cap-backend",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["cds", "serve"],
+      "cwd": "cap-backend",
+      "port": 4004
+    }
+  ]
+}
