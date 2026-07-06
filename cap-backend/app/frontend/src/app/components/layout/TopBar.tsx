@@ -27,6 +27,7 @@ import { Notification } from '../../types/entities';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import inetumHeaderLogo from '../../../assets/inetum-2-logo.png';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -265,17 +266,26 @@ export const TopBar: React.FC<TopBarProps> = ({
           </span>
         </Button>
 
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-            {t('login.platformName')}
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="truncate text-sm font-semibold text-foreground sm:text-base">{displayName}</p>
-            {currentRoleLabel && (
-              <Badge variant="secondary" className="hidden rounded-full px-2.5 py-1 text-[10px] sm:inline-flex">
-                {currentRoleLabel}
-              </Badge>
-            )}
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-9 w-28 shrink-0 items-center rounded-md border border-border/70 bg-white px-2 shadow-sm sm:w-32 lg:w-36">
+            <img
+              src={inetumHeaderLogo}
+              alt="Inetum"
+              className="h-6 w-full object-contain"
+            />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              {t('login.platformName')}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate text-sm font-semibold text-foreground sm:text-base">{displayName}</p>
+              {currentRoleLabel && (
+                <Badge variant="secondary" className="hidden rounded-full px-2.5 py-1 text-[10px] sm:inline-flex">
+                  {currentRoleLabel}
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
 

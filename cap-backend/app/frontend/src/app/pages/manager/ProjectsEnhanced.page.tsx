@@ -15,6 +15,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { parseWricefExcel, type ParsedWricefResult } from '../../utils/wricefExcel';
+import { getWricefObjectRef } from '../../features/projects/model';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -676,11 +677,14 @@ export const ProjectsEnhanced: React.FC = () => {
                     </Button>
                   </div>
                   <div className="max-h-32 overflow-y-auto space-y-1">
-                    {form.wricef.objects.slice(0, 5).map((obj) => (
-                      <div key={obj.id} className="text-xs p-1.5 rounded bg-muted/50">
-                        <span className="font-medium">{obj.id}</span> - {obj.title} ({t('projects.dialog.ticketCount', { count: form.wricef?.tickets.filter((ticket) => ticket.wricefId === obj.id).length || 0 })})
-                      </div>
-                    ))}
+                    {form.wricef.objects.slice(0, 5).map((obj) => {
+                      const objectRef = getWricefObjectRef(obj);
+                      return (
+                        <div key={objectRef} className="text-xs p-1.5 rounded bg-muted/50">
+                          <span className="font-medium">{objectRef}</span> - {obj.title} ({t('projects.dialog.ticketCount', { count: form.wricef?.tickets.filter((ticket) => ticket.wricefId === objectRef).length || 0 })})
+                        </div>
+                      );
+                    })}
                     {form.wricef.objects.length > 5 && (
                       <p className="text-xs text-muted-foreground italic">
                         {t('projects.dialog.moreObjects', { count: form.wricef.objects.length - 5 })}

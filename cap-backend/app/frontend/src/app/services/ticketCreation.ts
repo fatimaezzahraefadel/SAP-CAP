@@ -78,7 +78,7 @@ export const createTicketWithUnifiedFlow = async (
 
   let wricefId = (manualWricefId ?? '').trim();
   if (selectedObject) {
-    wricefId = selectedObject.id;
+    wricefId = selectedObject.externalRef?.trim() || selectedObject.id;
   }
   
   if (!wricefId) {

@@ -818,7 +818,9 @@
       "relatedTickets": "Related Tickets",
       "author": "Author",
       "updated": "Updated",
-      "action": "Action"
+      "action": "Action",
+      "emptyTitle": "No documentation objects",
+      "emptyDesc": "Create a documentation object to make project documentation available here."
     },
     "errors": {
       "loadFailed": "Failed to load documentation objects.",
@@ -1588,8 +1590,10 @@
         "description": "Create a new WRICEF document. You can add objects to it after creation.",
         "project": "Project *",
         "projectPlaceholder": "Select a project",
-        "sourceFile": "Source File Name *",
+        "sourceFile": "Source File *",
         "sourceFilePlaceholder": "e.g. S4HANA_Migration_WRICEF.xlsx",
+        "chooseFile": "Choose file",
+        "noFileSelected": "No file selected",
         "creating": "Creating...",
         "create": "Create"
       },
@@ -1608,7 +1612,7 @@
         "deleteError": "Failed to delete WRICEF",
         "validation": {
           "selectProject": "Select a project",
-          "enterSourceFile": "Enter a source file name",
+          "enterSourceFile": "Choose a source file",
           "enterObjectTitle": "Object title is required",
           "minOneObject": "Add at least one object before submitting"
         }

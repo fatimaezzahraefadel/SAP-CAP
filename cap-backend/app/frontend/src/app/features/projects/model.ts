@@ -247,25 +247,34 @@ export const computeEstimateConsumption = (
 export const normalizeWricefRef = (value: string): string =>
   value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
 
+export const getWricefObjectRef = (object: Pick<WricefObject, 'id' | 'externalRef'>): string =>
+  object.externalRef?.trim() || object.id;
+
 export const isTicketLinkedToObject = (
   ticketWricefId: string | null | undefined,
-  objectId: string
+  objectId: string,
+  objectExternalRef?: string | null
 ): boolean => {
   if (!ticketWricefId) return false;
   const ticketRef = ticketWricefId.trim().toLowerCase();
-  const objectRef = objectId.trim().toLowerCase();
-  if (ticketRef === objectRef || ticketRef.startsWith(`${objectRef}-tk-`)) return true;
+  const objectRefs = [objectExternalRef, objectId]
+    .map((value) => value?.trim().toLowerCase())
+    .filter((value): value is string => Boolean(value));
 
-  const normalizedTicketRef = normalizeWricefRef(ticketRef);
-  const normalizedObjectRef = normalizeWricefRef(objectRef);
-  const compactTicketRef = normalizedTicketRef.replace(/[^a-z0-9]/g, '');
-  const compactObjectRef = normalizedObjectRef.replace(/[^a-z0-9]/g, '');
-  return (
-    normalizedTicketRef === normalizedObjectRef ||
-    normalizedTicketRef.startsWith(`${normalizedObjectRef}-tk-`) ||
-    compactTicketRef === compactObjectRef ||
-    compactTicketRef.startsWith(`${compactObjectRef}tk`)
-  );
+  return objectRefs.some((objectRef) => {
+    if (ticketRef === objectRef || ticketRef.startsWith(`${objectRef}-tk-`)) return true;
+
+    const normalizedTicketRef = normalizeWricefRef(ticketRef);
+    const normalizedObjectRef = normalizeWricefRef(objectRef);
+    const compactTicketRef = normalizedTicketRef.replace(/[^a-z0-9]/g, '');
+    const compactObjectRef = normalizedObjectRef.replace(/[^a-z0-9]/g, '');
+    return (
+      normalizedTicketRef === normalizedObjectRef ||
+      normalizedTicketRef.startsWith(`${normalizedObjectRef}-tk-`) ||
+      compactTicketRef === compactObjectRef ||
+      compactTicketRef.startsWith(`${compactObjectRef}tk`)
+    );
+  });
 };
 
 export const buildWricefTicketMap = (tickets: Ticket[]): Map<string, Ticket[]> => {
@@ -288,7 +297,7 @@ export const buildObjectTicketRows = (
   object: WricefObject,
   tickets: Ticket[]
 ): Ticket[] => {
-  return tickets.filter((ticket) => isTicketLinkedToObject(ticket.wricefId, object.id));
+  return tickets.filter((ticket) => isTicketLinkedToObject(ticket.wricefId, object.id, object.externalRef));
 };
 
 export const buildWricefObjectTicketStats = (
@@ -297,7 +306,7 @@ export const buildWricefObjectTicketStats = (
 ): Map<string, { available: number }> => {
   const stats = new Map<string, { available: number }>();
   wricefObjects.forEach((object) => {
-    const linkedTickets = tickets.filter(t => isTicketLinkedToObject(t.wricefId, object.id));
+    const linkedTickets = tickets.filter(t => isTicketLinkedToObject(t.wricefId, object.id, object.externalRef));
     stats.set(object.id, { available: linkedTickets.length });
   });
   return stats;
@@ -341,13 +350,18 @@ export const buildWricefImportPlan = (
   existingObjects: WricefObject[],
   existingTickets: Ticket[]
 ): WricefImportPlan => {
-  const knownObjectIds = new Set(existingObjects.map((object) => object.id.trim().toLowerCase()));
+  const knownObjectIds = new Set(
+    existingObjects.flatMap((object) => [
+      object.id.trim().toLowerCase(),
+      getWricefObjectRef(object).trim().toLowerCase(),
+    ])
+  );
   const knownObjectKeys = new Set(
     existingObjects.map((object) => `${object.type}::${object.title.trim().toLowerCase()}`)
   );
 
   const uniqueObjects = imported.objects.filter((object) => {
-    const idKey = object.id.trim().toLowerCase();
+    const idKey = getWricefObjectRef(object).trim().toLowerCase();
     const titleKey = `${object.type}::${object.title.trim().toLowerCase()}`;
     if (knownObjectIds.has(idKey) || knownObjectKeys.has(titleKey)) return false;
     knownObjectIds.add(idKey);
@@ -391,7 +405,7 @@ export const buildDocumentationDraft = (
 
   return {
     title: `SFD - ${object.title}`,
-    description: `Documentation for WRICEF object ${object.id}`,
+    description: `Documentation for WRICEF object ${getWricefObjectRef(object)}`,
     type: 'SFD',
     content: `# ${object.title}\n\n## Context\n${object.description}\n\n## Functional Details\n- \n\n## Technical Notes\n- \n`,
   };

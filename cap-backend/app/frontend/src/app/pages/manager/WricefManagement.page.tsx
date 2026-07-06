@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Clock,
   FileText,
+  FileUp,
   Layers,
   PackagePlus,
   Plus,
@@ -42,6 +43,7 @@ import { WricefsAPI } from '../../services/odata/wricefsApi';
 import { WricefObjectsAPI } from '../../services/odata/wricefObjectsApi';
 import { ProjectsAPI } from '../../services/odata/projectsApi';
 import { TicketsAPI } from '../../services/odata/ticketsApi';
+import { AttachmentsAPI } from '../../services/odata/attachmentsApi';
 import {
   type Project,
   type Ticket,
@@ -81,6 +83,7 @@ const ALL_SAP_MODULES: SAPModule[] = [
   'OTHER',
 ];
 const ALL_COMPLEXITIES: TicketComplexity[] = ['SIMPLE', 'MOYEN', 'COMPLEXE', 'TRES_COMPLEXE'];
+const WRICEF_UPLOAD_ACCEPT = '.pdf,.png,.jpg,.jpeg,.docx,.xlsx,.txt';
 
 // ── New-object form state ──────────────────────────────────────────────────
 
@@ -124,7 +127,7 @@ export const WricefManagement: React.FC = () => {
   // ── creation state ──
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newProjectId, setNewProjectId] = useState('');
-  const [newSourceFileName, setNewSourceFileName] = useState('');
+  const [newSourceFile, setNewSourceFile] = useState<File | null>(null);
   const [creating, setCreating] = useState(false);
 
   // ── add-object state ──
@@ -187,23 +190,29 @@ export const WricefManagement: React.FC = () => {
       toast.error(t('dashboard.wricef.toasts.validation.selectProject'));
       return;
     }
-    if (!newSourceFileName.trim()) {
+    if (!newSourceFile) {
       toast.error(t('dashboard.wricef.toasts.validation.enterSourceFile'));
       return;
     }
     setCreating(true);
     try {
-      await WricefsAPI.create({
+      const created = await WricefsAPI.create({
         projectId: newProjectId,
-        sourceFileName: newSourceFileName.trim(),
+        sourceFileName: newSourceFile.name,
         importedAt: new Date().toISOString(),
         status: 'DRAFT',
         autoCreated: false,
       });
+      try {
+        await AttachmentsAPI.upload('WRICEF', created.id, newSourceFile);
+      } catch (uploadError) {
+        await WricefsAPI.delete(created.id);
+        throw uploadError;
+      }
       toast.success(t('dashboard.wricef.toasts.createSuccess'));
       setCreateDialogOpen(false);
       setNewProjectId('');
-      setNewSourceFileName('');
+      setNewSourceFile(null);
       await loadData();
     } catch {
       toast.error(t('dashboard.wricef.toasts.createError'));
@@ -712,7 +721,16 @@ export const WricefManagement: React.FC = () => {
       {/* ════════════════════════════════════════════════════════════════════
           Create WRICEF Dialog
          ════════════════════════════════════════════════════════════════════ */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+      <Dialog
+        open={createDialogOpen}
+        onOpenChange={(open) => {
+          setCreateDialogOpen(open);
+          if (!open && !creating) {
+            setNewProjectId('');
+            setNewSourceFile(null);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t('dashboard.wricef.dialog.title')}</DialogTitle>
@@ -740,12 +758,27 @@ export const WricefManagement: React.FC = () => {
 
             <div className="space-y-1.5">
               <Label htmlFor="wricef-source-file">{t('dashboard.wricef.dialog.sourceFile')}</Label>
-              <Input
-                id="wricef-source-file"
-                placeholder={t('dashboard.wricef.dialog.sourceFilePlaceholder')}
-                value={newSourceFileName}
-                onChange={(e) => setNewSourceFileName(e.target.value)}
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  id="wricef-source-file"
+                  type="file"
+                  accept={WRICEF_UPLOAD_ACCEPT}
+                  className="hidden"
+                  onChange={(e) => setNewSourceFile(e.target.files?.[0] ?? null)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="shrink-0"
+                  onClick={() => document.getElementById('wricef-source-file')?.click()}
+                >
+                  <FileUp className="mr-1.5 h-4 w-4" />
+                  {t('dashboard.wricef.dialog.chooseFile')}
+                </Button>
+                <span className="min-w-0 truncate text-sm text-muted-foreground">
+                  {newSourceFile?.name ?? t('dashboard.wricef.dialog.noFileSelected')}
+                </span>
+              </div>
             </div>
           </div>
 

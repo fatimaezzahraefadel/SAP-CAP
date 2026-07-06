@@ -20,6 +20,11 @@ export interface PeriodData {
   totalHours: number;
 }
 
+const asHours = (value: unknown): number => {
+  const hours = Number(value);
+  return Number.isFinite(hours) ? hours : 0;
+};
+
 export const useCalendarImputations = (canImpute: boolean, _canValidate: boolean) => {
   const { currentUser } = useAuth();
   const queryClient = useQueryClient();
@@ -55,7 +60,7 @@ export const useCalendarImputations = (canImpute: boolean, _canValidate: boolean
   const hoursByDate = useMemo(() => {
     const map: Record<string, number> = {};
     imputations.forEach((imp) => {
-      map[imp.date] = (map[imp.date] || 0) + imp.hours;
+      map[imp.date] = (map[imp.date] || 0) + asHours(imp.hours);
     });
     return map;
   }, [imputations]);
@@ -71,7 +76,7 @@ export const useCalendarImputations = (canImpute: boolean, _canValidate: boolean
   const periodData = useCallback((key: string): PeriodData => {
     const p = periods.find((pd) => pd.periodKey === key && (canImpute ? pd.consultantId === userId : true));
     const periodImps = imputations.filter((i) => i.periodKey === key && (canImpute ? i.consultantId === userId : true));
-    const totalHours = periodImps.reduce((s, i) => s + i.hours, 0);
+    const totalHours = periodImps.reduce((s, i) => s + asHours(i.hours), 0);
     return { period: p, imputations: periodImps, totalHours };
   }, [periods, imputations, canImpute, userId]);
 
@@ -137,7 +142,7 @@ export const useCalendarImputations = (canImpute: boolean, _canValidate: boolean
     const existing = periods.find((p) => p.periodKey === periodKey && p.consultantId === currentUser.id);
     const range = getPeriodRange(periodKey);
     const periodImps = imputations.filter((i) => i.periodKey === periodKey && i.consultantId === currentUser.id);
-    const totalHours = periodImps.reduce((s, i) => s + i.hours, 0);
+    const totalHours = periodImps.reduce((s, i) => s + asHours(i.hours), 0);
 
     try {
       if (existing) {
@@ -227,19 +232,19 @@ export const useCalendarImputations = (canImpute: boolean, _canValidate: boolean
     const prefix = calendarMonth;
     return imputations
       .filter((i) => i.date.startsWith(prefix) && (canImpute ? i.consultantId === currentUser?.id : true))
-      .reduce((s, i) => s + i.hours, 0);
+      .reduce((s, i) => s + asHours(i.hours), 0);
   }, [imputations, calendarMonth, canImpute, currentUser]);
 
   const validatedHoursThisMonth = useMemo(() => {
     return imputations
       .filter((i) => i.validationStatus === 'VALIDATED' && (canImpute ? i.consultantId === currentUser?.id : true))
-      .reduce((s, i) => s + i.hours, 0);
+      .reduce((s, i) => s + asHours(i.hours), 0);
   }, [imputations, canImpute, currentUser]);
 
   const stratimeHoursThisMonth = useMemo(() => {
     return periods
       .filter((period) => period.periodKey.startsWith(calendarMonth) && period.sentToStraTIME)
-      .reduce((sum, period) => sum + period.totalHours, 0);
+      .reduce((sum, period) => sum + asHours(period.totalHours), 0);
   }, [periods, calendarMonth]);
 
   return {

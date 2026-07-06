@@ -135,6 +135,7 @@ const ensureObject = (
 
   const created: WricefObject = {
     id: objectId,
+    externalRef: objectId,
     type: defaults?.type ?? inferWricefType(objectId),
     title: defaults?.title?.trim() || `Object ${objectId}`,
     description: defaults?.description?.trim() || '',

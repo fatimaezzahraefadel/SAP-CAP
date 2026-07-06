@@ -102,6 +102,7 @@ entity WricefObjects : cuid, managed {
   wricef                  : Association to Wricefs on wricef.ID = wricefId;
   projectId               : String(50) not null;
   project                 : Association to Projects on project.ID = projectId;
+  externalRef             : String(100);
   type                    : WricefType       not null;
   title                   : String(200)      not null;
   description             : LargeString;

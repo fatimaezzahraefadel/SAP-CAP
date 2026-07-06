@@ -48,6 +48,7 @@ import {
   filterProjectObjects,
   filterProjectTickets,
   formatBytes,
+  isTicketLinkedToObject,
   paginateItems,
   PROJECT_TABS,
   ProjectDocumentationFormState,
@@ -291,7 +292,9 @@ export const useProjectDetailsViewModel = (): ProjectDetailsViewModel => {
   );
   const hasAbaqueEstimate = Boolean(project?.abaqueEstimate && project.abaqueEstimate.length > 0);
   const wricefTotalTickets = useMemo(
-    () => tickets.filter((ticket) => wricefObjects.some((object) => object.id === ticket.wricefId)).length,
+    () => tickets.filter((ticket) =>
+      wricefObjects.some((object) => isTicketLinkedToObject(ticket.wricefId, object.id, object.externalRef))
+    ).length,
     [wricefObjects, tickets]
   );
   const wricefTotalDocuments = useMemo(
@@ -478,7 +481,7 @@ export const useProjectDetailsViewModel = (): ProjectDetailsViewModel => {
       });
 
       const newObjects = await Promise.all(
-        plan.uniqueObjects.map((object) =>
+        plan.uniqueObjects.map(({ id: _importRef, ...object }) =>
           WricefObjectsAPI.create({
             ...object,
             projectId: project.id,

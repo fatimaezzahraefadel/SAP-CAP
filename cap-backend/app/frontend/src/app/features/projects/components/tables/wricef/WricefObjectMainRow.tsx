@@ -13,6 +13,7 @@ import {
   WricefType,
   WRICEF_TYPE_LABELS,
 } from '@/app/types/entities';
+import { getWricefObjectRef } from '../../../model';
 
 interface WricefObjectMainRowProps {
   object: WricefObject;
@@ -33,6 +34,8 @@ export const WricefObjectMainRow: React.FC<WricefObjectMainRowProps> = ({
   complexityBadgeClass,
   onToggleExpandObject,
 }) => {
+  const objectRef = getWricefObjectRef(object);
+
   return (
     <TableRow className="cursor-pointer hover:bg-muted/40 transition-colors" onClick={() => onToggleExpandObject(object.id)}>
       <TableCell className="px-3 py-3">
@@ -44,7 +47,7 @@ export const WricefObjectMainRow: React.FC<WricefObjectMainRowProps> = ({
           )}
         </button>
       </TableCell>
-      <TableCell className="px-3 py-3 font-mono text-sm font-medium">{object.id}</TableCell>
+      <TableCell className="px-3 py-3 font-mono text-sm font-medium">{objectRef}</TableCell>
       <TableCell className="px-3 py-3">
         <Badge className={`text-xs ${wricefTypeBadgeClass[object.type]}`}>
           {WRICEF_TYPE_LABELS[object.type]}

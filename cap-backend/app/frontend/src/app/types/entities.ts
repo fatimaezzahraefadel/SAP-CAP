@@ -211,6 +211,7 @@ export interface WricefObject {
   id: string;
   wricefId: string;
   projectId: string;
+  externalRef?: string;
   type: WricefType;
   title: string;
   description: string;

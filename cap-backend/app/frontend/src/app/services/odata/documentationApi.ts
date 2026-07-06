@@ -166,9 +166,13 @@ const isTicketLinkedToWricefObject = (ticketRef?: string | null, objectRef?: str
   );
 };
 
+const getWricefObjectRef = (object: Pick<WricefObject, 'id' | 'externalRef'>): string =>
+  object.externalRef?.trim() || object.id;
+
 const buildWricefObjectContent = (object: WricefObject): string => {
+  const objectRef = getWricefObjectRef(object);
   return [
-    `# ${object.type} Object - ${object.id}`,
+    `# ${object.type} Object - ${objectRef}`,
     '',
     '## Title',
     object.title,
@@ -189,7 +193,7 @@ const resolveWricefLinkedTicketIds = (
   wricefObject: WricefObject
 ): string[] => {
   return projectTickets
-    .filter((t) => isTicketLinkedToWricefObject(t.wricefId, wricefObject.id))
+    .filter((t) => isTicketLinkedToWricefObject(t.wricefId, getWricefObjectRef(wricefObject)))
     .map((t) => t.id);
 };
 
@@ -320,15 +324,16 @@ export const DocumentationAPI = {
     const activeSourceRefs = new Set<string>();
 
     for (const wricefObject of wricefObjects) {
-      const sourceRefId = `${WRICEF_SOURCE_PREFIX}${projectId}:${wricefObject.id}`;
+      const objectRef = getWricefObjectRef(wricefObject);
+      const sourceRefId = `${WRICEF_SOURCE_PREFIX}${projectId}:${objectRef}`;
       activeSourceRefs.add(sourceRefId);
       const linkedTicketIds = resolveWricefLinkedTicketIds(projectTickets, wricefObject);
 
       const docPayload: Omit<DocumentationObject, 'id' | 'createdAt' | 'updatedAt'> = {
-        title: wricefObject.title || wricefObject.id,
+        title: wricefObject.title || objectRef,
         description:
           wricefObject.description ||
-          `WRICEF object ${wricefObject.id} imported from ${wricef.sourceFileName}`,
+          `WRICEF object ${objectRef} imported from ${wricef.sourceFileName}`,
         type: 'GENERAL',
         content: buildWricefObjectContent(wricefObject),
         attachedFiles: [],

@@ -6,6 +6,7 @@ import { TableCell, TableRow } from '@/app/components/ui/table';
 import { DocumentationObject, Ticket, TicketStatus, WricefObject } from '@/app/types/entities';
 import { WricefObjectDocumentsTable } from './WricefObjectDocumentsTable';
 import { WricefObjectTicketsTable } from './WricefObjectTicketsTable';
+import { getWricefObjectRef } from '../../../model';
 
 interface WricefObjectExpandedRowProps {
   object: WricefObject;
@@ -33,13 +34,15 @@ export const WricefObjectExpandedRow: React.FC<WricefObjectExpandedRowProps> = (
   onViewDocument,
 }) => {
   const { t } = useTranslation();
+  const objectRef = getWricefObjectRef(object);
+
   return (
     <TableRow>
       <TableCell colSpan={8} className="p-0">
         <div className="bg-muted/20 border-t border-b border-border/50 px-6 py-3">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-semibold text-foreground">
-              {t('projects.details.tables.wricef.ticketsFor', { id: object.id })}
+              {t('projects.details.tables.wricef.ticketsFor', { id: objectRef })}
             </h4>
             <Button
               size="sm"
@@ -63,7 +66,7 @@ export const WricefObjectExpandedRow: React.FC<WricefObjectExpandedRowProps> = (
           <div className="mt-4 pt-3 border-t border-border/40">
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-sm font-semibold text-foreground">
-                  {t('projects.details.tables.wricef.documentsFor', { id: object.id })}
+                  {t('projects.details.tables.wricef.documentsFor', { id: objectRef })}
               </h4>
               <Button
                 size="sm"
