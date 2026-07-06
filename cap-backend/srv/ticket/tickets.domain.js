@@ -361,7 +361,7 @@ class TicketDomainService {
 
       try {
         ticketStateMachine.assertTransition(ticket.status, TICKET_STATUS.APPROVED, 'ticket');
-      } catch (err) {
+      } catch {
         req.reject(409, `Cannot approve ticket in status '${ticket.status}'; expected PENDING_APPROVAL`);
         return;
       }
@@ -428,7 +428,7 @@ class TicketDomainService {
 
       try {
         ticketStateMachine.assertTransition(ticket.status, TICKET_STATUS.REJECTED, 'ticket');
-      } catch (err) {
+      } catch {
         req.reject(409, `Cannot reject ticket in status '${ticket.status}'; transition to REJECTED not allowed`);
         return;
       }

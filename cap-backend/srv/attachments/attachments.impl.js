@@ -44,7 +44,7 @@ module.exports = (srv) => {
         const buf = Buffer.isBuffer(body) ? body : Buffer.from(String(body), 'base64');
         res.setHeader('Content-Length', buf.length);
         return res.send(buf);
-      } catch (e) {
+      } catch {
         return res.status(500).send('Error serving file');
       }
     });
