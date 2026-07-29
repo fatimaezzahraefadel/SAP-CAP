@@ -3,12 +3,13 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { User } from '../types/entities';
 import { AuthAPI } from '../services/odata/authApi';
-import { onAuthExpired, setODataAuthToken } from '../services/odata/core';
+import { onAuthExpired, setODataAuthToken, setTestUser, getTestUser, TestUser } from '../services/odata/core';
 import { UsersAPI } from '../services/odata/usersApi';
 
 interface AuthContextType {
   currentUser: User | null;
   login: () => Promise<void>;
+  loginAsTestUser: (testUser: TestUser) => Promise<void>;
   logout: () => void;
   switchUser: (userId: string) => Promise<void>;
   isAuthenticated: boolean;
@@ -50,7 +51,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loadCurrentUser = useCallback(async () => {
     setIsAuthLoading(true);
     setODataAuthToken(null);
-    clearLegacyAuthStorage();
 
     try {
       const user = await AuthAPI.currentUser();
@@ -62,14 +62,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const loginAsTestUser = useCallback(async (user: TestUser) => {
+    console.log('[AuthContext] loginAsTestUser called with:', user);
+    setIsAuthLoading(true);
+    setTestUser(user);
+    try {
+      console.log('[AuthContext] Calling AuthAPI.currentUser()');
+      const userData = await AuthAPI.currentUser();
+      console.log('[AuthContext] Got user data:', userData);
+      setCurrentUser(userData.active ? userData : null);
+    } catch (error) {
+      console.error('[AuthContext] Error in loginAsTestUser:', error);
+      setCurrentUser(null);
+    } finally {
+      setIsAuthLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    void loadCurrentUser();
-  }, [loadCurrentUser]);
+    const existingTestUser = getTestUser();
+    if (existingTestUser) {
+      void loginAsTestUser(existingTestUser);
+    } else {
+      void loadCurrentUser();
+    }
+  }, [loadCurrentUser, loginAsTestUser]);
 
   useEffect(() => {
     const unsubscribe = onAuthExpired(() => {
       setCurrentUser(null);
       setODataAuthToken(null);
+      setTestUser(null);
       clearLegacyAuthStorage();
     });
     return unsubscribe;
@@ -82,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(() => {
     setCurrentUser(null);
     setODataAuthToken(null);
+    setTestUser(null);
     clearLegacyAuthStorage();
     window.location.assign('/do/logout');
   }, []);
@@ -97,13 +121,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     () => ({
       currentUser,
       login,
+      loginAsTestUser,
       logout,
       switchUser,
       isAuthenticated: Boolean(currentUser),
       isAuthLoading,
       isDirectLoginEnabled: false,
     }),
-    [currentUser, isAuthLoading, login, logout, switchUser]
+    [currentUser, isAuthLoading, login, loginAsTestUser, logout, switchUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

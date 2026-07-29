@@ -433,7 +433,7 @@ export const PendingApprovals: React.FC = () => {
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-5">
-                    {/* AssignmentToggle (Manual / AI) */}
+                    {/* Manual assignment */}
                     <AssignmentToggle
                       ticket={selectedTicket}
                       users={users}

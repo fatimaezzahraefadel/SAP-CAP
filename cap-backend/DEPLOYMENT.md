@@ -96,9 +96,6 @@ Some features read configuration from the backend app's environment. Set them
 once with `cf set-env` and restage:
 
 ```bash
-# Required only if the AI dispatch feature is used (otherwise it returns 500)
-cf set-env ticket-cap-srv OPENROUTER_API_KEY <your-key>
-
 # Optional overrides (defaults shown)
 cf set-env ticket-cap-srv CLEANUP_CRON "0 2 * * *"          # orphan-attachment purge schedule
 cf set-env ticket-cap-srv ATTACHMENT_MAX_SIZE_MB 25          # upload size limit

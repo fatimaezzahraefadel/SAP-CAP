@@ -1,0 +1,7 @@
+ID,code,libelle,actif
+dom-abap,ABAP,SAP ABAP,true
+dom-cpi,CPI,SAP CPI Integration Suite,true
+dom-fiori,FIORI,SAP Fiori UI5,true
+dom-cap,CAP,SAP CAP BTP,true
+dom-cloud,CLOUD,Cloud AWS Azure GCP,true
+dom-autre,AUTRE,Autre,true

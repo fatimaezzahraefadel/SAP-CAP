@@ -1,0 +1,4 @@
+ID,matricule,nom,prenom,email,poste,role,dateEmbauche,soldeConges,manager_ID
+mgr-001,MGR001,Martin,Claire,manager@inetum.local,Manager SAP,MANAGER,2020-01-15,22,
+cons-001,CONS001,Benali,Yassine,consultant@inetum.local,Consultant technique SAP,CONSULTANT,2023-03-01,18,mgr-001
+cons-002,CONS002,Dupont,Lea,lea.dupont@inetum.local,Consultante SAP Fiori,CONSULTANT,2022-09-12,14,mgr-001

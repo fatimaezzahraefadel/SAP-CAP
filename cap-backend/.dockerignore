@@ -1,0 +1,15 @@
+node_modules
+app/frontend/node_modules
+app/dist
+app/approuter/resources
+gen
+coverage
+.git
+.vscode
+*.log
+npm-debug.log*
+db/*.db
+db/*.sqlite
+db/*.sqlite3
+uploads
+.env

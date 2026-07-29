@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
-import { Sparkles, Ticket, BarChart3, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
+import { Ticket, BarChart3, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
 import { PageHeader } from '../../components/common/PageHeader';
 import { KPICard } from '../../components/common/KPICard';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -113,8 +113,8 @@ const DevCoordinatorDashboard: React.FC = () => {
       <Card className="border-border/80 bg-card">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">{t('coordinator.dashboard.dispatch.title')}</CardTitle>
-          <Button variant="default" size="sm" onClick={() => navigate('/dev-coordinator/ai-dispatch')}>
-            <Sparkles className="mr-2 h-4 w-4" /> {t('coordinator.dashboard.dispatch.aiDispatch')}
+          <Button variant="default" size="sm" onClick={() => navigate('/dev-coordinator/workload')}>
+            {t('coordinator.dashboard.workload.details')}
           </Button>
         </CardHeader>
         <CardContent>
@@ -134,7 +134,7 @@ const DevCoordinatorDashboard: React.FC = () => {
                       <Badge variant="secondary">{t(`entities.priority.${ticket.priority}`)}</Badge>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); navigate('/dev-coordinator/ai-dispatch'); }}>
+                  <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/dev-coordinator/tickets/${ticket.id}`); }}>
                     {t('coordinator.dispatch.assign')}
                   </Button>
                 </div>

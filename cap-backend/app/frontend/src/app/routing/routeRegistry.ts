@@ -177,8 +177,8 @@ export const ROLE_ROUTE_REGISTRY: Record<UserRole, RoleRouteGroup> = {
       {
         id: 'manager-leave',
         path: 'leave',
-        lazy: lazyNamed(() => import('../pages/manager/GestionConges.page'), 'GestionConges'),
-        nav: { label: 'Leave', iconKey: 'calendar-days' },
+        lazy: lazyNamed(() => import('../pages/gestion/GestionManagerFiori.page'), 'GestionManagerFiori'),
+        nav: { label: 'Conges', iconKey: 'calendar-days' },
       },
       {
         id: 'manager-imputations',
@@ -243,8 +243,8 @@ export const ROLE_ROUTE_REGISTRY: Record<UserRole, RoleRouteGroup> = {
       {
         id: 'tech-leave',
         path: 'leave',
-        lazy: lazyNamed(() => import('../pages/consultant-tech/MesConges.page'), 'MesConges'),
-        nav: { label: 'Leave', iconKey: 'calendar-days' },
+        lazy: lazyNamed(() => import('../pages/gestion/GestionConsultantFiori.page'), 'GestionConsultantFiori'),
+        nav: { label: 'Conges', iconKey: 'calendar-days' },
       },
       {
         id: 'tech-imputations',
@@ -409,12 +409,6 @@ export const ROLE_ROUTE_REGISTRY: Record<UserRole, RoleRouteGroup> = {
         id: 'dev-coord-ticket-groups-redirect',
         path: 'ticket-groups',
         redirectTo: '/dev-coordinator/objects',
-      },
-      {
-        id: 'dev-coord-ai-dispatch',
-        path: 'ai-dispatch',
-        lazy: lazyDefault(() => import('../pages/dev-coordinator/AIDispatchPage.page')),
-        nav: { label: 'AI Dispatch', iconKey: 'sparkles' },
       },
       {
         id: 'dev-coord-workload',

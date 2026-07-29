@@ -1,0 +1,5 @@
+ID,code,libelle,deduitDuSolde,dureeMaxJours,actif
+tc-annuel,ANNUEL,Conge annuel paye,true,22,true
+tc-maladie,MALADIE,Conge maladie,false,,true
+tc-exceptionnel,EXCEPTIONNEL,Conge exceptionnel,true,5,true
+tc-sans-solde,SANS_SOLDE,Conge sans solde,false,,true

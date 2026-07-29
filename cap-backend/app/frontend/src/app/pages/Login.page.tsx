@@ -8,10 +8,20 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import inetumLogoDark from '@/assets/inetum-logo-dark.svg';
 import inetumLogoLight from '@/assets/inetum-logo.svg';
+import { TestUser } from '../services/odata/core';
+
+const testUsers: TestUser[] = [
+  { id: 'u-admin', email: 'alice.admin@inetum.com', name: 'Alice Admin', role: 'ADMIN' },
+  { id: 'u-manager', email: 'marc.manager@inetum.com', name: 'Marc Manager', role: 'MANAGER' },
+  { id: 'u-tech', email: 'theo.tech@inetum.com', name: 'Theo Technique', role: 'CONSULTANT_TECHNIQUE' },
+  { id: 'u-func', email: 'fatima.fonc@inetum.com', name: 'Fatima Fonctionnel', role: 'CONSULTANT_FONCTIONNEL' },
+  { id: 'u-pm', email: 'pierre.pm@inetum.com', name: 'Pierre PM', role: 'PROJECT_MANAGER' },
+  { id: 'u-devco', email: 'diana.devco@inetum.com', name: 'Diana DevCo', role: 'DEV_COORDINATOR' },
+];
 
 export const Login: React.FC = () => {
   const { t } = useTranslation();
-  const { currentUser, isAuthenticated, isAuthLoading, login } = useAuth();
+  const { currentUser, isAuthenticated, isAuthLoading, login, loginAsTestUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const fromPath = (location.state as { from?: string } | null)?.from;
@@ -39,18 +49,24 @@ export const Login: React.FC = () => {
                 {t('login.accountAccess')}
               </p>
               <CardTitle className="text-2xl">{t('login.signIn')}</CardTitle>
-              <p className="text-sm text-muted-foreground">{t('login.sapLoginRequired')}</p>
+              <p className="text-sm text-muted-foreground">Sélectionnez un utilisateur de test</p>
             </div>
           </CardHeader>
-          <CardContent>
-            <Button className="w-full" size="lg" onClick={() => void login()} disabled={isAuthLoading}>
-              {isAuthLoading ? t('common.loadingSession') : t('login.continueWithSap')}
-            </Button>
-            {!isAuthLoading && !currentUser ? (
-              <p className="mt-3 text-sm text-muted-foreground">
-                {t('login.missingRoleCollection')}
-              </p>
-            ) : null}
+          <CardContent className="space-y-2">
+            {testUsers.map((user) => (
+              <Button
+                key={user.id}
+                className="w-full justify-start text-left"
+                size="lg"
+                onClick={() => void loginAsTestUser(user)}
+                disabled={isAuthLoading}
+              >
+                <div className="flex flex-col items-start">
+                  <span className="font-medium">{user.name}</span>
+                  <span className="text-xs text-muted-foreground">{user.role}</span>
+                </div>
+              </Button>
+            ))}
           </CardContent>
         </Card>
       </div>

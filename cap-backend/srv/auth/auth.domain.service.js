@@ -8,7 +8,7 @@ const PUBLIC_EVENTS = new Set();
 
 const normalizeEmail = (value) => String(value ?? '').trim().toLowerCase();
 const normalizeString = (value) => String(value ?? '').trim();
-const isTestRuntime = () => Boolean(process.env.JEST_WORKER_ID) || process.env.NODE_ENV === 'test';
+const isTestRuntime = () => Boolean(process.env.JEST_WORKER_ID) || process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
 
 const getHeader = (req, name) => {
   const lowerName = String(name).toLowerCase();
@@ -17,10 +17,13 @@ const getHeader = (req, name) => {
 };
 
 const getTestClaims = (req) => {
+  console.log('[backend] isTestRuntime:', isTestRuntime());
+  console.log('[backend] Request headers:', req?.headers ?? req?.http?.req?.headers ?? req?._?.req?.headers ?? 'no headers found');
   if (!isTestRuntime()) return null;
 
   const userId = normalizeString(getHeader(req, 'x-test-user-id'));
   const role = normalizeString(getHeader(req, 'x-test-user-role'));
+  console.log('[backend] Test headers - userId:', userId, 'role:', role);
   if (!userId || !role) return null;
 
   return {

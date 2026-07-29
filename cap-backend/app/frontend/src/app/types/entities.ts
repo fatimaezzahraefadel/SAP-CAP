@@ -418,7 +418,7 @@ export interface Ticket {
   effortComment?: string;
   /** Optional functional tester */
   functionalTesterId?: string;
-  /** Tags for search / AI matching */
+  /** Tags for search and matching */
   tags?: string[];
   /** WRICEF reference for the ticket */
   wricefId?: string | null;
@@ -509,25 +509,6 @@ export interface KPI {
   averageProductivity: number;
   allocationRate: number;
   activeRisks: number;
-}
-
-// ---------------------------------------------------------------------------
-// AI Dispatch – Assignee Recommendation
-// ---------------------------------------------------------------------------
-
-export interface AssigneeRecommendation {
-  userId: string;
-  userName: string;
-  userRole: UserRole;
-  score: number;
-  /** Breakdown of scoring factors */
-  factors: {
-    availabilityScore: number;
-    skillsMatchScore: number;
-    performanceScore: number;
-    similarTicketsScore: number;
-  };
-  explanation: string;
 }
 
 // ---------------------------------------------------------------------------

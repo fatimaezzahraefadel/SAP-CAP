@@ -47,7 +47,7 @@ export type {
 // Configuration
 // ---------------------------------------------------------------------------
 
-export type ODataService = 'core' | 'user' | 'ticket' | 'time';
+export type ODataService = 'core' | 'user' | 'ticket' | 'time' | 'consultant' | 'manager';
 
 const FALLBACK_BASE = import.meta.env.VITE_ODATA_BASE_URL ? import.meta.env.VITE_ODATA_BASE_URL.replace(/\/performance\/?$/, '') : '/odata/v4';
 
@@ -56,10 +56,13 @@ const ODATA_SERVICES: Record<ODataService, string> = {
   user: import.meta.env.VITE_ODATA_USER_URL || `${FALLBACK_BASE}/user`,
   ticket: import.meta.env.VITE_ODATA_TICKET_URL || `${FALLBACK_BASE}/ticket`,
   time: import.meta.env.VITE_ODATA_TIME_URL || `${FALLBACK_BASE}/time`,
+  consultant: import.meta.env.VITE_ODATA_CONSULTANT_URL || `${FALLBACK_BASE}/consultant`,
+  manager: import.meta.env.VITE_ODATA_MANAGER_URL || `${FALLBACK_BASE}/manager`,
 };
 
 const ODATA_OBSERVABILITY_ENABLED = import.meta.env.VITE_ODATA_OBSERVABILITY === 'true';
 const ODATA_AUTH_TOKEN_STORAGE_KEY = 'odata.auth.token';
+const ODATA_TEST_USER_STORAGE_KEY = 'odata.test.user';
 const JWT_EXPIRY_SKEW_SECONDS = 30;
 
 export interface ODataClientConfig {
@@ -172,6 +175,47 @@ export const getODataAuthToken = (): string | null => odataAuthToken;
  * @throws {never} Storage errors are internally swallowed.
  * @example setODataAuthToken(session.token);
  */
+export interface TestUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+}
+
+let testUser: TestUser | null = null;
+
+const readStoredTestUser = (): TestUser | null => {
+  try {
+    const data = localStorage.getItem(ODATA_TEST_USER_STORAGE_KEY);
+    if (!data) return null;
+    const parsed = JSON.parse(data);
+    if (parsed && parsed.id && parsed.email && parsed.name && parsed.role) {
+      return parsed as TestUser;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+const persistTestUser = (user: TestUser | null): void => {
+  try {
+    if (user) localStorage.setItem(ODATA_TEST_USER_STORAGE_KEY, JSON.stringify(user));
+    else localStorage.removeItem(ODATA_TEST_USER_STORAGE_KEY);
+  } catch {
+    // ignore storage failures
+  }
+};
+
+testUser = readStoredTestUser();
+
+export const getTestUser = (): TestUser | null => testUser;
+
+export const setTestUser = (user: TestUser | null): void => {
+  testUser = user;
+  persistTestUser(user);
+};
+
 export const setODataAuthToken = (token: string | null): void => {
   const normalized = token?.trim() || null;
   odataAuthToken = normalized;
@@ -690,6 +734,14 @@ export async function odataFetch<T>(
 
   if (ifMatch) {
     requestHeaders.set('If-Match', ifMatch);
+  }
+
+  if (testUser) {
+    console.log('[core.ts] Adding test user headers:', testUser);
+    requestHeaders.set('x-test-user-id', testUser.id);
+    requestHeaders.set('x-test-user-email', testUser.email);
+    requestHeaders.set('x-test-user-name', testUser.name);
+    requestHeaders.set('x-test-user-role', testUser.role);
   }
 
   if (!requestHeaders.has('Authorization') && odataAuthToken) {
