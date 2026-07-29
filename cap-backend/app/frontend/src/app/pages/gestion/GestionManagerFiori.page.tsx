@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { AlertTriangle, Award, BarChart3, CalendarCheck, Check, ExternalLink, RefreshCw, Search, UserRound, Users, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import FullCalendar from '@fullcalendar/react';
@@ -42,6 +43,8 @@ const messageFromError = (error: unknown) => error && typeof error === 'object' 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
 export function GestionManagerFiori() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [leaveFilters, setLeaveFilters] = useState({ status: ALL, consultant: ALL, type: ALL, from: '', to: '', search: '' });
   const [certificateFilters, setCertificateFilters] = useState({ consultant: ALL, domaine: ALL, validite: ALL, search: '' });
@@ -67,6 +70,14 @@ export function GestionManagerFiori() {
   const isLoading = demandes.isLoading || consultants.isLoading || certificats.isLoading || types.isLoading || domaines.isLoading || kpi.isLoading;
   const error = [demandes.error, consultants.error, certificats.error, types.error, domaines.error, kpi.error, approuver.error, rejeter.error].map(messageFromError).find(Boolean);
   const actionPending = approuver.isPending || rejeter.isPending;
+  const defaultTab = location.pathname.endsWith('/calendar')
+    ? 'calendar'
+    : location.pathname.endsWith('/certificates')
+      ? 'certificates'
+      : location.pathname.endsWith('/consultants')
+        ? 'consultants'
+        : 'leave';
+  const managerTabPath = (tab: string) => tab === 'leave' ? '/manager/leave' : `/manager/${tab}`;
 
   const demandeRows: LeaveRow[] = (demandes.data ?? []).map((item) => ({ ...item, consultantLabel: consultantById.get(item.consultant_ID) ?? item.consultant_ID, typeLabel: typeById.get(item.typeConge_ID) ?? item.typeConge_ID }));
   const certificatRows: CertificateRow[] = (certificats.data ?? []).map((item) => ({ ...item, consultantLabel: consultantById.get(item.consultant_ID) ?? item.consultant_ID, domaineLabel: domaineById.get(item.domaine_ID) ?? item.domaine_ID, validite: certificateValidity(item.dateExpiration) }));
@@ -120,7 +131,7 @@ export function GestionManagerFiori() {
 
         <KpiCharts leaves={demandeRows} certificates={certificatRows} consultants={consultantOptions} />
 
-        <Tabs defaultValue="consultants" className="gap-4">
+        <Tabs value={defaultTab} onValueChange={(tab) => navigate(managerTabPath(tab))} className="gap-4">
           <TabsList className="w-full justify-start overflow-x-auto rounded-md">
             <TabsTrigger value="consultants">Consultants</TabsTrigger>
             <TabsTrigger value="leave">Congés</TabsTrigger>

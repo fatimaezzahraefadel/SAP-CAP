@@ -121,7 +121,7 @@ export function GestionConsultantFiori() {
       <PageHeader
         title="Mes congés et certificats"
         subtitle={employe ? `${employe.prenom} ${employe.nom} - ${employe.poste ?? 'Consultant technique'}` : 'Espace consultant'}
-        breadcrumbs={[{ label: 'Consultant', path: '/consultant-tech/dashboard' }, { label: 'Conges' }]}
+        breadcrumbs={[{ label: 'Consultant', path: '/consultant-tech/dashboard' }, { label: 'Congés' }]}
         actions={<Button onClick={refresh} disabled={isLoading} className="gap-2"><RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />Actualiser</Button>}
       />
       <main className="space-y-6 p-4 sm:p-6 lg:p-8">
