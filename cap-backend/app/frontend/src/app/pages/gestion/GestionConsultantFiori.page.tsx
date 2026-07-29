@@ -1,21 +1,16 @@
-import { FormEvent, type ReactNode, useMemo, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
+import { Award, CalendarDays, Clock3, FilePlus2, RefreshCw, Send, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  AnalyticalTable,
-  Bar,
-  Button,
-  Card,
-  CardHeader,
-  DynamicPage,
-  DynamicPageHeader,
-  DynamicPageTitle,
-  FlexBox,
-  Label,
-  ObjectStatus,
-  Text,
-  Title,
-} from '@ui5/webcomponents-react';
-import type { AnalyticalTableColumnDefinition } from '@ui5/webcomponents-react';
+import { PageHeader } from '../../components/common/PageHeader';
+import { EmptyState } from '../../components/common/EmptyState';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import {
   GestionCongesCertificatsAPI,
   type CertificatGcc,
@@ -23,20 +18,11 @@ import {
   type CreateDemandeCongeInput,
   type DemandeConge,
 } from '../../services/odata/gestionCongesCertificatsApi';
+import { cn } from '../../components/ui/utils';
 
-const pagePadding = { padding: '1rem', boxSizing: 'border-box' as const };
-const sectionStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(18rem, 1fr))', gap: '1rem' };
-const formGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(12rem, 1fr))', gap: '0.75rem', padding: '1rem' };
-const fieldStyle = { display: 'grid', gap: '0.35rem' };
-const inputStyle = { minHeight: '2.25rem', border: '1px solid #c9d3df', borderRadius: 4, padding: '0 0.65rem', background: 'white' };
+type BadgeTone = 'default' | 'secondary' | 'destructive' | 'outline';
 
-const initialLeaveForm: CreateDemandeCongeInput = {
-  typeConge_ID: '',
-  dateDebut: '',
-  dateFin: '',
-  motif: '',
-};
-
+const initialLeaveForm: CreateDemandeCongeInput = { typeConge_ID: '', dateDebut: '', dateFin: '', motif: '' };
 const initialCertificateForm: CreateCertificatInput = {
   domaine_ID: '',
   intitule: '',
@@ -47,19 +33,23 @@ const initialCertificateForm: CreateCertificatInput = {
   score: '',
 };
 
-const statusState = (statut: string) => {
-  if (statut === 'APPROUVEE') return 'Positive';
-  if (statut === 'REJETEE') return 'Negative';
-  if (statut === 'SOUMISE') return 'Critical';
-  return 'None';
+const statusTone = (status: string): BadgeTone => {
+  if (status === 'APPROUVEE') return 'default';
+  if (status === 'REJETEE') return 'destructive';
+  if (status === 'SOUMISE') return 'secondary';
+  return 'outline';
 };
 
-const isExpiringSoon = (date?: string) => {
-  if (!date) return false;
+const certificateTone = (date?: string): BadgeTone => {
+  if (!date) return 'outline';
   const diff = new Date(date).getTime() - Date.now();
-  return diff >= 0 && diff <= 90 * 24 * 60 * 60 * 1000;
+  if (diff < 0) return 'destructive';
+  if (diff <= 90 * 24 * 60 * 60 * 1000) return 'secondary';
+  return 'default';
 };
 
+const isExpiringSoon = (date?: string) => certificateTone(date) === 'secondary';
+const formatDate = (value?: string) => value ? new Intl.DateTimeFormat('fr-FR').format(new Date(value)) : '-';
 const messageFromError = (error: unknown) =>
   error && typeof error === 'object' && 'message' in error ? String((error as { message?: unknown }).message) : '';
 
@@ -96,73 +86,24 @@ export function GestionConsultantFiori() {
   const domaineOptions = domaines.data ?? [];
   const typeById = useMemo(() => new Map(typeOptions.map((item) => [item.ID, item.libelle])), [typeOptions]);
   const domaineById = useMemo(() => new Map(domaineOptions.map((item) => [item.ID, item.libelle])), [domaineOptions]);
-  const alerts = (certificats.data ?? []).filter((item) => isExpiringSoon(item.dateExpiration));
   const isLoading = profil.isLoading || demandes.isLoading || certificats.isLoading || types.isLoading || domaines.isLoading;
   const loadError = [profil.error, demandes.error, certificats.error, types.error, domaines.error].map(messageFromError).find(Boolean);
-
-  const demandeColumns = useMemo<AnalyticalTableColumnDefinition[]>(() => [
-    { Header: 'Type', accessor: 'typeLabel', minWidth: 170 },
-    { Header: 'Debut', accessor: 'dateDebut', width: 120 },
-    { Header: 'Fin', accessor: 'dateFin', width: 120 },
-    { Header: 'Jours', accessor: 'nbJours', width: 85 },
-    {
-      Header: 'Statut',
-      accessor: 'statut',
-      width: 130,
-      Cell: ({ value }) => <ObjectStatus inverted state={statusState(String(value))}>{String(value)}</ObjectStatus>,
-    },
-    { Header: 'Commentaire manager', accessor: 'commentaireManager', minWidth: 220 },
-    {
-      Header: 'Action',
-      accessor: 'ID',
-      disableSortBy: true,
-      width: 120,
-      Cell: ({ row }) => {
-        const original = row.original as DemandeConge;
-        const canCancel = original.statut === 'SOUMISE' || original.statut === 'APPROUVEE';
-        return canCancel ? (
-          <Button design="Negative" disabled={annuler.isPending} onClick={() => annuler.mutate(original.ID)}>
-            Annuler
-          </Button>
-        ) : <Text>-</Text>;
-      },
-    },
-  ], [annuler]);
-
-  const certificatColumns = useMemo<AnalyticalTableColumnDefinition[]>(() => [
-    { Header: 'Intitule', accessor: 'intitule', minWidth: 220 },
-    { Header: 'Domaine', accessor: 'domaineLabel', minWidth: 160 },
-    { Header: 'Organisme', accessor: 'organisme', minWidth: 150 },
-    { Header: 'Obtention', accessor: 'dateObtention', width: 130 },
-    {
-      Header: 'Expiration',
-      accessor: 'dateExpiration',
-      width: 145,
-      Cell: ({ row, value }) => {
-        const original = row.original as CertificatGcc;
-        return <ObjectStatus state={isExpiringSoon(original.dateExpiration) ? 'Critical' : 'None'}>{value || 'Aucune'}</ObjectStatus>;
-      },
-    },
-  ], []);
+  const formError = messageFromError(creerDemande.error) || messageFromError(creerCertificat.error) || messageFromError(annuler.error);
 
   const demandeRows = (demandes.data ?? []).map((item) => ({
     ...item,
     typeLabel: typeById.get(item.typeConge_ID) ?? item.typeConge_ID,
-    commentaireManager: item.commentaireManager || '-',
   }));
-
   const certificatRows = (certificats.data ?? []).map((item) => ({
     ...item,
     domaineLabel: domaineById.get(item.domaine_ID) ?? item.domaine_ID,
-    organisme: item.organisme || '-',
   }));
+  const pendingCount = demandeRows.filter((item) => item.statut === 'SOUMISE').length;
+  const alerts = certificatRows.filter((item) => isExpiringSoon(item.dateExpiration));
 
   const submitLeave = (event: FormEvent) => {
     event.preventDefault();
-    creerDemande.mutate({
-      ...leaveForm,
-      motif: leaveForm.motif?.trim() || undefined,
-    });
+    creerDemande.mutate({ ...leaveForm, motif: leaveForm.motif?.trim() || undefined });
   };
 
   const submitCertificate = (event: FormEvent) => {
@@ -177,136 +118,236 @@ export function GestionConsultantFiori() {
   };
 
   return (
-    <DynamicPage
-      headerPinned
-      titleArea={
-        <DynamicPageTitle
-          heading={<Title>Gestion des conges et certificats</Title>}
-          subheading={<Text>{employe ? `${employe.prenom} ${employe.nom} - ${employe.poste ?? 'Consultant technique'}` : 'Espace consultant'}</Text>}
-          actionsBar={<Button design="Emphasized" icon="refresh" disabled={isLoading} onClick={refresh}>Actualiser</Button>}
-        />
-      }
-      headerArea={
-        <DynamicPageHeader>
-          <FlexBox wrap="Wrap" gap="1rem">
-            <KpiCard title="Solde restant" value={employe?.soldeConges ?? '-'} subtitle="jours de conges" />
-            <KpiCard title="Demandes soumises" value={(demandes.data ?? []).filter((item) => item.statut === 'SOUMISE').length} subtitle="en attente manager" />
-            <KpiCard title="Certificats a renouveler" value={alerts.length} subtitle="expiration sous 90 jours" />
-          </FlexBox>
-        </DynamicPageHeader>
-      }
-    >
-      <FlexBox direction="Column" gap="1rem" style={pagePadding}>
-        {loadError ? <StatusPanel design="Negative" text={loadError} /> : null}
-        {creerDemande.error ? <StatusPanel design="Negative" text={messageFromError(creerDemande.error)} /> : null}
-        {creerCertificat.error ? <StatusPanel design="Negative" text={messageFromError(creerCertificat.error)} /> : null}
-        {annuler.error ? <StatusPanel design="Negative" text={messageFromError(annuler.error)} /> : null}
+    <div className="min-w-0">
+      <PageHeader
+        title="Mes conges et certificats"
+        subtitle={employe ? `${employe.prenom} ${employe.nom} - ${employe.poste ?? 'Consultant technique'}` : 'Espace consultant'}
+        breadcrumbs={[{ label: 'Consultant', path: '/consultant-tech/dashboard' }, { label: 'Conges' }]}
+        actions={
+          <Button onClick={refresh} disabled={isLoading} className="gap-2">
+            <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
+            Actualiser
+          </Button>
+        }
+      />
 
-        <div style={sectionStyle}>
-          <Card header={<CardHeader titleText="Nouvelle demande de conge" />}>
-            <form onSubmit={submitLeave} style={formGridStyle}>
-              <Field label="Type">
-                <select
-                  required
-                  value={leaveForm.typeConge_ID}
-                  onChange={(event) => setLeaveForm((current) => ({ ...current, typeConge_ID: event.target.value }))}
-                  style={inputStyle}
-                >
-                  <option value="">Choisir un type</option>
-                  {typeOptions.map((item) => <option key={item.ID} value={item.ID}>{item.libelle}</option>)}
-                </select>
-              </Field>
-              <Field label="Date debut">
-                <input required type="date" value={leaveForm.dateDebut} onChange={(event) => setLeaveForm((current) => ({ ...current, dateDebut: event.target.value }))} style={inputStyle} />
-              </Field>
-              <Field label="Date fin">
-                <input required type="date" value={leaveForm.dateFin} onChange={(event) => setLeaveForm((current) => ({ ...current, dateFin: event.target.value }))} style={inputStyle} />
-              </Field>
-              <Field label="Motif">
-                <input value={leaveForm.motif} onChange={(event) => setLeaveForm((current) => ({ ...current, motif: event.target.value }))} style={inputStyle} />
-              </Field>
-              <Bar design="Footer" endContent={<Button submits design="Emphasized" disabled={creerDemande.isPending}>Soumettre</Button>} />
-            </form>
-          </Card>
+      <main className="space-y-6 p-4 sm:p-6 lg:p-8">
+        {(loadError || formError) && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {loadError || formError}
+          </div>
+        )}
 
-          <Card header={<CardHeader titleText="Nouveau certificat" />}>
-            <form onSubmit={submitCertificate} style={formGridStyle}>
-              <Field label="Domaine">
-                <select
-                  required
-                  value={certificateForm.domaine_ID}
-                  onChange={(event) => setCertificateForm((current) => ({ ...current, domaine_ID: event.target.value }))}
-                  style={inputStyle}
-                >
-                  <option value="">Choisir un domaine</option>
-                  {domaineOptions.map((item) => <option key={item.ID} value={item.ID}>{item.libelle}</option>)}
-                </select>
-              </Field>
-              <Field label="Intitule">
-                <input required value={certificateForm.intitule} onChange={(event) => setCertificateForm((current) => ({ ...current, intitule: event.target.value }))} style={inputStyle} />
-              </Field>
-              <Field label="Organisme">
-                <input value={certificateForm.organisme} onChange={(event) => setCertificateForm((current) => ({ ...current, organisme: event.target.value }))} style={inputStyle} />
-              </Field>
-              <Field label="Obtention">
-                <input required type="date" value={certificateForm.dateObtention} onChange={(event) => setCertificateForm((current) => ({ ...current, dateObtention: event.target.value }))} style={inputStyle} />
-              </Field>
-              <Field label="Expiration">
-                <input type="date" value={certificateForm.dateExpiration} onChange={(event) => setCertificateForm((current) => ({ ...current, dateExpiration: event.target.value }))} style={inputStyle} />
-              </Field>
-              <Field label="Score">
-                <input value={certificateForm.score} onChange={(event) => setCertificateForm((current) => ({ ...current, score: event.target.value }))} style={inputStyle} />
-              </Field>
-              <Bar design="Footer" endContent={<Button submits design="Emphasized" disabled={creerCertificat.isPending}>Ajouter</Button>} />
-            </form>
-          </Card>
-        </div>
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricCard icon={CalendarDays} label="Solde restant" value={employe?.soldeConges ?? '-'} detail="jours disponibles" />
+          <MetricCard icon={Clock3} label="Demandes soumises" value={pendingCount} detail="en attente manager" />
+          <MetricCard icon={Award} label="Certificats" value={certificatRows.length} detail="dans mon portefeuille" />
+          <MetricCard icon={FilePlus2} label="A renouveler" value={alerts.length} detail="expiration sous 90 jours" />
+        </section>
 
-        <Card header={<CardHeader titleText="Mes demandes de conge" subtitleText={`${demandeRows.length} demandes`} />}>
-          <TableShell loading={isLoading} empty={!demandeRows.length}>
-            <AnalyticalTable data={demandeRows} columns={demandeColumns} visibleRows={6} filterable sortable />
-          </TableShell>
-        </Card>
-        <Card header={<CardHeader titleText="Mon portefeuille certificats" subtitleText={`${certificatRows.length} certificats`} />}>
-          <TableShell loading={isLoading} empty={!certificatRows.length}>
-            <AnalyticalTable data={certificatRows} columns={certificatColumns} visibleRows={6} filterable sortable />
-          </TableShell>
-        </Card>
-      </FlexBox>
-    </DynamicPage>
-  );
-}
+        <Tabs defaultValue="leave" className="gap-4">
+          <TabsList className="w-full justify-start overflow-x-auto rounded-md">
+            <TabsTrigger value="leave">Demandes de conge</TabsTrigger>
+            <TabsTrigger value="certificates">Certificats</TabsTrigger>
+          </TabsList>
 
-function KpiCard({ title, value, subtitle }: { title: string; value: string | number; subtitle: string }) {
-  return (
-    <Card header={<CardHeader titleText={title} />}>
-      <div style={{ minWidth: '13rem', padding: '1rem' }}>
-        <Title level="H2">{String(value)}</Title>
-        <Label>{subtitle}</Label>
-      </div>
-    </Card>
-  );
-}
+          <TabsContent value="leave" className="grid gap-4 xl:grid-cols-[24rem_1fr]">
+            <Card className="rounded-md">
+              <CardHeader className="border-b pb-4">
+                <CardTitle>Soumettre une demande</CardTitle>
+                <CardDescription>La duree et les controles sont verifies par le backend CAP.</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <form onSubmit={submitLeave} className="space-y-4">
+                  <Field label="Type de conge">
+                    <Select value={leaveForm.typeConge_ID} onValueChange={(value) => setLeaveForm((current) => ({ ...current, typeConge_ID: value }))} required>
+                      <SelectTrigger><SelectValue placeholder="Choisir un type" /></SelectTrigger>
+                      <SelectContent>{typeOptions.map((item) => <SelectItem key={item.ID} value={item.ID}>{item.libelle}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </Field>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                    <Field label="Date debut">
+                      <Input required type="date" value={leaveForm.dateDebut} onChange={(event) => setLeaveForm((current) => ({ ...current, dateDebut: event.target.value }))} />
+                    </Field>
+                    <Field label="Date fin">
+                      <Input required type="date" value={leaveForm.dateFin} onChange={(event) => setLeaveForm((current) => ({ ...current, dateFin: event.target.value }))} />
+                    </Field>
+                  </div>
+                  <Field label="Motif">
+                    <Input value={leaveForm.motif} placeholder="Ex. rendez-vous personnel" onChange={(event) => setLeaveForm((current) => ({ ...current, motif: event.target.value }))} />
+                  </Field>
+                  <Button type="submit" disabled={creerDemande.isPending} className="w-full gap-2">
+                    <Send className="h-4 w-4" />
+                    Soumettre
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+            <LeaveHistory rows={demandeRows} loading={isLoading} actionPending={annuler.isPending} onCancel={(id) => annuler.mutate(id)} />
+          </TabsContent>
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label style={fieldStyle}>
-      <Label>{label}</Label>
-      {children}
-    </label>
-  );
-}
-
-function StatusPanel({ design, text }: { design: 'Negative' | 'Information'; text: string }) {
-  return (
-    <div style={{ padding: '0.75rem 1rem', borderRadius: 4, border: '1px solid #d8e0e8', background: design === 'Negative' ? '#fff3f3' : '#f5f8fb' }}>
-      <ObjectStatus state={design}>{text}</ObjectStatus>
+          <TabsContent value="certificates" className="grid gap-4 xl:grid-cols-[24rem_1fr]">
+            <Card className="rounded-md">
+              <CardHeader className="border-b pb-4">
+                <CardTitle>Ajouter un certificat</CardTitle>
+                <CardDescription>Declaration visible ensuite par le manager.</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <form onSubmit={submitCertificate} className="space-y-4">
+                  <Field label="Domaine">
+                    <Select value={certificateForm.domaine_ID} onValueChange={(value) => setCertificateForm((current) => ({ ...current, domaine_ID: value }))} required>
+                      <SelectTrigger><SelectValue placeholder="Choisir un domaine" /></SelectTrigger>
+                      <SelectContent>{domaineOptions.map((item) => <SelectItem key={item.ID} value={item.ID}>{item.libelle}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </Field>
+                  <Field label="Intitule">
+                    <Input required value={certificateForm.intitule} onChange={(event) => setCertificateForm((current) => ({ ...current, intitule: event.target.value }))} />
+                  </Field>
+                  <Field label="Organisme">
+                    <Input value={certificateForm.organisme} onChange={(event) => setCertificateForm((current) => ({ ...current, organisme: event.target.value }))} />
+                  </Field>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                    <Field label="Obtention">
+                      <Input required type="date" value={certificateForm.dateObtention} onChange={(event) => setCertificateForm((current) => ({ ...current, dateObtention: event.target.value }))} />
+                    </Field>
+                    <Field label="Expiration">
+                      <Input type="date" value={certificateForm.dateExpiration} onChange={(event) => setCertificateForm((current) => ({ ...current, dateExpiration: event.target.value }))} />
+                    </Field>
+                  </div>
+                  <Field label="Score">
+                    <Input value={certificateForm.score} onChange={(event) => setCertificateForm((current) => ({ ...current, score: event.target.value }))} />
+                  </Field>
+                  <Button type="submit" disabled={creerCertificat.isPending} className="w-full gap-2">
+                    <FilePlus2 className="h-4 w-4" />
+                    Ajouter
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+            <CertificatePortfolio rows={certificatRows} loading={isLoading} />
+          </TabsContent>
+        </Tabs>
+      </main>
     </div>
   );
 }
 
-function TableShell({ loading, empty, children }: { loading: boolean; empty: boolean; children: ReactNode }) {
-  if (loading) return <StatusPanel design="Information" text="Chargement des donnees..." />;
-  if (empty) return <StatusPanel design="Information" text="Aucune donnee disponible." />;
-  return <div style={{ overflowX: 'auto' }}>{children}</div>;
+function MetricCard({ icon: Icon, label, value, detail }: { icon: React.ElementType; label: string; value: string | number; detail: string }) {
+  return (
+    <Card className="rounded-md">
+      <CardContent className="flex items-center gap-4 p-4">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm text-muted-foreground">{label}</p>
+          <p className="text-2xl font-semibold tracking-tight">{value}</p>
+          <p className="truncate text-xs text-muted-foreground">{detail}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid gap-2">
+      <Label>{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+function LeaveHistory({ rows, loading, actionPending, onCancel }: { rows: Array<DemandeConge & { typeLabel: string }>; loading: boolean; actionPending: boolean; onCancel: (id: string) => void }) {
+  return (
+    <Card className="rounded-md">
+      <CardHeader className="border-b pb-4">
+        <CardTitle>Historique des demandes</CardTitle>
+        <CardDescription>Suivi des statuts et commentaires manager.</CardDescription>
+      </CardHeader>
+      <CardContent className="p-0">
+        {loading ? <SkeletonRows /> : rows.length === 0 ? (
+          <EmptyState icon={CalendarDays} title="Aucune demande" description="Soumets ta premiere demande depuis le formulaire." className="m-6" />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Type</TableHead>
+                <TableHead>Periode</TableHead>
+                <TableHead>Jours</TableHead>
+                <TableHead>Statut</TableHead>
+                <TableHead>Commentaire</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((item) => (
+                <TableRow key={item.ID}>
+                  <TableCell className="font-medium">{item.typeLabel}</TableCell>
+                  <TableCell>{formatDate(item.dateDebut)} - {formatDate(item.dateFin)}</TableCell>
+                  <TableCell>{item.nbJours}</TableCell>
+                  <TableCell><Badge variant={statusTone(item.statut)}>{item.statut}</Badge></TableCell>
+                  <TableCell className="max-w-[18rem] truncate text-muted-foreground">{item.commentaireManager || '-'}</TableCell>
+                  <TableCell>
+                    {(item.statut === 'SOUMISE' || item.statut === 'APPROUVEE') ? (
+                      <div className="flex justify-end">
+                        <Button size="sm" variant="outline" disabled={actionPending} onClick={() => onCancel(item.ID)}><X className="h-4 w-4" />Annuler</Button>
+                      </div>
+                    ) : <span className="block text-right text-muted-foreground">-</span>}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function CertificatePortfolio({ rows, loading }: { rows: Array<CertificatGcc & { domaineLabel: string }>; loading: boolean }) {
+  return (
+    <Card className="rounded-md">
+      <CardHeader className="border-b pb-4">
+        <CardTitle>Portefeuille certificats</CardTitle>
+        <CardDescription>Les expirations proches ou depassees sont visibles dans la colonne expiration.</CardDescription>
+      </CardHeader>
+      <CardContent className="p-0">
+        {loading ? <SkeletonRows /> : rows.length === 0 ? (
+          <EmptyState icon={Award} title="Aucun certificat" description="Ajoute tes certifications SAP, cloud ou techniques." className="m-6" />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Certificat</TableHead>
+                <TableHead>Domaine</TableHead>
+                <TableHead>Organisme</TableHead>
+                <TableHead>Obtention</TableHead>
+                <TableHead>Expiration</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((item) => (
+                <TableRow key={item.ID}>
+                  <TableCell className="font-medium">{item.intitule}</TableCell>
+                  <TableCell>{item.domaineLabel}</TableCell>
+                  <TableCell className="text-muted-foreground">{item.organisme || '-'}</TableCell>
+                  <TableCell>{formatDate(item.dateObtention)}</TableCell>
+                  <TableCell><Badge variant={certificateTone(item.dateExpiration)}>{item.dateExpiration ? formatDate(item.dateExpiration) : 'Aucune'}</Badge></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SkeletonRows() {
+  return (
+    <div className="space-y-3 p-6">
+      {[0, 1, 2].map((item) => <div key={item} className="h-10 animate-pulse rounded-md bg-muted" />)}
+    </div>
+  );
 }
