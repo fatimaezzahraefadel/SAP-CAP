@@ -124,6 +124,14 @@ cap-backend/app/frontend/src/app/services/odata/gestionCongesCertificatsApi.ts
 
 L'interface consomme les services SAP CAP/OData V4 avec `fetch` via le client OData existant. Les ecrans utilisent le design system React deja present dans l'application, avec les dependances SAP UI5 installees dans le projet pour rester compatible avec l'environnement Fiori/SAP du livrable.
 
+Bibliotheques ajoutees pour respecter explicitement la stack du cahier des charges :
+
+- `@fullcalendar/react`
+- `@fullcalendar/daygrid`
+- `@fullcalendar/interaction`
+- `chart.js`
+- `react-chartjs-2`
+
 ### 4.1 Espace consultant
 
 Fonctionnalites livrees :
@@ -151,7 +159,8 @@ Fonctionnalites livrees :
 - approbation avec commentaire optionnel ;
 - rejet avec commentaire obligatoire ;
 - KPI : demandes en attente, absences en cours, jours consommes, taux d'approbation, total certificats, certificats a 90 jours, consultants sans certificat ;
-- calendrier d'equipe sous forme de vue periode/absence pour visualiser les chevauchements ;
+- graphiques Chart.js : jours consommes par consultant, repartition par type de conge, decisions manager, certificats par domaine et validite ;
+- calendrier d'equipe avec FullCalendar pour visualiser les absences approuvees et soumises ;
 - liste des certificats de l'equipe ;
 - filtres certificats par consultant, domaine, validite et recherche texte ;
 - matrice de competences consultants x domaines ;
@@ -186,8 +195,8 @@ Fonctionnalites livrees :
 | MG-01 | Consulter demandes equipe avec filtres | Fait | Table manager avec filtres statut, consultant, type, periode, recherche. |
 | MG-02 | Approuver | Fait | Action `approuverDemande`, solde decremente. |
 | MG-03 | Rejeter avec commentaire | Fait | Action `rejeterDemande`, commentaire obligatoire. |
-| MG-04 | Calendrier equipe | Fait | Onglet `Calendrier`, groupes par periode et affiche les chevauchements. |
-| MG-05 | KPI supervision | Fait | Fonction `kpiConges` + cartes KPI. |
+| MG-04 | Calendrier equipe | Fait | Onglet `Calendrier` avec FullCalendar. |
+| MG-05 | KPI supervision | Fait | Fonction `kpiConges`, cartes KPI et graphiques Chart.js. |
 | MG-06 | Fiche consultant | Fait | Onglet `Fiche consultant`. |
 
 ### 5.4 Certificats manager
@@ -289,7 +298,6 @@ Resultat :
 
 ## 9. Ameliorations possibles
 
-- Remplacer la vue calendrier simple par FullCalendar si le jury demande une vraie grille mensuelle.
 - Ajouter des tests automatises Jest pour les actions de conge et certificats.
 - Brancher une vraie authentification XSUAA/BTP au lieu du mode test/dummy.
 - Ajouter un `docker-compose.yml` avec profils SQLite et HANA.

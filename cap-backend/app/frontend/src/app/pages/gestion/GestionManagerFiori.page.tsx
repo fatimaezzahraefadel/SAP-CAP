@@ -1,6 +1,20 @@
 import { useMemo, useState } from 'react';
 import { AlertTriangle, Award, BarChart3, CalendarCheck, Check, RefreshCw, Search, UserRound, Users, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import { Bar, Doughnut } from 'react-chartjs-2';
+import {
+  BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Legend,
+  LinearScale,
+  ArcElement,
+  Tooltip,
+  type ChartOptions,
+} from 'chart.js';
 import { PageHeader } from '../../components/common/PageHeader';
 import { EmptyState } from '../../components/common/EmptyState';
 import { Badge } from '../../components/ui/badge';
@@ -31,6 +45,8 @@ const certificateValidity = (date?: string): CertificateRow['validite'] => {
 };
 const certificateTone = (validite: CertificateRow['validite']): Tone => validite === 'EXPIRE' ? 'destructive' : validite === 'EXPIRE_BIENTOT' ? 'secondary' : validite === 'VALIDE' ? 'default' : 'outline';
 const messageFromError = (error: unknown) => error && typeof error === 'object' && 'message' in error ? String((error as { message?: unknown }).message) : '';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
 export function GestionManagerFiori() {
   const queryClient = useQueryClient();
@@ -125,6 +141,8 @@ export function GestionManagerFiori() {
           <MetricCard icon={BarChart3} label="Sans certificat" value={kpi.data?.consultantsSansCertificat ?? 0} detail="consultants" />
         </section>
 
+        <KpiCharts leaves={demandeRows} certificates={certificatRows} consultants={consultantOptions} />
+
         <Tabs defaultValue="requests" className="gap-4">
           <TabsList className="w-full justify-start overflow-x-auto rounded-md">
             <TabsTrigger value="requests">Demandes</TabsTrigger>
@@ -206,12 +224,129 @@ function LeaveTable({ rows, loading, actionPending, onApprove, onReject }: { row
 }
 
 function TeamCalendar({ rows, loading }: { rows: LeaveRow[]; loading: boolean }) {
-  const grouped = rows.reduce<Record<string, LeaveRow[]>>((acc, item) => {
-    const key = `${formatDate(item.dateDebut)} - ${formatDate(item.dateFin)}`;
-    acc[key] = [...(acc[key] ?? []), item];
+  const events = rows.map((item) => ({
+    id: item.ID,
+    title: `${item.consultantLabel} - ${item.typeLabel}`,
+    start: item.dateDebut,
+    end: addOneDay(item.dateFin),
+    backgroundColor: item.statut === 'APPROUVEE' ? '#2563eb' : '#f59e0b',
+    borderColor: item.statut === 'APPROUVEE' ? '#1d4ed8' : '#d97706',
+    textColor: '#ffffff',
+    extendedProps: {
+      statut: item.statut,
+      jours: item.nbJours,
+      motif: item.motif || '-',
+    },
+  }));
+
+  return (
+    <Card className="rounded-md">
+      <CardHeader className="border-b pb-4">
+        <CardTitle>Calendrier d'equipe</CardTitle>
+        <CardDescription>FullCalendar affiche les absences approuvees et soumises pour reperer les chevauchements.</CardDescription>
+      </CardHeader>
+      <CardContent className="p-4">
+        {loading ? <SkeletonRows /> : rows.length === 0 ? (
+          <EmptyState icon={CalendarCheck} title="Aucune absence" description="Aucune absence approuvee ou soumise." />
+        ) : (
+          <div className="gcc-calendar min-h-[36rem] rounded-md border bg-background p-3">
+            <FullCalendar
+              plugins={[dayGridPlugin as never, interactionPlugin as never]}
+              initialView="dayGridMonth"
+              locale="fr"
+              height="auto"
+              firstDay={1}
+              events={events}
+              eventDisplay="block"
+              headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,dayGridWeek' }}
+            />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function KpiCharts({ leaves, certificates, consultants }: { leaves: LeaveRow[]; certificates: CertificateRow[]; consultants: EmployeGcc[] }) {
+  const approved = leaves.filter((item) => item.statut === 'APPROUVEE');
+  const byType = groupSum(approved, (item) => item.typeLabel, (item) => Number(item.nbJours || 0));
+  const byConsultant = consultants.reduce<Record<string, number>>((acc, consultant) => {
+    const label = `${consultant.prenom} ${consultant.nom}`;
+    acc[label] = approved.filter((item) => item.consultant_ID === consultant.ID).reduce((sum, item) => sum + Number(item.nbJours || 0), 0);
     return acc;
   }, {});
-  return <Card className="rounded-md"><CardHeader className="border-b pb-4"><CardTitle>Calendrier d'equipe</CardTitle><CardDescription>Vue des absences approuvees et en attente pour reperer les chevauchements.</CardDescription></CardHeader><CardContent className="p-4">{loading ? <SkeletonRows /> : Object.keys(grouped).length === 0 ? <EmptyState icon={CalendarCheck} title="Aucune absence" description="Aucune absence approuvee ou soumise." /> : <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{Object.entries(grouped).map(([period, items]) => <div key={period} className="rounded-md border p-3"><div className="mb-2 flex items-center justify-between gap-2"><p className="font-medium">{period}</p><Badge variant={items.length > 1 ? 'secondary' : 'outline'}>{items.length} absence(s)</Badge></div><div className="space-y-2">{items.map((item) => <div key={item.ID} className="rounded-md bg-muted/50 p-2 text-sm"><div className="flex items-center justify-between gap-2"><span>{item.consultantLabel}</span><Badge variant={statusTone(item.statut)}>{item.statut}</Badge></div><p className="text-muted-foreground">{item.typeLabel} - {item.nbJours} jour(s)</p></div>)}</div></div>)}</div>}</CardContent></Card>;
+  const byDecision = groupCount(leaves.filter((item) => item.statut === 'APPROUVEE' || item.statut === 'REJETEE'), (item) => item.statut);
+  const certsByDomain = groupCount(certificates, (item) => item.domaineLabel);
+  const certsByValidity = groupCount(certificates, (item) => item.validite);
+
+  return (
+    <section className="grid gap-4 xl:grid-cols-2">
+      <ChartCard title="Jours consommes par consultant" description="Chart.js - total des jours approuves par membre de l'equipe.">
+        <Bar data={barData(byConsultant, '#2563eb')} options={barOptions('Jours')} />
+      </ChartCard>
+      <ChartCard title="Repartition par type de conge" description="Chart.js - jours approuves par type de conge.">
+        <Bar data={barData(byType, '#059669')} options={barOptions('Jours')} />
+      </ChartCard>
+      <ChartCard title="Decisions manager" description="Chart.js - demandes approuvees versus rejetees.">
+        <Doughnut data={doughnutData(byDecision, ['#2563eb', '#dc2626', '#f59e0b'])} options={doughnutOptions()} />
+      </ChartCard>
+      <ChartCard title="Certificats par domaine et validite" description="Chart.js - competences et expirations.">
+        <div className="grid gap-4 md:grid-cols-2">
+          <Doughnut data={doughnutData(certsByDomain, ['#2563eb', '#059669', '#7c3aed', '#ea580c', '#0891b2', '#64748b'])} options={doughnutOptions()} />
+          <Doughnut data={doughnutData(certsByValidity, ['#16a34a', '#f59e0b', '#dc2626', '#64748b'])} options={doughnutOptions()} />
+        </div>
+      </ChartCard>
+    </section>
+  );
+}
+
+function ChartCard({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+  return <Card className="rounded-md"><CardHeader className="border-b pb-4"><CardTitle>{title}</CardTitle><CardDescription>{description}</CardDescription></CardHeader><CardContent className="h-[22rem] p-4">{children}</CardContent></Card>;
+}
+
+function addOneDay(value: string) {
+  const date = new Date(`${value}T00:00:00`);
+  date.setDate(date.getDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function groupCount<T>(rows: T[], getKey: (row: T) => string) {
+  return rows.reduce<Record<string, number>>((acc, row) => {
+    const key = getKey(row) || 'Autre';
+    acc[key] = (acc[key] ?? 0) + 1;
+    return acc;
+  }, {});
+}
+
+function groupSum<T>(rows: T[], getKey: (row: T) => string, getValue: (row: T) => number) {
+  return rows.reduce<Record<string, number>>((acc, row) => {
+    const key = getKey(row) || 'Autre';
+    acc[key] = (acc[key] ?? 0) + getValue(row);
+    return acc;
+  }, {});
+}
+
+function barData(values: Record<string, number>, color: string) {
+  const labels = Object.keys(values);
+  return { labels, datasets: [{ label: 'Total', data: labels.map((label) => values[label]), backgroundColor: color, borderRadius: 4 }] };
+}
+
+function doughnutData(values: Record<string, number>, colors: string[]) {
+  const labels = Object.keys(values);
+  return { labels, datasets: [{ data: labels.map((label) => values[label]), backgroundColor: labels.map((_, index) => colors[index % colors.length]), borderWidth: 0 }] };
+}
+
+function barOptions(label: string): ChartOptions<'bar'> {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `${label}: ${ctx.parsed.y ?? 0}` } } },
+    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+  };
+}
+
+function doughnutOptions(): ChartOptions<'doughnut'> {
+  return { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' as const } } };
 }
 
 function CertificateTable({ rows, loading }: { rows: CertificateRow[]; loading: boolean }) {

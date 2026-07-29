@@ -11,6 +11,9 @@
     "check": "npm run typecheck && npm run build && vitest run"
   },
   "dependencies": {
+    "@fullcalendar/daygrid": "^6.1.21",
+    "@fullcalendar/interaction": "^6.1.21",
+    "@fullcalendar/react": "^7.0.2",
     "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^5.2.2",
     "@popperjs/core": "2.11.8",
@@ -45,6 +48,7 @@
     "@ui5/webcomponents-fiori": "^2.24.2",
     "@ui5/webcomponents-icons": "^2.24.2",
     "@ui5/webcomponents-react": "^2.24.1",
+    "chart.js": "^4.5.1",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "cmdk": "1.1.1",
@@ -58,6 +62,7 @@
     "motion": "12.23.24",
     "next-themes": "0.4.6",
     "react": "18.3.1",
+    "react-chartjs-2": "^5.3.1",
     "react-day-picker": "8.10.1",
     "react-dom": "18.3.1",
     "react-hook-form": "7.55.0",
