@@ -9,7 +9,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
     outDir: path.resolve(__dirname, '../dist'),
-    emptyOutDir: true,
+    emptyOutDir: false,
     target: 'esnext',
     minify: false,
     reportCompressedSize: false,

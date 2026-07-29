@@ -53,6 +53,7 @@ export interface CertificatGcc {
   intitule: string;
   organisme?: string;
   identifiantCertificat?: string;
+  documentUrl?: string;
   dateObtention: string;
   dateExpiration?: string;
   score?: string;
