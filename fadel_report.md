@@ -248,7 +248,7 @@ Le conteneur :
 Depuis le dossier backend :
 
 ```powershell
-cd "E:\FAZ pfa\Ticket-CAP\Ticket-CAP\Ticket-CAP\cap-backend"
+cd cap-backend
 docker build -t gestion-conges-certificats-cap:test .
 docker run --rm -p 4016:4004 gestion-conges-certificats-cap:test
 ```
@@ -273,7 +273,7 @@ http://localhost:4016/odata/v4/manager/kpiConges()
 Depuis le dossier backend :
 
 ```powershell
-cd "E:\FAZ pfa\Ticket-CAP\Ticket-CAP\Ticket-CAP\cap-backend"
+cd cap-backend
 npm install
 cd app/frontend
 npm install
