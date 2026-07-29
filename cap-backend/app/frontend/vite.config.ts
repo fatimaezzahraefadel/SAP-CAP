@@ -10,6 +10,9 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, '../dist'),
     emptyOutDir: true,
+    target: 'esnext',
+    minify: false,
+    reportCompressedSize: false,
     rollupOptions: {
       output: {
         // Keep the biggest stable dependencies out of the main app chunk so

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import frLocale from '@fullcalendar/core/locales/fr';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
   BarElement,
@@ -123,8 +124,8 @@ export function GestionManagerFiori() {
   return (
     <div className="min-w-0">
       <PageHeader
-        title="Conges et certificats"
-        subtitle="Pilotage manager des absences, decisions, KPI et competences certifiees."
+        title="Congés et certificats"
+        subtitle="Pilotage des absences, décisions, indicateurs et compétences certifiées."
         breadcrumbs={[{ label: 'Manager', path: '/manager/dashboard' }, { label: 'Conges' }]}
         actions={<Button onClick={refresh} disabled={isLoading} className="gap-2"><RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />Actualiser</Button>}
       />
@@ -133,11 +134,11 @@ export function GestionManagerFiori() {
         {error && <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-          <MetricCard icon={AlertTriangle} label="En attente" value={kpi.data?.demandesEnAttente ?? 0} detail="a decider" />
+          <MetricCard icon={AlertTriangle} label="En attente" value={kpi.data?.demandesEnAttente ?? 0} detail="à décider" />
           <MetricCard icon={CalendarCheck} label="Absences" value={kpi.data?.absencesEnCours ?? 0} detail="aujourd'hui" />
-          <MetricCard icon={Users} label="Jours consommes" value={kpi.data?.joursApprouves ?? 0} detail="equipe" />
-          <MetricCard icon={Check} label="Taux accord" value={`${Math.round(kpi.data?.tauxApprobation ?? 0)}%`} detail="decisions" />
-          <MetricCard icon={Award} label="Certificats" value={kpi.data?.totalCertificats ?? certificatRows.length} detail={`${kpi.data?.certificatsA90Jours ?? 0} a 90j, ${kpi.data?.certificatsExpires ?? 0} expires`} />
+          <MetricCard icon={Users} label="Jours consommés" value={kpi.data?.joursApprouves ?? 0} detail="équipe" />
+          <MetricCard icon={Check} label="Taux d'accord" value={`${Math.round(kpi.data?.tauxApprobation ?? 0)}%`} detail="décisions" />
+          <MetricCard icon={Award} label="Certificats" value={kpi.data?.totalCertificats ?? certificatRows.length} detail={`${kpi.data?.certificatsA90Jours ?? 0} à 90 j, ${kpi.data?.certificatsExpires ?? 0} expirés`} />
           <MetricCard icon={BarChart3} label="Sans certificat" value={kpi.data?.consultantsSansCertificat ?? 0} detail="consultants" />
         </section>
 
@@ -168,7 +169,7 @@ export function GestionManagerFiori() {
           </TabsContent>
           <TabsContent value="consultant" className="space-y-4">
             <Card className="rounded-md">
-              <CardHeader className="border-b pb-4"><CardTitle>Selection consultant</CardTitle><CardDescription>Solde, historique et jours consommes.</CardDescription></CardHeader>
+              <CardHeader className="border-b pb-4"><CardTitle>Sélection du consultant</CardTitle><CardDescription>Solde, historique et jours consommés.</CardDescription></CardHeader>
               <CardContent className="pt-6">
                 <Select value={selectedConsultant} onValueChange={setSelectedConsultant}>
                   <SelectTrigger className="max-w-sm"><SelectValue placeholder="Choisir un consultant" /></SelectTrigger>
@@ -214,13 +215,13 @@ function CertificateFilters({ filters, setFilters, consultants, domaines }: { fi
       <FilterField label="Recherche"><div className="relative"><Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="pl-8" value={filters.search} onChange={(event) => setFilters((current: typeof filters) => ({ ...current, search: event.target.value }))} /></div></FilterField>
       <FilterField label="Consultant"><Select value={filters.consultant} onValueChange={(value) => setFilters((current: typeof filters) => ({ ...current, consultant: value }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value={ALL}>Tous</SelectItem>{consultants.map((item) => <SelectItem key={item.ID} value={item.ID}>{item.prenom} {item.nom}</SelectItem>)}</SelectContent></Select></FilterField>
       <FilterField label="Domaine"><Select value={filters.domaine} onValueChange={(value) => setFilters((current: typeof filters) => ({ ...current, domaine: value }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value={ALL}>Tous</SelectItem>{domaines.map((item) => <SelectItem key={item.ID} value={item.ID}>{item.libelle}</SelectItem>)}</SelectContent></Select></FilterField>
-      <FilterField label="Validite"><Select value={filters.validite} onValueChange={(value) => setFilters((current: typeof filters) => ({ ...current, validite: value }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[ALL, 'VALIDE', 'EXPIRE_BIENTOT', 'EXPIRE', 'SANS_EXPIRATION'].map((item) => <SelectItem key={item} value={item}>{item === ALL ? 'Toutes' : item}</SelectItem>)}</SelectContent></Select></FilterField>
+      <FilterField label="Validité"><Select value={filters.validite} onValueChange={(value) => setFilters((current: typeof filters) => ({ ...current, validite: value }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[ALL, 'VALIDE', 'EXPIRE_BIENTOT', 'EXPIRE', 'SANS_EXPIRATION'].map((item) => <SelectItem key={item} value={item}>{item === ALL ? 'Toutes' : item}</SelectItem>)}</SelectContent></Select></FilterField>
     </CardContent></Card>
   );
 }
 
 function LeaveTable({ rows, loading, actionPending, onApprove, onReject }: { rows: LeaveRow[]; loading: boolean; actionPending: boolean; onApprove: (id: string) => void; onReject: (id: string) => void; }) {
-  return <Card className="rounded-md"><CardHeader className="border-b pb-4"><CardTitle>Demandes de l'equipe</CardTitle><CardDescription>Liste filtrable par statut, consultant, type et periode.</CardDescription></CardHeader><CardContent className="p-0">{loading ? <SkeletonRows /> : rows.length === 0 ? <EmptyState icon={CalendarCheck} title="Aucune demande" description="Aucune ligne ne correspond aux filtres." className="m-6" /> : <Table><TableHeader><TableRow><TableHead>Consultant</TableHead><TableHead>Type</TableHead><TableHead>Periode</TableHead><TableHead>Jours</TableHead><TableHead>Statut</TableHead><TableHead>Motif</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{rows.map((item) => <TableRow key={item.ID} className={item.statut === 'SOUMISE' ? 'bg-secondary/20' : undefined}><TableCell className="font-medium">{item.consultantLabel}</TableCell><TableCell>{item.typeLabel}</TableCell><TableCell>{formatDate(item.dateDebut)} - {formatDate(item.dateFin)}</TableCell><TableCell>{item.nbJours}</TableCell><TableCell><Badge variant={statusTone(item.statut)}>{item.statut}</Badge></TableCell><TableCell className="max-w-[18rem] truncate text-muted-foreground">{item.motif || '-'}</TableCell><TableCell>{item.statut === 'SOUMISE' ? <div className="flex justify-end gap-2"><Button size="sm" disabled={actionPending} onClick={() => onApprove(item.ID)}><Check className="h-4 w-4" />Approuver</Button><Button size="sm" variant="destructive" disabled={actionPending} onClick={() => onReject(item.ID)}><X className="h-4 w-4" />Rejeter</Button></div> : <span className="block text-right text-muted-foreground">-</span>}</TableCell></TableRow>)}</TableBody></Table>}</CardContent></Card>;
+  return <Card className="rounded-md"><CardHeader className="border-b pb-4"><CardTitle>Demandes de l'équipe</CardTitle><CardDescription>Liste filtrable par statut, consultant, type et période.</CardDescription></CardHeader><CardContent className="p-0">{loading ? <SkeletonRows /> : rows.length === 0 ? <EmptyState icon={CalendarCheck} title="Aucune demande" description="Aucune ligne ne correspond aux filtres." className="m-6" /> : <Table><TableHeader><TableRow><TableHead>Consultant</TableHead><TableHead>Type</TableHead><TableHead>Période</TableHead><TableHead>Jours</TableHead><TableHead>Statut</TableHead><TableHead>Motif</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{rows.map((item) => <TableRow key={item.ID} className={item.statut === 'SOUMISE' ? 'bg-secondary/20' : undefined}><TableCell className="font-medium">{item.consultantLabel}</TableCell><TableCell>{item.typeLabel}</TableCell><TableCell>{formatDate(item.dateDebut)} - {formatDate(item.dateFin)}</TableCell><TableCell>{item.nbJours}</TableCell><TableCell><Badge variant={statusTone(item.statut)}>{item.statut}</Badge></TableCell><TableCell className="max-w-[18rem] truncate text-muted-foreground">{item.motif || '-'}</TableCell><TableCell>{item.statut === 'SOUMISE' ? <div className="flex justify-end gap-2"><Button size="sm" disabled={actionPending} onClick={() => onApprove(item.ID)}><Check className="h-4 w-4" />Approuver</Button><Button size="sm" variant="destructive" disabled={actionPending} onClick={() => onReject(item.ID)}><X className="h-4 w-4" />Rejeter</Button></div> : <span className="block text-right text-muted-foreground">-</span>}</TableCell></TableRow>)}</TableBody></Table>}</CardContent></Card>;
 }
 
 function TeamCalendar({ rows, loading }: { rows: LeaveRow[]; loading: boolean }) {
@@ -242,7 +243,7 @@ function TeamCalendar({ rows, loading }: { rows: LeaveRow[]; loading: boolean })
   return (
     <Card className="rounded-md">
       <CardHeader className="border-b pb-4">
-        <CardTitle>Calendrier d'equipe</CardTitle>
+        <CardTitle>Calendrier d'équipe</CardTitle>
         <CardDescription>FullCalendar affiche les absences approuvees et soumises pour reperer les chevauchements.</CardDescription>
       </CardHeader>
       <CardContent className="p-4">
@@ -253,6 +254,7 @@ function TeamCalendar({ rows, loading }: { rows: LeaveRow[]; loading: boolean })
             <FullCalendar
               plugins={[dayGridPlugin as never, interactionPlugin as never]}
               initialView="dayGridMonth"
+              locales={[frLocale as never]}
               locale="fr"
               height="auto"
               firstDay={1}
@@ -281,16 +283,16 @@ function KpiCharts({ leaves, certificates, consultants }: { leaves: LeaveRow[]; 
 
   return (
     <section className="grid gap-4 xl:grid-cols-2">
-      <ChartCard title="Jours consommes par consultant" description="Chart.js - total des jours approuves par membre de l'equipe.">
+      <ChartCard title="Jours consommés par consultant" description="Chart.js - total des jours approuvés par membre de l'équipe.">
         <Bar data={barData(byConsultant, '#2563eb')} options={barOptions('Jours')} />
       </ChartCard>
-      <ChartCard title="Repartition par type de conge" description="Chart.js - jours approuves par type de conge.">
+      <ChartCard title="Répartition par type de congé" description="Chart.js - jours approuvés par type de congé.">
         <Bar data={barData(byType, '#059669')} options={barOptions('Jours')} />
       </ChartCard>
-      <ChartCard title="Decisions manager" description="Chart.js - demandes approuvees versus rejetees.">
+      <ChartCard title="Décisions du manager" description="Chart.js - demandes approuvées et rejetées.">
         <Doughnut data={doughnutData(byDecision, ['#2563eb', '#dc2626', '#f59e0b'])} options={doughnutOptions()} />
       </ChartCard>
-      <ChartCard title="Certificats par domaine et validite" description="Chart.js - competences et expirations.">
+      <ChartCard title="Certificats par domaine et validité" description="Chart.js - compétences et expirations.">
         <div className="grid gap-4 md:grid-cols-2">
           <Doughnut data={doughnutData(certsByDomain, ['#2563eb', '#059669', '#7c3aed', '#ea580c', '#0891b2', '#64748b'])} options={doughnutOptions()} />
           <Doughnut data={doughnutData(certsByValidity, ['#16a34a', '#f59e0b', '#dc2626', '#64748b'])} options={doughnutOptions()} />
@@ -350,17 +352,17 @@ function doughnutOptions(): ChartOptions<'doughnut'> {
 }
 
 function CertificateTable({ rows, loading }: { rows: CertificateRow[]; loading: boolean }) {
-  return <Card className="rounded-md"><CardHeader className="border-b pb-4"><CardTitle>Certificats de l'equipe</CardTitle><CardDescription>Filtrage par domaine, consultant, organisme et validite.</CardDescription></CardHeader><CardContent className="p-0">{loading ? <SkeletonRows /> : rows.length === 0 ? <EmptyState icon={Award} title="Aucun certificat" description="Aucun certificat ne correspond aux filtres." className="m-6" /> : <Table><TableHeader><TableRow><TableHead>Consultant</TableHead><TableHead>Certificat</TableHead><TableHead>Domaine</TableHead><TableHead>Organisme</TableHead><TableHead>Obtention</TableHead><TableHead>Expiration</TableHead><TableHead>Validite</TableHead></TableRow></TableHeader><TableBody>{rows.map((item) => <TableRow key={item.ID}><TableCell className="font-medium">{item.consultantLabel}</TableCell><TableCell>{item.intitule}</TableCell><TableCell>{item.domaineLabel}</TableCell><TableCell className="text-muted-foreground">{item.organisme || '-'}</TableCell><TableCell>{formatDate(item.dateObtention)}</TableCell><TableCell>{formatDate(item.dateExpiration)}</TableCell><TableCell><Badge variant={certificateTone(item.validite)}>{item.validite}</Badge></TableCell></TableRow>)}</TableBody></Table>}</CardContent></Card>;
+  return <Card className="rounded-md"><CardHeader className="border-b pb-4"><CardTitle>Certificats de l'équipe</CardTitle><CardDescription>Filtrage par domaine, consultant, organisme et validité.</CardDescription></CardHeader><CardContent className="p-0">{loading ? <SkeletonRows /> : rows.length === 0 ? <EmptyState icon={Award} title="Aucun certificat" description="Aucun certificat ne correspond aux filtres." className="m-6" /> : <Table><TableHeader><TableRow><TableHead>Consultant</TableHead><TableHead>Certificat</TableHead><TableHead>Domaine</TableHead><TableHead>Organisme</TableHead><TableHead>Obtention</TableHead><TableHead>Expiration</TableHead><TableHead>Validité</TableHead></TableRow></TableHeader><TableBody>{rows.map((item) => <TableRow key={item.ID}><TableCell className="font-medium">{item.consultantLabel}</TableCell><TableCell>{item.intitule}</TableCell><TableCell>{item.domaineLabel}</TableCell><TableCell className="text-muted-foreground">{item.organisme || '-'}</TableCell><TableCell>{formatDate(item.dateObtention)}</TableCell><TableCell>{formatDate(item.dateExpiration)}</TableCell><TableCell><Badge variant={certificateTone(item.validite)}>{item.validite}</Badge></TableCell></TableRow>)}</TableBody></Table>}</CardContent></Card>;
 }
 
 function SkillMatrix({ consultants, domaines, certificates, loading }: { consultants: EmployeGcc[]; domaines: Array<{ ID: string; libelle: string }>; certificates: CertificateRow[]; loading: boolean }) {
-  return <Card className="rounded-md"><CardHeader className="border-b pb-4"><CardTitle>Matrice de competences</CardTitle><CardDescription>Nombre de certificats par consultant et par domaine.</CardDescription></CardHeader><CardContent className="p-0">{loading ? <SkeletonRows /> : <Table><TableHeader><TableRow><TableHead>Consultant</TableHead>{domaines.map((domaine) => <TableHead key={domaine.ID}>{domaine.libelle}</TableHead>)}</TableRow></TableHeader><TableBody>{consultants.map((consultant) => <TableRow key={consultant.ID}><TableCell className="font-medium">{consultant.prenom} {consultant.nom}</TableCell>{domaines.map((domaine) => { const count = certificates.filter((item) => item.consultant_ID === consultant.ID && item.domaine_ID === domaine.ID).length; return <TableCell key={domaine.ID}><Badge variant={count ? 'default' : 'outline'}>{count}</Badge></TableCell>; })}</TableRow>)}</TableBody></Table>}</CardContent></Card>;
+  return <Card className="rounded-md"><CardHeader className="border-b pb-4"><CardTitle>Matrice de compétences</CardTitle><CardDescription>Nombre de certificats par consultant et par domaine.</CardDescription></CardHeader><CardContent className="p-0">{loading ? <SkeletonRows /> : <Table><TableHeader><TableRow><TableHead>Consultant</TableHead>{domaines.map((domaine) => <TableHead key={domaine.ID}>{domaine.libelle}</TableHead>)}</TableRow></TableHeader><TableBody>{consultants.map((consultant) => <TableRow key={consultant.ID}><TableCell className="font-medium">{consultant.prenom} {consultant.nom}</TableCell>{domaines.map((domaine) => { const count = certificates.filter((item) => item.consultant_ID === consultant.ID && item.domaine_ID === domaine.ID).length; return <TableCell key={domaine.ID}><Badge variant={count ? 'default' : 'outline'}>{count}</Badge></TableCell>; })}</TableRow>)}</TableBody></Table>}</CardContent></Card>;
 }
 
 function ConsultantDetail({ consultant, leaves, certificates }: { consultant?: EmployeGcc; leaves: LeaveRow[]; certificates: CertificateRow[] }) {
   if (!consultant) return <EmptyState icon={UserRound} title="Aucun consultant selectionne" description="Choisissez un consultant pour consulter sa fiche." />;
   const approvedDays = leaves.filter((item) => item.statut === 'APPROUVEE').reduce((sum, item) => sum + Number(item.nbJours || 0), 0);
-  return <div className="grid gap-4 xl:grid-cols-[20rem_1fr]"><Card className="rounded-md"><CardHeader><CardTitle>{consultant.prenom} {consultant.nom}</CardTitle><CardDescription>{consultant.poste ?? 'Consultant technique'}</CardDescription></CardHeader><CardContent className="space-y-3 text-sm"><p><span className="text-muted-foreground">Email:</span> {consultant.email}</p><p><span className="text-muted-foreground">Solde:</span> {consultant.soldeConges} jours</p><p><span className="text-muted-foreground">Jours consommes:</span> {approvedDays}</p><p><span className="text-muted-foreground">Certificats:</span> {certificates.length}</p></CardContent></Card><LeaveTable rows={leaves} loading={false} actionPending={false} onApprove={() => undefined} onReject={() => undefined} /></div>;
+  return <div className="grid gap-4 xl:grid-cols-[20rem_1fr]"><Card className="rounded-md"><CardHeader><CardTitle>{consultant.prenom} {consultant.nom}</CardTitle><CardDescription>{consultant.poste ?? 'Consultant technique'}</CardDescription></CardHeader><CardContent className="space-y-3 text-sm"><p><span className="text-muted-foreground">E-mail :</span> {consultant.email}</p><p><span className="text-muted-foreground">Solde :</span> {consultant.soldeConges} jours</p><p><span className="text-muted-foreground">Jours consommés :</span> {approvedDays}</p><p><span className="text-muted-foreground">Certificats :</span> {certificates.length}</p></CardContent></Card><LeaveTable rows={leaves} loading={false} actionPending={false} onApprove={() => undefined} onReject={() => undefined} /></div>;
 }
 
 function SkeletonRows() {
