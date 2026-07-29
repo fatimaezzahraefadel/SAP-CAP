@@ -11,4 +11,5 @@ service ConsultantService {
   entity MesCertificats as projection on db.Certificats;
 
   action annulerDemande(demandeId: String) returns MesDemandesConge;
+  action supprimerCertificat(certificatId: String) returns Boolean;
 }

@@ -6,12 +6,15 @@ const { countWorkingDays, isoDate, todayIso } = require('./gestion.util');
 const getEmployeeForRequest = async (req, tx) => {
   const email = req.user?.attr?.email || req.headers['x-test-user-email'];
   const userId = req.user?.id || req.headers['x-test-user-id'];
+  const requestedRole = req.headers['x-test-user-role'];
   const { Employes } = cds.entities('sap.performance.dashboard.db');
 
   let employe = email && await tx.run(SELECT.one.from(Employes).where({ email }));
   if (!employe && userId) employe = await tx.run(SELECT.one.from(Employes).where({ ID: userId }));
   if (!employe) employe = await tx.run(SELECT.one.from(Employes).where({ role: 'CONSULTANT' }));
   if (!employe) req.reject(403, 'Aucun consultant de test ne correspond a cet utilisateur.');
+  if (requestedRole && requestedRole !== 'CONSULTANT') req.reject(403, 'Acces reserve au role consultant.');
+  if (employe.role !== 'CONSULTANT') req.reject(403, 'Acces reserve au role consultant.');
   return employe;
 };
 
@@ -41,14 +44,13 @@ const validateLeaveRequest = async (req, tx, employe) => {
     req.reject(400, 'Solde de conges insuffisant pour cette demande.');
   }
 
-  const overlaps = await tx.run(
-    SELECT.from(DemandesConge).where`
+  const overlapQuery = SELECT.from(DemandesConge).where`
       consultant_ID = ${employe.ID}
       and statut not in ('REJETEE', 'ANNULEE')
       and dateDebut <= ${data.dateFin}
       and dateFin >= ${data.dateDebut}
-    `
-  );
+    `;
+  const overlaps = (await tx.run(overlapQuery)).filter((item) => item.ID !== data.ID);
 
   if (overlaps.length) {
     req.reject(400, 'Cette demande chevauche une autre demande existante.');
@@ -76,10 +78,32 @@ module.exports = cds.service.impl(function () {
     await validateLeaveRequest(req, tx, employe);
   });
 
+  this.before('DELETE', 'MesDemandesConge', async (req) => {
+    req.reject(405, 'Utilisez l action annulerDemande pour annuler une demande de conge.');
+  });
+
   this.before('CREATE', 'MesCertificats', async (req) => {
     const tx = cds.transaction(req);
     const employe = await getEmployeeForRequest(req, tx);
     req.data.consultant_ID = employe.ID;
+  });
+
+  this.before('UPDATE', 'MesCertificats', async (req) => {
+    const tx = cds.transaction(req);
+    const { Certificats } = cds.entities('sap.performance.dashboard.db');
+    const employe = await getEmployeeForRequest(req, tx);
+    const existing = await tx.run(SELECT.one.from(Certificats).where({ ID: req.data.ID, consultant_ID: employe.ID }));
+    if (!existing) req.reject(404, 'Certificat introuvable.');
+    req.data.consultant_ID = employe.ID;
+  });
+
+  this.before('DELETE', 'MesCertificats', async (req) => {
+    const tx = cds.transaction(req);
+    const { Certificats } = cds.entities('sap.performance.dashboard.db');
+    const employe = await getEmployeeForRequest(req, tx);
+    const key = req.data.ID || req.params?.[0]?.ID;
+    const existing = key && await tx.run(SELECT.one.from(Certificats).where({ ID: key, consultant_ID: employe.ID }));
+    if (!existing) req.reject(404, 'Certificat introuvable.');
   });
 
   this.on('annulerDemande', async (req) => {
@@ -97,5 +121,15 @@ module.exports = cds.service.impl(function () {
 
     await tx.run(UPDATE(DemandesConge).set({ statut: 'ANNULEE' }).where({ ID: demande.ID }));
     return tx.run(SELECT.one.from(DemandesConge).where({ ID: demande.ID }));
+  });
+
+  this.on('supprimerCertificat', async (req) => {
+    const tx = cds.transaction(req);
+    const { Certificats } = cds.entities('sap.performance.dashboard.db');
+    const employe = await getEmployeeForRequest(req, tx);
+    const certificat = await tx.run(SELECT.one.from(Certificats).where({ ID: req.data.certificatId, consultant_ID: employe.ID }));
+    if (!certificat) req.reject(404, 'Certificat introuvable.');
+    await tx.run(DELETE.from(Certificats).where({ ID: certificat.ID }));
+    return true;
   });
 });

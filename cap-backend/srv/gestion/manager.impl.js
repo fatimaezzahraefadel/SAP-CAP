@@ -2,13 +2,35 @@
 
 const cds = require('@sap/cds');
 
+const ensureManager = async (req, tx) => {
+  const email = req.user?.attr?.email || req.headers['x-test-user-email'];
+  const userId = req.user?.id || req.headers['x-test-user-id'];
+  const requestedRole = req.headers['x-test-user-role'];
+  const { Employes } = cds.entities('sap.performance.dashboard.db');
+
+  let employe = email && await tx.run(SELECT.one.from(Employes).where({ email }));
+  if (!employe && userId) employe = await tx.run(SELECT.one.from(Employes).where({ ID: userId }));
+  if (!employe) employe = await tx.run(SELECT.one.from(Employes).where({ role: 'MANAGER' }));
+  if (!employe) req.reject(403, 'Aucun manager de test ne correspond a cet utilisateur.');
+  if (requestedRole && requestedRole !== 'MANAGER') req.reject(403, 'Acces reserve au role manager.');
+  if (employe.role !== 'MANAGER') req.reject(403, 'Acces reserve au role manager.');
+  return employe;
+};
+
+const daysUntil = (date) => Math.ceil((new Date(`${date}T00:00:00`).getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+
 module.exports = cds.service.impl(function () {
+  this.before(['READ', 'CREATE', 'UPDATE', 'DELETE'], '*', async (req) => {
+    await ensureManager(req, cds.transaction(req));
+  });
+
   this.before('READ', 'Consultants', (req) => {
     if (req.query?.SELECT) req.query.where({ role: 'CONSULTANT' });
   });
 
   this.on('approuverDemande', async (req) => {
     const tx = cds.transaction(req);
+    await ensureManager(req, tx);
     const { DemandesConge, Employes, TypesConge } = cds.entities('sap.performance.dashboard.db');
     const demande = await tx.run(SELECT.one.from(DemandesConge).where({ ID: req.data.demandeId }));
     if (!demande) req.reject(404, 'Demande de conge introuvable.');
@@ -35,6 +57,7 @@ module.exports = cds.service.impl(function () {
     if (!commentaire) req.reject(400, 'Le commentaire est obligatoire pour rejeter une demande.');
 
     const tx = cds.transaction(req);
+    await ensureManager(req, tx);
     const { DemandesConge } = cds.entities('sap.performance.dashboard.db');
     const demande = await tx.run(SELECT.one.from(DemandesConge).where({ ID: req.data.demandeId }));
     if (!demande) req.reject(404, 'Demande de conge introuvable.');
@@ -51,17 +74,29 @@ module.exports = cds.service.impl(function () {
 
   this.on('kpiConges', async (req) => {
     const tx = cds.transaction(req);
-    const { DemandesConge } = cds.entities('sap.performance.dashboard.db');
+    await ensureManager(req, tx);
+    const { DemandesConge, Certificats, Employes } = cds.entities('sap.performance.dashboard.db');
     const demandes = await tx.run(SELECT.from(DemandesConge));
+    const certificats = await tx.run(SELECT.from(Certificats));
+    const consultants = await tx.run(SELECT.from(Employes).where({ role: 'CONSULTANT' }));
     const totalDecidees = demandes.filter((item) => item.statut === 'APPROUVEE' || item.statut === 'REJETEE').length;
     const approuvees = demandes.filter((item) => item.statut === 'APPROUVEE');
     const today = new Date().toISOString().slice(0, 10);
+    const consultantsAvecCertificat = new Set(certificats.map((item) => item.consultant_ID));
 
     return {
       demandesEnAttente: demandes.filter((item) => item.statut === 'SOUMISE').length,
       absencesEnCours: approuvees.filter((item) => item.dateDebut <= today && item.dateFin >= today).length,
       joursApprouves: approuvees.reduce((sum, item) => sum + Number(item.nbJours || 0), 0),
       tauxApprobation: totalDecidees ? (approuvees.length / totalDecidees) * 100 : 0,
+      totalCertificats: certificats.length,
+      certificatsExpires: certificats.filter((item) => item.dateExpiration && item.dateExpiration < today).length,
+      certificatsA90Jours: certificats.filter((item) => {
+        if (!item.dateExpiration) return false;
+        const delta = daysUntil(item.dateExpiration);
+        return delta >= 0 && delta <= 90;
+      }).length,
+      consultantsSansCertificat: consultants.filter((item) => !consultantsAvecCertificat.has(item.ID)).length,
     };
   });
 });

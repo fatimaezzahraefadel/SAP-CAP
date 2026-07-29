@@ -1,4 +1,4 @@
-import { createEntity, odataFetch, type ODataResponse } from './core';
+import { createEntity, odataFetch, updateEntity, type ODataResponse } from './core';
 
 export type StatutDemandeConge = 'SOUMISE' | 'APPROUVEE' | 'REJETEE' | 'ANNULEE';
 
@@ -73,6 +73,10 @@ export interface KPIConge {
   absencesEnCours: number;
   joursApprouves: number;
   tauxApprobation: number;
+  totalCertificats: number;
+  certificatsExpires: number;
+  certificatsA90Jours: number;
+  consultantsSansCertificat: number;
 }
 
 const list = async <T>(service: 'consultant' | 'manager', entity: string): Promise<T[]> => {
@@ -103,6 +107,12 @@ export const GestionCongesCertificatsAPI = {
       createEntity<DemandeConge>('consultant', 'MesDemandesConge', payload),
     creerCertificat: (payload: CreateCertificatInput) =>
       createEntity<CertificatGcc>('consultant', 'MesCertificats', payload),
+    modifierDemande: (id: string, payload: CreateDemandeCongeInput) =>
+      updateEntity<DemandeConge>('consultant', 'MesDemandesConge', id, payload),
+    modifierCertificat: (id: string, payload: CreateCertificatInput) =>
+      updateEntity<CertificatGcc>('consultant', 'MesCertificats', id, payload),
+    supprimerCertificat: (certificatId: string) =>
+      postAction<boolean>('consultant', 'supprimerCertificat', { certificatId }),
     annulerDemande: (demandeId: string) =>
       postAction<DemandeConge>('consultant', 'annulerDemande', { demandeId }),
   },

@@ -14,6 +14,10 @@ service ManagerService {
     absencesEnCours   : Integer;
     joursApprouves    : Integer;
     tauxApprobation   : Decimal(5,2);
+    totalCertificats   : Integer;
+    certificatsExpires : Integer;
+    certificatsA90Jours: Integer;
+    consultantsSansCertificat : Integer;
   }
 
   action approuverDemande(demandeId: String, commentaire: String) returns DemandesCongeEquipe;

@@ -2,130 +2,80 @@
 
 ## 1. Objectif
 
-Ce rapport explique comment les deux taches principales du cahier des charges ont ete implementees dans le projet SAP CAP :
+Ce rapport detaille la realisation des deux modules demandes dans le cahier des charges :
 
-- Gestion des conges.
-- Gestion des certificats.
+- gestion des conges des consultants techniques ;
+- gestion des certificats professionnels.
 
-Le projet existait deja avec une structure SAP CAP, un backend Node.js/CDS et une application frontend. Le travail a consiste a ajouter proprement ces deux modules metier en respectant les documents Markdown fournis dans `docs/`.
+Le developpement a ete fait dans le projet SAP CAP existant, avec un backend CDS/OData V4, une logique metier Node.js, une base SQLite de developpement, une interface web professionnelle et une execution Docker.
 
-## 2. Documents utilises
+## 2. Documents de reference
 
-Les deux fichiers Markdown utilises comme reference sont :
+Les exigences ont ete reprises depuis :
 
 - `docs/Cahier_des_charges_Gestion_Conges_Certificats_CAP_v1.md`
 - `docs/CAP_Architecture_Guide.md`
 
-Le cahier des charges definit les besoins fonctionnels :
+Le cahier des charges demande deux espaces distincts :
 
-- Un consultant peut soumettre, suivre, modifier ou annuler ses demandes de conge.
-- Un consultant peut declarer et consulter ses certificats.
-- Un manager peut consulter les demandes de son equipe.
-- Un manager peut approuver ou rejeter les demandes de conge.
-- Un manager peut consulter les certificats de l'equipe.
-- Le backend doit etre base sur SAP CAP, CDS et OData V4.
+- un espace consultant pour soumettre, suivre, modifier et annuler ses demandes de conge, puis declarer et maintenir ses certificats ;
+- un espace manager pour superviser les demandes, approuver ou rejeter, suivre les absences, les KPI et les competences certifiees.
 
-Le guide d'architecture recommande une structure backend par domaine, avec des fichiers CDS, des handlers JavaScript et une separation claire de la logique metier.
+Le guide d'architecture recommande une separation par domaine : modele dans `db/`, services OData dans `srv/`, handlers metier dans `srv/gestion/`, donnees CSV dans `db/data/`.
 
-## 3. Implementation Backend SAP CAP
+## 3. Backend SAP CAP
 
 ### 3.1 Modele CDS
 
-Le modele de donnees a ete ajoute dans :
+Le modele est defini dans :
 
 ```text
 cap-backend/db/gestion-conges-certificats.cds
 ```
 
-Les entites principales implementees sont :
+Entites implementees :
 
-- `Employes`
-- `TypesConge`
-- `DemandesConge`
-- `DomainesCertificat`
-- `Certificats`
+- `Employes` : consultant/manager, email, poste, solde de conges, relation manager.
+- `TypesConge` : conge annuel, maladie, exceptionnel, sans solde, deduction du solde, duree maximale.
+- `DemandesConge` : consultant, type, dates, nombre de jours, motif, statut, commentaire manager, date de decision.
+- `DomainesCertificat` : SAP ABAP, SAP CPI, SAP Fiori/UI5, SAP CAP/BTP, Cloud, Autre.
+- `Certificats` : consultant, domaine, intitule, organisme, identifiant, date d'obtention, expiration, score.
 
-Ce modele couvre les besoins du cahier des charges :
+Les entites utilisent `cuid` et `managed` pour les identifiants et les champs d'audit.
 
-- un employe peut etre consultant ou manager ;
-- un consultant possede un solde de conges ;
-- une demande de conge contient les dates, le type, le statut, le motif et la decision manager ;
-- un certificat contient le domaine, l'intitule, l'organisme, l'identifiant, les dates et le score.
+### 3.2 Donnees de test
 
-Les aspects standards CAP `cuid` et `managed` sont utilises pour les identifiants et les champs d'audit.
-
-### 3.2 Donnees de test CSV
-
-Des fichiers CSV ont ete ajoutes dans :
+Les CSV sont dans :
 
 ```text
 cap-backend/db/data/
 ```
 
-Fichiers ajoutes :
-
-```text
-sap.performance.dashboard.db-Employes.csv
-sap.performance.dashboard.db-TypesConge.csv
-sap.performance.dashboard.db-DemandesConge.csv
-sap.performance.dashboard.db-DomainesCertificat.csv
-sap.performance.dashboard.db-Certificats.csv
-```
-
-Ces donnees permettent de tester directement l'application avec :
-
-- plusieurs consultants ;
-- un manager ;
-- plusieurs types de conges ;
-- plusieurs demandes avec differents statuts ;
-- plusieurs certificats dans des domaines SAP et cloud.
+Ils couvrent plusieurs consultants, un manager, les types de conges minimum, les domaines de certificats minimum, des demandes dans plusieurs statuts et des certificats valides/proches expiration/expires.
 
 ### 3.3 Services OData
 
-Deux services CAP OData V4 ont ete ajoutes, comme demande par le cahier des charges :
-
-```text
-cap-backend/srv/consultant-service.cds
-cap-backend/srv/manager-service.cds
-```
-
-Les definitions principales se trouvent dans :
-
-```text
-cap-backend/srv/gestion/consultant.service.cds
-cap-backend/srv/gestion/manager.service.cds
-```
-
-Endpoints exposes :
+Services exposes :
 
 ```text
 /odata/v4/consultant
 /odata/v4/manager
 ```
 
-Le service consultant expose :
+Definitions :
 
-- `MonProfil`
-- `TypesConge`
-- `DomainesCertificat`
-- `MesDemandesConge`
-- `MesCertificats`
-- action `annulerDemande`
+```text
+cap-backend/srv/gestion/consultant.service.cds
+cap-backend/srv/gestion/manager.service.cds
+```
 
-Le service manager expose :
+Le service consultant expose `MonProfil`, `MesDemandesConge`, `MesCertificats`, les listes de valeurs, l'action `annulerDemande` et l'action `supprimerCertificat`.
 
-- `Consultants`
-- `DemandesCongeEquipe`
-- `CertificatsEquipe`
-- `TypesConge`
-- `DomainesCertificat`
-- action `approuverDemande`
-- action `rejeterDemande`
-- function `kpiConges`
+Le service manager expose les demandes de l'equipe, les certificats de l'equipe, les consultants, les listes de valeurs, les actions `approuverDemande` et `rejeterDemande`, plus la fonction `kpiConges`.
 
 ### 3.4 Logique metier
 
-La logique metier a ete ajoutee dans :
+Handlers :
 
 ```text
 cap-backend/srv/gestion/consultant.impl.js
@@ -133,119 +83,150 @@ cap-backend/srv/gestion/manager.impl.js
 cap-backend/srv/gestion/gestion.util.js
 ```
 
-Pour les conges, la logique implemente :
+Regles de conges implementees :
 
 - calcul automatique des jours ouvrables ;
-- controle date debut/date fin ;
-- controle du solde disponible ;
-- controle de chevauchement avec une autre demande ;
-- creation d'une demande au statut `SOUMISE` ;
-- approbation par le manager avec decrement du solde ;
-- rejet avec commentaire obligatoire ;
-- annulation par le consultant ;
-- recrédit du solde si une demande approuvee non commencee est annulee.
+- refus si la date de fin est avant la date de debut ;
+- refus si le solde est insuffisant pour un type deduit du solde ;
+- refus si la demande chevauche une autre demande active ;
+- creation au statut `SOUMISE` ;
+- modification autorisee uniquement au statut `SOUMISE` ;
+- annulation autorisee au statut `SOUMISE` ou `APPROUVEE` non commencee ;
+- recredit du solde si une demande approuvee future est annulee ;
+- approbation manager avec decrement du solde ;
+- rejet manager avec commentaire obligatoire.
 
-Pour les certificats, la logique implemente :
+Regles de certificats implementees :
 
 - creation d'un certificat par le consultant ;
-- association automatique du certificat au consultant connecte ;
-- consultation des certificats par consultant ou par manager.
+- association automatique au consultant courant ;
+- modification d'un certificat par son proprietaire ;
+- suppression d'un certificat par son proprietaire ;
+- consultation du portefeuille consultant ;
+- consultation globale par le manager ;
+- calcul cote UI de la validite : valide, expire bientot, expire, sans expiration.
 
-## 4. Implementation Frontend Fiori/UI5
+Autorisation :
 
-Le frontend existant a ete etendu avec de vraies pages basees sur UI5 Web Components React.
+- le service consultant filtre les lectures sur le consultant courant ;
+- le service manager verifie le role manager pour les lectures/actions ;
+- les actions manager sont bloquees pour un role consultant dans le mode utilisateur de test.
 
-Packages ajoutes :
+## 4. Frontend
 
-```text
-@ui5/webcomponents
-@ui5/webcomponents-react
-@ui5/webcomponents-icons
-@ui5/webcomponents-fiori
-```
-
-Pages ajoutees :
+Fichiers principaux :
 
 ```text
 cap-backend/app/frontend/src/app/pages/gestion/GestionConsultantFiori.page.tsx
 cap-backend/app/frontend/src/app/pages/gestion/GestionManagerFiori.page.tsx
-```
-
-Service frontend OData ajoute :
-
-```text
 cap-backend/app/frontend/src/app/services/odata/gestionCongesCertificatsApi.ts
 ```
 
-Les routes frontend ont ete branchees pour afficher :
+L'interface consomme les services SAP CAP/OData V4 avec `fetch` via le client OData existant. Les ecrans utilisent le design system React deja present dans l'application, avec les dependances SAP UI5 installees dans le projet pour rester compatible avec l'environnement Fiori/SAP du livrable.
 
-- une page consultant pour les demandes de conge et les certificats ;
-- une page manager pour les demandes de l'equipe, les certificats et les KPI.
+### 4.1 Espace consultant
 
-Les composants UI5 utilises incluent notamment :
+Fonctionnalites livrees :
 
-- `DynamicPage`
-- `DynamicPageTitle`
-- `DynamicPageHeader`
-- `Card`
-- `CardHeader`
-- `AnalyticalTable`
-- `ObjectStatus`
-- `Button`
-- `Title`
-- `Text`
-- `Label`
-- `FlexBox`
+- affichage du solde restant ;
+- affichage du nombre de demandes soumises ;
+- formulaire de soumission d'une demande ;
+- modification d'une demande tant qu'elle est `SOUMISE` ;
+- annulation d'une demande `SOUMISE` ou `APPROUVEE` non commencee ;
+- historique avec statut et commentaire manager ;
+- filtres par statut, type et recherche texte ;
+- formulaire d'ajout de certificat ;
+- modification et suppression d'un certificat ;
+- portefeuille de certificats trie par date d'obtention ;
+- filtres par domaine, validite et recherche texte ;
+- indicateurs visuels pour certificats expires ou expirant dans les 90 jours.
 
-L'objectif etait de faire une interface Fiori/UI5 reelle, et pas seulement une page HTML simple.
+### 4.2 Espace manager
 
-## 5. Nettoyage du projet
+Fonctionnalites livrees :
 
-Le projet a ete nettoye pour enlever les elements qui ne faisaient pas partie du besoin :
+- liste des demandes de l'equipe ;
+- filtres par statut, consultant, type, periode et recherche texte ;
+- mise en evidence des demandes `SOUMISE` ;
+- approbation avec commentaire optionnel ;
+- rejet avec commentaire obligatoire ;
+- KPI : demandes en attente, absences en cours, jours consommes, taux d'approbation, total certificats, certificats a 90 jours, consultants sans certificat ;
+- calendrier d'equipe sous forme de vue periode/absence pour visualiser les chevauchements ;
+- liste des certificats de l'equipe ;
+- filtres certificats par consultant, domaine, validite et recherche texte ;
+- matrice de competences consultants x domaines ;
+- fiche consultant : solde, email, jours consommes, certificats et historique.
 
-- suppression du dossier `.claude` ;
-- suppression des anciens fichiers lies a l'ancien dispatch automatique ;
-- suppression de fichiers de documentation non necessaires ;
-- suppression des references aux anciens outils externes qui ne faisaient pas partie du besoin ;
-- ajout d'un `.gitignore` pour eviter de pousser les dependances, bases SQLite locales et fichiers generes.
+## 5. Correspondance avec les exigences
 
-Une recherche a ete faite pour verifier que les traces d'anciens outils externes ne restent pas dans les fichiers sources utiles.
+### 5.1 Conges consultant
+
+| Ref | Exigence | Statut | Implementation |
+| --- | --- | --- | --- |
+| CG-01 | Consulter le solde | Fait | KPI `Solde restant` depuis `MonProfil`. |
+| CG-02 | Soumettre une demande | Fait | Formulaire consultant + `CREATE MesDemandesConge`. |
+| CG-03 | Controles automatiques | Fait | Handler CAP : dates, solde, chevauchement. |
+| CG-04 | Modifier une demande soumise | Fait | Bouton `Modifier` + `PATCH MesDemandesConge`, bloque cote serveur si statut different. |
+| CG-05 | Annuler une demande | Fait | Action `annulerDemande`, avec recredit si approuvee future. |
+| CG-06 | Suivre ses demandes | Fait | Historique filtre avec statut et commentaire manager. |
+
+### 5.2 Certificats consultant
+
+| Ref | Exigence | Statut | Implementation |
+| --- | --- | --- | --- |
+| CT-01 | Ajouter un certificat | Fait | Formulaire + `CREATE MesCertificats`. |
+| CT-02 | Modifier / supprimer | Fait | Boutons `Modifier` et `Supprimer`, action `supprimerCertificat`. |
+| CT-03 | Consulter portefeuille | Fait | Liste filtrable par domaine et validite, triee par obtention. |
+| CT-04 | Alerte expiration | Fait | KPI `A renouveler` et badge de validite. |
+
+### 5.3 Conges manager
+
+| Ref | Exigence | Statut | Implementation |
+| --- | --- | --- | --- |
+| MG-01 | Consulter demandes equipe avec filtres | Fait | Table manager avec filtres statut, consultant, type, periode, recherche. |
+| MG-02 | Approuver | Fait | Action `approuverDemande`, solde decremente. |
+| MG-03 | Rejeter avec commentaire | Fait | Action `rejeterDemande`, commentaire obligatoire. |
+| MG-04 | Calendrier equipe | Fait | Onglet `Calendrier`, groupes par periode et affiche les chevauchements. |
+| MG-05 | KPI supervision | Fait | Fonction `kpiConges` + cartes KPI. |
+| MG-06 | Fiche consultant | Fait | Onglet `Fiche consultant`. |
+
+### 5.4 Certificats manager
+
+| Ref | Exigence | Statut | Implementation |
+| --- | --- | --- | --- |
+| MC-01 | Visualiser certificats equipe avec filtres | Fait | Table avec filtres consultant, domaine, validite, recherche. |
+| MC-02 | Matrice competences | Fait | Onglet `Matrice`. |
+| MC-03 | Suivi expirations | Fait | Validite `EXPIRE_BIENTOT` / `EXPIRE` et KPI. |
+| MC-04 | KPI certificats | Fait | Total certificats, a 90 jours, expires, consultants sans certificat. |
+
+### 5.5 Transverse
+
+| Exigence | Statut | Implementation |
+| --- | --- | --- |
+| Pages adaptees au role | Fait | Routes consultant et manager separees. |
+| Recherche et filtres | Fait | Filtres sur demandes et certificats. |
+| Controle autorisations | Fait en mode developpement | Controle par role/test user dans les handlers CAP. |
+| Messages d'erreur en francais | Fait | `req.reject` avec messages metier en francais. |
 
 ## 6. Dockerisation
 
-Un fichier Docker a ete ajoute :
+Fichiers :
 
 ```text
 cap-backend/Dockerfile
-```
-
-Un fichier `.dockerignore` a aussi ete ajoute :
-
-```text
 cap-backend/.dockerignore
 ```
 
-Docker a ete ajoute pour plusieurs raisons :
+Docker a ete ajoute pour :
 
-- lancer le projet dans un environnement propre et reproductible ;
-- eviter les problemes de versions Node.js/npm entre machines ;
-- faciliter les tests par un autre membre de l'equipe ;
-- verifier que le backend CAP, le frontend build et SQLite fonctionnent ensemble ;
-- preparer une base simple pour un futur deploiement.
+- garantir un environnement reproductible ;
+- compiler le frontend et le backend dans une image propre ;
+- tester CAP + OData + SQLite ensemble ;
+- faciliter la demonstration sur une autre machine.
 
-Le conteneur :
+## 7. Execution
 
-- installe les dependances backend ;
-- installe les dependances frontend ;
-- build le frontend ;
-- synchronise les ressources frontend ;
-- compile le projet CAP ;
-- deploie SQLite au demarrage ;
-- lance le serveur CAP.
-
-## 7. Comment lancer le projet avec Docker
-
-Depuis le dossier backend :
+Avec Docker :
 
 ```powershell
 cd cap-backend
@@ -253,24 +234,14 @@ docker build -t gestion-conges-certificats-cap:test .
 docker run --rm -p 4016:4004 gestion-conges-certificats-cap:test
 ```
 
-Ensuite, ouvrir :
+Ouvrir :
 
 ```text
-http://localhost:4016
+http://localhost:4016/manager/leave
+http://localhost:4016/consultant-tech/leave
 ```
 
-Endpoints utiles pour verifier le backend :
-
-```text
-http://localhost:4016/odata/v4/consultant/$metadata
-http://localhost:4016/odata/v4/manager/$metadata
-http://localhost:4016/odata/v4/consultant/TypesConge
-http://localhost:4016/odata/v4/manager/kpiConges()
-```
-
-## 8. Comment lancer sans Docker
-
-Depuis le dossier backend :
+Sans Docker :
 
 ```powershell
 cd cap-backend
@@ -282,70 +253,53 @@ npx cds deploy
 npm start
 ```
 
-Pour le mode developpement CAP :
+Mode developpement :
 
 ```powershell
+cd cap-backend
 npx cds watch
 ```
 
-## 9. Tests effectues
+Endpoints utiles :
 
-Les tests suivants ont ete faits avec Docker :
-
-- metadata consultant : OK ;
-- metadata manager : OK ;
-- lecture des types de conge : OK ;
-- lecture des domaines de certificats : OK ;
-- lecture des demandes de conge consultant : OK ;
-- lecture des certificats consultant : OK ;
-- lecture des demandes manager : OK ;
-- lecture des certificats manager : OK ;
-- creation d'une demande de conge : OK ;
-- approbation manager : OK ;
-- creation d'un certificat : OK ;
-- KPI manager : OK.
-
-Exemple de resultat obtenu :
-
-```json
-{
-  "LeaveStatusAfterCreate": "SOUMISE",
-  "LeaveDays": 2,
-  "LeaveStatusAfterApprove": "APPROUVEE",
-  "CertificateTitle": "SAP CAP Smoke Test"
-}
+```text
+http://localhost:4016/odata/v4/consultant/$metadata
+http://localhost:4016/odata/v4/manager/$metadata
+http://localhost:4016/odata/v4/manager/kpiConges()
 ```
 
-## 10. Ce qui peut etre ameliore
+## 8. Verification effectuee
 
-Ameliorations backend :
+Commandes executees :
 
-- separer encore plus la logique en fichiers `domain.service.js` et `repo.js`, comme recommande par le guide d'architecture ;
-- ajouter des tests automatises pour les actions `approuverDemande`, `rejeterDemande` et `annulerDemande` ;
-- ajouter un controle serveur plus strict des roles consultant/manager ;
-- ajouter une vraie gestion d'authentification avec XSUAA ou SAP BTP ;
-- enrichir les KPI manager : repartition par type de conge, jours consommes par consultant, taux d'expiration des certificats.
+```powershell
+cd cap-backend/app/frontend
+npx tsc --noEmit --noUnusedLocals false --noUnusedParameters false
 
-Ameliorations frontend :
+cd ../..
+npm run build
+```
 
-- ajouter des formulaires complets UI5 pour creer/modifier les demandes et certificats depuis l'interface ;
-- ajouter plus de filtres : statut, consultant, periode, domaine ;
-- ajouter une vue calendrier pour les absences de l'equipe ;
-- ajouter une matrice de competences pour les certificats ;
-- ajouter des indicateurs visuels pour les certificats expires ou expirant dans moins de 90 jours.
+Resultat :
 
-Ameliorations DevOps :
+- verification TypeScript : OK ;
+- build frontend Vite : OK ;
+- build CAP : OK ;
+- generation OData/metadata : OK.
 
-- ajouter un `docker-compose.yml` ;
-- ajouter une pipeline GitHub Actions pour build/test automatiquement ;
-- ajouter un profil HANA Cloud pour preparer un deploiement SAP BTP ;
-- documenter les comptes de test dans le README.
+## 9. Ameliorations possibles
 
-## 11. Conclusion
+- Remplacer la vue calendrier simple par FullCalendar si le jury demande une vraie grille mensuelle.
+- Ajouter des tests automatises Jest pour les actions de conge et certificats.
+- Brancher une vraie authentification XSUAA/BTP au lieu du mode test/dummy.
+- Ajouter un `docker-compose.yml` avec profils SQLite et HANA.
+- Ajouter des captures d'ecran dans une documentation utilisateur.
+- Ajouter une pipeline GitHub Actions pour build/test automatique.
 
-Les deux taches principales demandees dans le cahier des charges ont ete implementees :
+## 10. Conclusion
 
-- gestion des conges ;
-- gestion des certificats.
+Les deux modules demandes par le cahier des charges sont maintenant couverts :
 
-Elles sont exposees via SAP CAP/CDS/OData, utilisees par une interface Fiori/UI5, testees avec des donnees CSV et lanceables dans Docker.
+- le consultant gere ses conges et son portefeuille de certificats ;
+- le manager pilote les demandes, absences, KPI, certificats, matrice de competences et fiches consultants ;
+- le tout fonctionne avec SAP CAP, CDS, OData V4, SQLite local, frontend web et Docker.
