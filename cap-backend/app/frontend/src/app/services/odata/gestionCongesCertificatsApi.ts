@@ -1,4 +1,4 @@
-import { odataFetch, type ODataResponse } from './core';
+import { createEntity, odataFetch, type ODataResponse } from './core';
 
 export type StatutDemandeConge = 'SOUMISE' | 'APPROUVEE' | 'REJETEE' | 'ANNULEE';
 
@@ -39,9 +39,26 @@ export interface DemandeConge {
   dateDecision?: string;
 }
 
+export interface CreateDemandeCongeInput {
+  typeConge_ID: string;
+  dateDebut: string;
+  dateFin: string;
+  motif?: string;
+}
+
 export interface CertificatGcc {
   ID: string;
   consultant_ID: string;
+  domaine_ID: string;
+  intitule: string;
+  organisme?: string;
+  identifiantCertificat?: string;
+  dateObtention: string;
+  dateExpiration?: string;
+  score?: string;
+}
+
+export interface CreateCertificatInput {
   domaine_ID: string;
   intitule: string;
   organisme?: string;
@@ -82,6 +99,10 @@ export const GestionCongesCertificatsAPI = {
     domaines: () => list<DomaineCertificat>('consultant', 'DomainesCertificat'),
     demandes: () => list<DemandeConge>('consultant', 'MesDemandesConge'),
     certificats: () => list<CertificatGcc>('consultant', 'MesCertificats'),
+    creerDemande: (payload: CreateDemandeCongeInput) =>
+      createEntity<DemandeConge>('consultant', 'MesDemandesConge', payload),
+    creerCertificat: (payload: CreateCertificatInput) =>
+      createEntity<CertificatGcc>('consultant', 'MesCertificats', payload),
     annulerDemande: (demandeId: string) =>
       postAction<DemandeConge>('consultant', 'annulerDemande', { demandeId }),
   },
