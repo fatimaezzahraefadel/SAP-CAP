@@ -1,27 +1,26 @@
-﻿{
+{
   "common": {
     "search": "Rechercher des projets, utilisateurs, tickets...",
     "notifications": "Notifications",
     "noNotifications": "Aucune notification",
     "profile": "Profil",
-    "settings": "ParamÃ¨tres",
-    "logout": "DÃ©connexion",
+    "settings": "Paramètres",
+    "logout": "Déconnexion",
     "english": "Anglais",
-    "french": "FranÃ§ais",
+    "french": "Français",
     "switchLanguage": "Changer de langue",
     "lightMode": "Passer en mode clair",
     "darkMode": "Passer en mode sombre",
-    "compactDensity": "Passer en densitÃ© compacte",
-    "comfortableDensity": "Passer en densitÃ© confortable",
-    "expandSidebar": "Agrandir la barre latÃ©rale",
-    "collapseSidebar": "RÃ©duire la barre latÃ©rale",
+    "compactDensity": "Passer en densité compacte",
+    "comfortableDensity": "Passer en densité confortable",
+    "expandSidebar": "Agrandir la barre latérale",
+    "collapseSidebar": "Réduire la barre latérale",
     "toggleNavigation": "Basculer la navigation",
     "loading": "Chargement...",
     "loadingSession": "Chargement de la session...",
-    "pageNotFound": "Page non trouvÃ©e",
-    "pageNotFoundDesc": "La page que vous avez demandÃ©e n'existe pas.",
+    "pageNotFound": "Page non trouvée",
+    "pageNotFoundDesc": "La page que vous avez demandée n'existe pas.",
     "cancel": "Annuler",
-    "ok": "OK",
     "save": "Enregistrer",
     "delete": "Supprimer",
     "actions": "Actions",
@@ -33,15 +32,23 @@
     "description": "Description",
     "all": "Tous",
     "edit": "Modifier",
-    "create": "CrÃ©er",
+    "create": "Créer",
     "back": "Retour",
-    "tryAgain": "RÃ©essayer",
-    "goHome": "Retour Ã  l'accueil",
+    "tryAgain": "Réessayer",
+    "goHome": "Retour à l'accueil",
     "tickets": "Tickets",
-    "previous": "PrÃ©cÃ©dent",
+    "previous": "Précédent",
     "next": "Suivant",
+    "close": "Fermer",
+    "guest": "Invité",
+    "appName": "Hub de Performance",
+    "navigationMenu": "Menu de navigation",
+    "progressToTarget": "Progression vers l'objectif",
+    "targetWithValue": "Objectif : {{value}}",
+    "module": "Module",
+    "complexity": "Complexité",
     "errors": {
-      "loadFailed": "Ã‰chec du chargement des donnÃ©es. Veuillez rÃ©essayer plus tard."
+      "loadFailed": "Échec du chargement des données. Veuillez réessayer plus tard."
     }
   },
   "units": {
@@ -61,100 +68,99 @@
       "BUILD": "Build"
     },
     "sapModule": {
-      "FI": "FI â€“ Finance",
-      "CO": "CO â€“ ContrÃ´le de Gestion",
-      "MM": "MM â€“ Gestion des Achats",
-      "SD": "SD â€“ Ventes & Distrib.",
-      "PP": "PP â€“ Production",
-      "PM": "PM â€“ Maintenance",
-      "QM": "QM â€“ Gestion QualitÃ©",
-      "HR": "HR â€“ Ressources Humaines",
-      "PS": "PS â€“ Gestion de Projet",
-      "WM": "WM â€“ Gestion EntrepÃ´ts",
-      "BASIS": "BASIS â€“ Admin",
-      "ABAP": "ABAP â€“ DÃ©veloppement",
+      "FI": "FI – Finance",
+      "CO": "CO – Contrôle de Gestion",
+      "MM": "MM – Gestion des Achats",
+      "SD": "SD – Ventes & Distrib.",
+      "PP": "PP – Production",
+      "PM": "PM – Maintenance",
+      "QM": "QM – Gestion Qualité",
+      "HR": "HR – Ressources Humaines",
+      "PS": "PS – Gestion de Projet",
+      "WM": "WM – Gestion Entrepôts",
+      "BASIS": "BASIS – Admin",
+      "ABAP": "ABAP – Développement",
       "FIORI": "Fiori / UI5",
-      "BW": "BW â€“ Business Warehouse",
+      "BW": "BW – Business Warehouse",
       "OTHER": "Autre"
     },
     "ticketComplexity": {
       "SIMPLE": "Simple",
       "MOYEN": "Moyen",
       "COMPLEXE": "Complexe",
-      "TRES_COMPLEXE": "TrÃ¨s Complexe"
+      "TRES_COMPLEXE": "Très Complexe"
     },
     "imputationValidation": {
       "DRAFT": "Brouillon",
       "SUBMITTED": "Soumis",
-      "VALIDATED": "ValidÃ©",
-      "REJECTED": "RejetÃ©"
+      "VALIDATED": "Validé",
+      "REJECTED": "Rejeté"
     },
     "ticketNature": {
       "WORKFLOW": "Workflow",
       "FORMULAIRE": "Formulaire",
       "PROGRAMME": "Programme",
-      "ENHANCEMENT": "AmÃ©lioration",
+      "ENHANCEMENT": "Amélioration",
       "MODULE": "Module",
       "REPORT": "Rapport"
     },
     "ticketStatus": {
       "PENDING_APPROVAL": "En attente d'approbation",
-      "APPROVED": "ApprouvÃ©",
+      "APPROVED": "Approuvé",
       "NEW": "Nouveau",
       "IN_PROGRESS": "En cours",
       "IN_TEST": "En test",
-      "BLOCKED": "BloquÃ©",
-      "DONE": "TerminÃ©",
-      "REJECTED": "RejetÃ©"
+      "BLOCKED": "Bloqué",
+      "DONE": "Terminé",
+      "REJECTED": "Rejeté"
     },
     "commentType": {
-      "GENERAL": "GÃ©nÃ©ral",
+      "GENERAL": "Général",
       "BLOCKER": "Bloquant",
       "QUESTION": "Question",
-      "UPDATE": "Mise Ã  jour",
+      "UPDATE": "Mise à jour",
       "FEEDBACK": "Retour"
     },
     "wricefValidationStatus": {
       "DRAFT": "Brouillon",
       "PENDING_VALIDATION": "En attente de validation",
-      "VALIDATED": "ValidÃ©",
-      "REJECTED": "RejetÃ©"
+      "VALIDATED": "Validé",
+      "REJECTED": "Rejeté"
     },
     "wricefType": {
-      "W": "W â€“ Workflow",
-      "R": "R â€“ Rapport",
-      "I": "I â€“ Interface",
-      "C": "C â€“ Conversion",
-      "E": "E â€“ AmÃ©lioration",
-      "F": "F â€“ Formulaire"
+      "W": "W – Workflow",
+      "R": "R – Rapport",
+      "I": "I – Interface",
+      "C": "C – Conversion",
+      "E": "E – Amélioration",
+      "F": "F – Formulaire"
     },
     "certificationStatus": {
       "VALID": "Valide",
-      "EXPIRING_SOON": "Expire BientÃ´t",
-      "EXPIRED": "ExpirÃ©e"
+      "EXPIRING_SOON": "Expire Bientôt",
+      "EXPIRED": "Expirée"
     },
     "leaveStatus": {
       "PENDING": "En attente",
-      "APPROVED": "ApprouvÃ©e",
-      "REJECTED": "RefusÃ©e"
+      "APPROVED": "Approuvée",
+      "REJECTED": "Refusée"
+    },
+    "validationStatus": {
+      "PENDING": "En attente",
+      "APPROVED": "Approuvé",
+      "CHANGES_REQUESTED": "Modifications demandées"
     },
     "documentationObjectType": {
       "SFD": "SFD",
       "GUIDE": "Guide",
       "ARCHITECTURE_DOC": "Doc Architecture",
-      "GENERAL": "GÃ©nÃ©ral"
-    },
-    "priority": {
-      "LOW": "Basse",
-      "MEDIUM": "Moyenne",
-      "HIGH": "Haute",
-      "CRITICAL": "Critique"
+      "GENERAL": "Général"
     }
   },
   "consultant": {
     "techDashboard": {
       "welcome": "Bon retour, {{name}}",
-      "subtitle": "Cockpit d'exÃ©cution pour vos livraisons et votre charge de travail",
+      "subtitle": "Cockpit d'exécution pour vos livraisons et votre charge de travail",
       "breadcrumb": "Mon Tableau de Bord",
       "kpi": {
         "myTickets": "Mes Tickets",
@@ -163,50 +169,50 @@
         "activeProjects": "Projets Actifs"
       },
       "upcomingTickets": {
-        "title": "Tickets Ã  Venir",
+        "title": "Tickets à Venir",
         "loading": "Chargement des tickets...",
-        "empty": "Aucun ticket Ã  venir.",
-        "due": "Ã‰chÃ©ance {{date}}",
-        "done": "{{percent}}% terminÃ©"
+        "empty": "Aucun ticket à venir.",
+        "due": "Échéance {{date}}",
+        "done": "{{percent}}% terminé"
       },
       "assignedProjects": {
-        "title": "Projets AssignÃ©s",
-        "empty": "Aucun projet assignÃ©.",
+        "title": "Projets Assignés",
+        "empty": "Aucun projet assigné.",
         "openProjects": "Ouvrir les Projets",
         "progress": "Progression"
       },
       "productivity": {
-        "title": "AperÃ§u de la ProductivitÃ©",
+        "title": "Aperçu de la Productivité",
         "thisWeek": "Cette Semaine",
-        "ticketsCompleted": "Tickets TerminÃ©s",
-        "completionRate": "Taux de RÃ©ussite"
+        "ticketsCompleted": "Tickets Terminés",
+        "completionRate": "Taux de Réussite"
       }
     },
     "myProjects": {
       "title": "Mes Projets",
-      "subtitle": "AperÃ§u en lecture seule de vos projets et tickets assignÃ©s",
+      "subtitle": "Aperçu en lecture seule de vos projets et tickets assignés",
       "loading": "Chargement des projets...",
-      "emptyTitle": "Aucun projet assignÃ©",
-      "emptyDesc": "Vous n'avez actuellement aucun projet assignÃ©. Lorsqu'un manager vous assignera Ã  un projet, il apparaÃ®tra ici.",
+      "emptyTitle": "Aucun projet assigné",
+      "emptyDesc": "Vous n'avez actuellement aucun projet assigné. Lorsqu'un manager vous assignera à un projet, il apparaîtra ici.",
       "manager": "Manager",
-      "period": "PÃ©riode",
+      "period": "Période",
       "myProgress": "Ma Progression",
-      "assigned": "AssignÃ©s",
-      "done": "TerminÃ©s",
-      "blocked": "BloquÃ©s"
+      "assigned": "Assignés",
+      "done": "Terminés",
+      "blocked": "Bloqués"
     },
     "certifications": {
       "title": "Mes Certifications",
-      "subtitle": "GÃ©rez vos certifications professionnelles",
+      "subtitle": "Gérez vos certifications professionnelles",
       "stats": {
         "total": "Total",
         "valid": "Valides",
-        "expired": "ExpirÃ©es"
+        "expired": "Expirées"
       },
       "addCertification": "Ajouter une Certification",
       "table": {
         "name": "Nom",
-        "body": "Organisme Ã‰metteur",
+        "body": "Organisme Émetteur",
         "obtained": "Obtenue le",
         "expires": "Expire le",
         "status": "Statut",
@@ -217,7 +223,7 @@
         "title": "Ajouter une Certification",
         "name": "Nom du certificat *",
         "namePlaceholder": "ex : SAP Certified Application Associate",
-        "body": "Organisme Ã©metteur *",
+        "body": "Organisme émetteur *",
         "bodyPlaceholder": "ex : SAP",
         "obtained": "Date d'obtention *",
         "expires": "Date d'expiration",
@@ -226,35 +232,35 @@
         "add": "Ajouter"
       },
       "toasts": {
-        "requiredFields": "Le nom, l'organisme Ã©metteur et la date d'obtention sont requis",
-        "added": "Certification ajoutÃ©e",
-        "addFailed": "Ã‰chec de l'ajout de la certification",
-        "removed": "Certification supprimÃ©e",
-        "removeFailed": "Ã‰chec de la suppression de la certification"
+        "requiredFields": "Le nom, l'organisme émetteur et la date d'obtention sont requis",
+        "added": "Certification ajoutée",
+        "addFailed": "Échec de l'ajout de la certification",
+        "removed": "Certification supprimée",
+        "removeFailed": "Échec de la suppression de la certification"
       }
     },
     "leaves": {
-      "title": "Mes Demandes de CongÃ©s",
-      "subtitle": "Soumettez et suivez vos demandes de congÃ©s",
+      "title": "Mes Demandes de Congés",
+      "subtitle": "Soumettez et suivez vos demandes de congés",
       "stats": {
         "total": "Total des Demandes",
         "pending": "En attente",
-        "approved": "ApprouvÃ©es",
-        "daysTaken": "Jours ApprouvÃ©s"
+        "approved": "Approuvées",
+        "daysTaken": "Jours Approuvés"
       },
       "newRequest": "Nouvelle Demande",
       "table": {
-        "start": "DÃ©but",
+        "start": "Début",
         "end": "Fin",
         "days": "Jours",
         "reason": "Motif",
         "status": "Statut",
         "submitted": "Soumise",
-        "empty": "Aucune demande de congÃ© pour le moment."
+        "empty": "Aucune demande de congé pour le moment."
       },
       "dialog": {
-        "title": "Nouvelle Demande de CongÃ©",
-        "startDate": "Date de dÃ©but *",
+        "title": "Nouvelle Demande de Congé",
+        "startDate": "Date de début *",
         "endDate": "Date de fin *",
         "reason": "Motif",
         "reasonPlaceholder": "Motif optionnel...",
@@ -262,10 +268,10 @@
         "submit": "Soumettre"
       },
       "toasts": {
-        "requiredFields": "La date de dÃ©but et de fin sont requises",
-        "invalidDates": "La date de fin doit Ãªtre postÃ©rieure Ã  la date de dÃ©but",
-        "submitted": "Demande de congÃ© soumise",
-        "submitFailed": "Ã‰chec de la soumission de la demande"
+        "requiredFields": "La date de début et de fin sont requises",
+        "invalidDates": "La date de fin doit être postérieure à la date de début",
+        "submitted": "Demande de congé soumise",
+        "submitFailed": "Échec de la soumission de la demande"
       }
     }
   },
@@ -276,9 +282,9 @@
       "breadcrumb": "Mon Tableau de Bord",
       "kpi": {
         "pendingDeliverables": "Livrables en Attente",
-        "approvedDeliverables": "Livrables ApprouvÃ©s",
+        "approvedDeliverables": "Livrables Approuvés",
         "openTickets": "Tickets Ouverts",
-        "resolvedTickets": "Tickets RÃ©solus"
+        "resolvedTickets": "Tickets Résolus"
       },
       "deliverables": {
         "title": "Livrables en Attente de Validation",
@@ -286,127 +292,65 @@
         "pendingReview": "Examen en attente"
       },
       "tickets": {
-        "title": "Mes Tickets RÃ©cents",
-        "manage": "GÃ©rer les Tickets",
-        "empty": "Aucun ticket crÃ©Ã© pour le moment."
+        "title": "Mes Tickets Récents",
+        "manage": "Gérer les Tickets",
+        "empty": "Aucun ticket créé pour le moment."
       }
     },
     "projects": {
       "title": "Projets",
-      "subtitle": "PÃ©rimÃ¨tre fonctionnel, statut des livrables et points d'entrÃ©e de collaboration",
+      "subtitle": "Périmètre fonctionnel, statut des livrables et points d'entrée de collaboration",
       "loading": "Chargement des projets...",
-      "empty": "Aucun projet Ã  afficher.",
       "manager": "Manager",
       "techContact": "Contact Tech",
-      "notAssigned": "Non assignÃ©",
+      "notAssigned": "Non assigné",
       "pending": "En attente",
       "changesReq": "Modif. Req.",
-      "blockedTickets": "Tickets BloquÃ©s",
+      "blockedTickets": "Tickets Bloqués",
       "openTeams": "Ouvrir Chat Teams",
-      "columns": {
-        "project": "Projet"
-      },
       "feedback": {
         "title": "Retour sur le Projet",
-        "placeholder": "Partagez vos retours mÃ©tier, bloqueurs ou ajustements demandÃ©s...",
+        "placeholder": "Partagez vos retours métier, bloqueurs ou ajustements demandés...",
         "submit": "Soumettre le Retour",
-        "history": "Historique",
-        "errorTitle": "Retour invalide",
-        "errorShort": "Le retour sur le projet doit contenir au moins 10 caractÃ¨res",
+        "errorShort": "Le retour sur le projet doit contenir au moins 10 caractères",
         "success": "Retour sur le projet soumis",
-        "saveFailed": "Ã‰chec de l'enregistrement du retour."
-      },
-      "details": {
-      "overview": {
-        "liveMetrics": "MÃ©triques en Temps RÃ©el",
-        "openTickets": "Tickets Ouverts",
-        "criticalTickets": "Tickets Critiques",
-        "objects": "{{count}} objet",
-        "notImported": "WRICEF non importÃ©"
-      },
-      "wricef": {
-        "stats": {
-          "totalObjects": "Nombre Total d'Objets",
-          "totalTickets": "Total des Tickets",
-          "totalDocuments": "Total des Documents"
-        },
-        "filters": {
-          "search": "Rechercher des objets...",
-          "type": "Type",
-          "allTypes": "Tous les Types",
-          "complexity": "ComplexitÃ©",
-          "allComplexity": "Toute ComplexitÃ©",
-          "module": "Module",
-          "allModules": "Tous les Modules",
-          "clear": "Effacer les Filtres",
-          "createTicket": "CrÃ©er un Ticket",
-          "import": "Importer"
-        },
-        "pagination": {
-          "showing": "Affichage",
-          "of": "sur",
-          "pageSize": "par page"
-        }
-      },
-      "kpis": {
-        "onTrack": "Sur Piste",
-        "atRisk": "Ã€ Risque",
-        "blocked": "BloquÃ©s",
-        "critical": "Critique",
-        "done": "TerminÃ©"
-      },
-      "abaques": {
-        "nature": "Nature",
-        "complexity": "ComplexitÃ©",
-        "hours": "Heures"
+        "saveFailed": "Échec de l'enregistrement du retour."
       }
-    }
     },
     "deliverables": {
-      "title": "Livrables & SpÃ©cifications",
-      "subtitle": "GÃ©rer, examiner et valider les livrables du projet",
+      "title": "Livrables & Spécifications",
+      "subtitle": "Gérer, examiner et valider les livrables du projet",
       "search": "Rechercher des livrables...",
-      "pendingReview": "Examen en attente",
-      "approved": "ApprouvÃ©",
-      "changesRequested": "Modifications demandÃ©es",
       "allStatuses": "Tous les Statuts",
-      "deposit": "DÃ©poser un Livrable",
+      "deposit": "Déposer un Livrable",
       "loading": "Chargement des livrables...",
       "empty": {
-        "title": "Aucun livrable trouvÃ©",
+        "title": "Aucun livrable trouvé",
         "descSearch": "Essayez d'ajuster votre recherche ou vos filtres.",
-        "descEmpty": "Aucun livrable n'a encore Ã©tÃ© tÃ©lÃ©chargÃ©. Cliquez sur le bouton ci-dessus pour dÃ©poser votre premiÃ¨re spÃ©cification fonctionnelle.",
-        "upload": "TÃ©lÃ©charger le document"
+        "descEmpty": "Aucun livrable n'a encore été téléchargé. Cliquez sur le bouton ci-dessus pour déposer votre première spécification fonctionnelle.",
+        "upload": "Télécharger le document"
       },
       "waitingReview": "{{count}} en attente d'examen",
       "project": "Projet",
-      "reference": "RÃ©fÃ©rence",
+      "reference": "Référence",
       "feedback": "Retour",
-      "tableHeaders": {
-        "deliverable": "Livrable",
-        "status": "Statut",
-        "date": "Date"
-      },
       "review": "Examiner le Livrable",
       "depositDialog": {
-        "title": "DÃ©poser un Livrable",
-        "desc": "Soumettre une nouvelle spÃ©cification fonctionnelle ou un livrable de projet pour validation.",
+        "title": "Déposer un Livrable",
+        "desc": "Soumettre une nouvelle spécification fonctionnelle ou un livrable de projet pour validation.",
         "targetProject": "Projet Cible",
-        "projectPlaceholder": "SÃ©lectionner le projet associÃ©...",
+        "projectPlaceholder": "Sélectionner le projet associé...",
         "docType": "Type de Document",
         "docTitle": "Titre",
         "docTitlePlaceholder": "ex : Scope Def v1.2",
-        "fileRef": "Lien / RÃ©fÃ©rence du fichier (Optionnel)",
+        "fileRef": "Lien / Référence du fichier (Optionnel)",
         "fileRefPlaceholder": "https://sharepoint.com/...",
-        "fileUpload": "Fichier (Optionnel)",
-        "fileUploadCta": "Cliquer pour tÃ©lÃ©verser un fichier",
-        "fileUploadHint": "PDF, Word, Excel, images...",
         "submitting": "Soumission...",
         "submit": "Soumettre le Livrable"
       },
       "reviewDialog": {
         "title": "Examiner le Livrable",
-        "desc": "Valider la spÃ©cification et fournir des retours exploitables si des modifications sont nÃ©cessaires.",
+        "desc": "Valider la spécification et fournir des retours exploitables si des modifications sont nécessaires.",
         "name": "Nom",
         "type": "Type",
         "link": "Lien",
@@ -416,53 +360,37 @@
         "approve": "Approuver",
         "saving": "Enregistrement..."
       },
-      "editDialog": {
-        "title": "Modifier le Livrable",
-        "desc": "Mettre Ã  jour les informations du livrable et, si besoin, remplacer le fichier joint.",
-        "replaceFile": "Remplacer le fichier (Optionnel)",
-        "replaceFileCta": "Choisir un nouveau fichier",
-        "currentFile": "Fichier actuel",
-        "saving": "Enregistrement..."
-      },
-      "deleteDialog": {
-        "title": "Supprimer le Livrable",
-        "desc": "ÃŠtes-vous sÃ»r de vouloir supprimer Â« {{name}} Â» ? Cette action est irrÃ©versible.",
-        "deleting": "Suppression...",
-        "approvedBlocked": "Impossible de supprimer un livrable approuvÃ©"
-      },
       "toasts": {
-        "loadFailed": "Ã‰chec du chargement des livrables.",
-        "notAllowed": "Vous n'Ãªtes pas autorisÃ© Ã  examiner les livrables",
-        "updated": "Statut du livrable mis Ã  jour",
-        "updateFailed": "Ã‰chec de la mise Ã  jour du livrable",
-        "deleted": "Livrable supprimÃ©",
-        "deleteFailed": "Ã‰chec de la suppression du livrable",
+        "loadFailed": "Échec du chargement des livrables.",
+        "notAllowed": "Vous n'êtes pas autorisé à examiner les livrables",
+        "updated": "Statut du livrable mis à jour",
+        "updateFailed": "Échec de la mise à jour du livrable",
         "requiredFields": "Le projet, le nom et le type sont requis",
-        "submitted": "SpÃ©cification soumise avec succÃ¨s",
-        "submitFailed": "Ã‰chec de la soumission de la spÃ©cification"
+        "submitted": "Spécification soumise avec succès",
+        "submitFailed": "Échec de la soumission de la spécification"
       }
     }
   },
   "pm": {
     "dashboard": {
       "title": "Tableau de Bord Chef de Projet",
-      "subtitle": "Mission principale : valider les imputations de l'Ã©quipe et envoyer les pÃ©riodes validÃ©es Ã  Stratime",
+      "subtitle": "Mission principale : valider les imputations de l'équipe et envoyer les périodes validées à Stratime",
       "kpi": {
         "activeProjects": "Projets Actifs",
         "openTickets": "Tickets Ouverts",
         "inTest": "En Test",
-        "blocked": "BloquÃ©s"
+        "blocked": "Bloqués"
       },
       "stratime": {
         "title": "Pipeline de Validation Stratime",
         "openHub": "Ouvrir le Centre de Validation",
-        "submitted": "PÃ©riodes Soumises",
+        "submitted": "Périodes Soumises",
         "waiting": "En attente de validation par le chef de projet",
-        "ready": "PrÃªt pour Stratime",
-        "pendingDispatch": "PÃ©riodes validÃ©es en attente d'envoi"
+        "ready": "Prêt pour Stratime",
+        "pendingDispatch": "Périodes validées en attente d'envoi"
       },
       "recentTickets": {
-        "title": "Tickets RÃ©cents",
+        "title": "Tickets Récents",
         "viewAll": "Tout voir",
         "noTickets": "Aucun ticket pour le moment",
         "effort": "{{hours}}h d'effort"
@@ -475,10 +403,10 @@
       "validationPipeline": {
         "title": "Pipeline de Validation Stratime",
         "openHub": "Ouvrir le Centre de Validation",
-        "submittedPeriods": "PÃ©riodes Soumises",
+        "submittedPeriods": "Périodes Soumises",
         "waitingForValidation": "En attente de validation par le chef de projet",
-        "readyForStratime": "PrÃªt pour Stratime",
-        "readyDescription": "PÃ©riodes validÃ©es en attente d'envoi"
+        "readyForStratime": "Prêt pour Stratime",
+        "readyDescription": "Périodes validées en attente d'envoi"
       },
       "noTickets": "Aucun ticket pour le moment"
     }
@@ -486,17 +414,17 @@
   "coordinator": {
     "dashboard": {
       "title": "Tableau de Bord Coordinateur Dev",
-      "subtitle": "Dispatch des tickets, suivi de la charge de travail et disponibilitÃ© des consultants",
+      "subtitle": "Dispatch des tickets, suivi de la charge de travail et disponibilité des consultants",
       "kpi": {
-        "unassigned": "Tickets Non AffectÃ©s",
+        "unassigned": "Tickets Non Affectés",
         "inProgress": "En Cours",
-        "blocked": "BloquÃ©s",
+        "blocked": "Bloqués",
         "totalEffort": "Effort Total (h)"
       },
       "workload": {
         "title": "Charge de Travail des Consultants",
-        "subtitle": "Affectations des tickets, heures d'effort et disponibilitÃ© des consultants",
-        "details": "DÃ©tails",
+        "subtitle": "Affectations des tickets, heures d'effort et disponibilité des consultants",
+        "details": "Détails",
         "tickets": "{{count}} tickets",
         "ticketLoad": "Charge de Tickets",
         "effort": "{{hours}}h d'effort",
@@ -505,57 +433,57 @@
       "dispatch": {
         "title": "Tickets en Attente d'Affectation",
         "aiDispatch": "Affectation manuelle",
-        "allAssigned": "Tous les tickets sont affectÃ©s"
+        "allAssigned": "Tous les tickets sont affectés"
       },
       "recentTickets": {
-        "title": "Tickets RÃ©cents",
+        "title": "Tickets Récents",
         "viewAll": "Tout voir",
         "effort": "{{hours}}h d'effort"
       }
     },
     "dispatch": {
-      "title": "Affectation manuelle",
-      "subtitle": "SÃ©lectionnez un ticket non affectÃ© et choisissez l'assigne",
-      "step1": "1. SÃ©lectionner le Ticket",
-      "selectPlaceholder": "Choisir un ticket non affectÃ©...",
-      "noUnassigned": "Aucun ticket non affectÃ©",
-      "analyzing": "Analyse en cours...",
-      "suggest": "SuggÃ©rer des assignÃ©s",
-      "step2": "2. AssignÃ©s RecommandÃ©s (Top 5)",
+      "title": "Affectation Manuelle",
+      "subtitle": "Sélectionnez un ticket non affecté et choisissez le responsable",
+      "step1": "1. Sélectionner un Ticket",
+      "selectPlaceholder": "Choisir un ticket non affecté...",
+      "noUnassigned": "Aucun ticket non affecté",
+      "analyzing": "Analyse...",
+      "suggest": "Suggérer des Responsables",
+      "step2": "2. Responsables Recommandés (Top 5)",
       "assign": "Affecter",
       "factors": {
-        "availability": "DisponibilitÃ©",
-        "skillsMatch": "Match des compÃ©tences",
+        "availability": "Disponibilité",
+        "skillsMatch": "Correspondance des Compétences",
         "performance": "Performance",
-        "similarTickets": "Tickets similaires"
+        "similarTickets": "Tickets Similaires"
       },
       "algorithm": {
         "title": "Algorithme de Scoring",
-        "formula": "Score PondÃ©rÃ© = DisponibilitÃ© (30%) + Match des compÃ©tences (35%) + Performance (15%) + Tickets Similaires (20%)",
-        "availability": "DisponibilitÃ© : % de disponibilitÃ© de l'utilisateur moins une pÃ©nalitÃ© pour le nombre de tickets ouverts",
-        "skillsMatch": "Match des compÃ©tences : Correspondance floue entre les compÃ©tences de l'utilisateur et la nature/tags du ticket",
-        "performance": "Performance : Nombre de tickets rÃ©solus (plafonnÃ© Ã  100)",
-        "similarTickets": "Tickets similaires : Nombre de tickets passÃ©s de mÃªme nature rÃ©solus par cet utilisateur",
-        "engine": "Les recommandations sont gÃ©nÃ©rÃ©es par le moteur de scoring configurÃ©."
+        "formula": "Score Pondéré = Disponibilité (30%) + Correspondance Compétences (35%) + Performance (15%) + Tickets Similaires (20%)",
+        "availability": "Disponibilité : disponibilité (%) de l'utilisateur moins pénalité pour nombre de tickets ouverts",
+        "skillsMatch": "Correspondance des compétences : correspondance approximative entre les compétences de l'utilisateur et la nature/tags du ticket",
+        "performance": "Performance : nombre de tickets résolus (plafonné à 100)",
+        "similarTickets": "Tickets similaires : tickets passés de même nature résolus par cet utilisateur",
+        "engine": "Les recommandations sont calculées par le moteur de scoring configuré."
       },
       "toasts": {
-        "assigned": "Ticket affectÃ©",
-        "assignedDesc": "\"{{title}}\" affectÃ© Ã  {{name}} ({{role}})",
-        "assignFailed": "Ã‰chec de l'affectation du ticket"
+        "assigned": "Ticket affecté",
+        "assignedDesc": "\"{{title}}\" affecté à {{name}} ({{role}})",
+        "assignFailed": "Échec de l'affectation du ticket"
       }
     },
     "workload": {
-      "title": "AperÃ§u de la Charge de Travail",
-      "details": "DÃ©tails",
-      "subtitle": "Affectations des tickets, heures d'effort et disponibilitÃ© des consultants",
+      "title": "Aperçu de la Charge de Travail",
+      "details": "Détails",
+      "subtitle": "Affectations des tickets, heures d'effort et disponibilité des consultants",
       "available": "{{percent}}% disponible",
-      "counts": "{{active}} actifs / {{done}} terminÃ©s",
+      "counts": "{{active}} actifs / {{done}} terminés",
       "effort": "{{total}}h d'effort total ({{active}}h actifs)",
       "ticketLoad": "Charge de Tickets",
-      "noConsultants": "Aucun consultant trouvÃ©"
+      "noConsultants": "Aucun consultant trouvé"
     },
     "recentTickets": {
-      "title": "Tickets RÃ©cents",
+      "title": "Tickets Récents",
       "viewAll": "Tout voir",
       "effort": "{{hours}}h d'effort"
     }
@@ -563,14 +491,14 @@
   "admin": {
     "dashboard": {
       "title": "Centre d'administration",
-      "subtitle": "SantÃ© de la plateforme, gouvernance des utilisateurs et intÃ©gritÃ© des donnÃ©es",
+      "subtitle": "Santé de la plateforme, gouvernance des utilisateurs et intégrité des données",
       "breadcrumb": "Tableau de bord Admin",
       "kpi": {
         "totalUsers": "Utilisateurs totaux",
         "activeUsers": "Utilisateurs actifs",
         "projects": "Projets",
         "tickets": "Tickets",
-        "definitions": "DÃ©finitions KPI"
+        "definitions": "Définitions KPI"
       },
       "kpiReferences": {
         "totalUsers": {
@@ -604,158 +532,153 @@
         "source": "Source",
         "refresh": "Actualisation"
       },
+      "formulas": {
+        "totalUsers": "count(all users)",
+        "activeUsers": "count(users where active = true)",
+        "projects": "count(all projects)",
+        "tickets": "count(all tickets)"
+      },
+      "sources": {
+        "users": "Utilisateurs",
+        "projects": "Projets",
+        "tickets": "Tickets"
+      },
+      "refresh": {
+        "onLoad": "Au chargement du tableau de bord"
+      },
       "systemStatus": {
-        "title": "Ã‰tat du systÃ¨me",
+        "title": "État du système",
         "backendMode": "Mode backend",
         "liveApi": "API en direct",
-        "connected": "ConnectÃ© au service SAP CAP",
+        "connected": "Connecté au service SAP CAP",
         "odataEndpoint": "Point de terminaison OData",
-        "activitySnapshot": "AperÃ§u d'activitÃ©",
+        "activitySnapshot": "Aperçu d'activité",
         "userRecords": "Enregistrements utilisateurs",
-        "projectEntities": "EntitÃ©s projet",
-        "auditEvents": "Ã‰vÃ©nements d'audit"
+        "projectEntities": "Entités projet",
+        "auditEvents": "Événements d'audit"
       },
+      "auditLog": "Journal d'audit",
       "auditTable": {
         "timestamp": "Horodatage",
         "user": "Utilisateur",
-        "event": "Ã‰vÃ©nement",
+        "event": "Événement",
         "message": "Message",
         "status": "Statut",
-        "empty": "Aucune entrÃ©e d'audit disponible.",
-        "entities": {
-          "Users": "Utilisateur",
-          "Projects": "Projet",
-          "Tickets": "Ticket",
-          "Notifications": "Notification",
-          "TimeLogs": "Journal horaire",
-          "Timesheets": "Feuille de temps",
-          "Evaluations": "Ã‰valuation",
-          "LeaveRequests": "Demande de congÃ©",
-          "Allocations": "Allocation",
-          "Deliverables": "Livrable",
-          "Documentation": "Documentation",
-          "Comments": "Commentaire",
-          "AuditLogs": "Journal d'audit"
-        },
-        "actions": {
-          "CREATE": "CrÃ©Ã©",
-          "UPDATE": "Mis Ã  jour",
-          "DELETE": "SupprimÃ©"
-        }
+        "empty": "Aucune entrée d'audit disponible."
       },
       "auditStatus": {
         "read": "Lu",
         "unread": "Non lu"
       },
       "errors": {
-        "loadFailed": "Ã‰chec du chargement des donnÃ©es du tableau de bord. Veuillez rafraÃ®chir la page."
+        "loadFailed": "Échec du chargement des données du tableau de bord. Veuillez rafraîchir la page."
       }
     },
     "users": {
       "title": "Gestion des Utilisateurs",
-      "subtitle": "GÃ©rer les comptes utilisateurs, les rÃ´les et les permissions",
+      "subtitle": "Gérer les comptes utilisateurs, les rôles et les permissions",
       "newUser": "Nouvel Utilisateur",
       "searchPlaceholder": "Rechercher par nom ou e-mail...",
-      "role": "RÃ´le",
-      "allRoles": "Tous les RÃ´les",
+      "role": "Rôle",
+      "allRoles": "Tous les Rôles",
       "table": {
         "user": "Utilisateur",
-        "role": "RÃ´le",
-        "skills": "CompÃ©tences",
-        "availability": "DisponibilitÃ©",
+        "role": "Rôle",
+        "skills": "Compétences",
+        "availability": "Disponibilité",
         "status": "Statut",
         "actions": "Actions",
         "rate": "Taux",
         "active": "Actif",
         "inactive": "Inactif",
         "loading": "Chargement des utilisateurs...",
-        "empty": "Aucun utilisateur ne correspond Ã  vos filtres."
+        "empty": "Aucun utilisateur ne correspond à vos filtres."
       },
       "dialog": {
-        "createTitle": "CrÃ©er un Utilisateur",
+        "createTitle": "Créer un Utilisateur",
         "editTitle": "Modifier l'Utilisateur",
-        "desc": "GÃ©rer le profil du compte, l'affectation des rÃ´les et les attributs de dotation.",
+        "desc": "Gérer le profil du compte, l'affectation des rôles et les attributs de dotation.",
         "name": "Nom",
         "email": "E-mail",
-        "role": "RÃ´le",
-        "selectRole": "SÃ©lectionner un rÃ´le",
-        "availability": "DisponibilitÃ© %",
-        "skills": "CompÃ©tences (sÃ©parÃ©es par des virgules)",
-        "certifications": "Certifications (sÃ©parÃ©es par des virgules)",
+        "role": "Rôle",
+        "selectRole": "Sélectionner un rôle",
+        "availability": "Disponibilité %",
+        "skills": "Compétences (séparées par des virgules)",
+        "certifications": "Certifications (séparées par des virgules)",
         "active": "Compte actif",
         "saving": "Enregistrement..."
       },
       "deleteDialog": {
         "title": "Supprimer l'utilisateur",
-        "desc": "Cela supprimera dÃ©finitivement \"{{name}}\" du jeu de donnÃ©es actuel.",
-        "fallback": "Cette action est irrÃ©versible."
+        "desc": "Cela supprimera définitivement \"{{name}}\" du jeu de données actuel.",
+        "fallback": "Cette action est irréversible."
       },
       "toasts": {
-        "activated": "Utilisateur activÃ©",
-        "deactivated": "Utilisateur dÃ©sactivÃ©",
-        "updateStatusFailed": "Ã‰chec de la mise Ã  jour du statut de l'utilisateur",
+        "activated": "Utilisateur activé",
+        "deactivated": "Utilisateur désactivé",
+        "updateStatusFailed": "Échec de la mise à jour du statut de l'utilisateur",
         "requiredFields": "Le nom et l'e-mail sont requis",
         "invalidEmail": "Veuillez entrer une adresse e-mail valide",
-        "invalidAvailability": "La disponibilitÃ© doit Ãªtre comprise entre 0 et 100",
-        "updated": "Utilisateur mis Ã  jour",
-        "created": "Utilisateur crÃ©Ã©",
-        "saveFailed": "Ã‰chec de l'enregistrement de l'utilisateur",
-        "deleteSelf": "Vous ne pouvez pas supprimer l'utilisateur actuellement connectÃ©",
-        "deleted": "Utilisateur supprimÃ©",
-        "deleteFailed": "Ã‰chec de la suppression de l'utilisateur"
+        "invalidAvailability": "La disponibilité doit être comprise entre 0 et 100",
+        "updated": "Utilisateur mis à jour",
+        "created": "Utilisateur créé",
+        "saveFailed": "Échec de l'enregistrement de l'utilisateur",
+        "deleteSelf": "Vous ne pouvez pas supprimer l'utilisateur actuellement connecté",
+        "deleted": "Utilisateur supprimé",
+        "deleteFailed": "Échec de la suppression de l'utilisateur"
       }
     },
     "referenceData": {
-      "title": "Gestion des DonnÃ©es de RÃ©fÃ©rence",
-      "subtitle": "GÃ©rer les valeurs de recherche et codes systÃ¨me",
-      "pageSubtitle": "GÃ©rer les statuts de ticket, prioritÃ©s, types de projet et compÃ©tences",
-      "breadcrumb": "DonnÃ©es de RÃ©fÃ©rence",
-      "search": "Rechercher par code ou libellÃ©...",
-      "add": "Ajouter une DonnÃ©e de RÃ©fÃ©rence",
+      "title": "Gestion des Données de Référence",
+      "subtitle": "Gérer les valeurs de recherche et codes système",
+      "pageSubtitle": "Gérer les statuts de ticket, priorités, types de projet et compétences",
+      "breadcrumb": "Données de Référence",
+      "search": "Rechercher par code ou libellé...",
+      "add": "Ajouter une Donnée de Référence",
       "code": "Code *",
-      "label": "LibellÃ© *",
+      "label": "Libellé *",
       "type": "Type",
       "active": "Actif",
       "order": "Ordre",
       "cancel": "Annuler",
       "save": "Enregistrer",
-      "delete": "Supprimer la donnÃ©e de rÃ©fÃ©rence",
+      "delete": "Supprimer la donnée de référence",
       "deleteItem": "Supprimer {{label}}",
       "edit": "Modifier {{label}}",
-      "deleteConfirm": "Supprimer la donnÃ©e de rÃ©fÃ©rence",
-      "deleteDesc": "Cette action ne peut pas Ãªtre annulÃ©e.",
-      "deleteDescWithCode": "Supprimer \"{{label}}\" ({{code}}) des donnÃ©es de rÃ©fÃ©rence ?",
+      "deleteConfirm": "Supprimer la donnée de référence",
+      "deleteDesc": "Cette action ne peut pas être annulée.",
+      "deleteDescWithCode": "Supprimer \"{{label}}\" ({{code}}) des données de référence ?",
       "yes": "Supprimer",
       "form": {
-        "createTitle": "CrÃ©er une DonnÃ©e de RÃ©fÃ©rence",
-        "editTitle": "Modifier une DonnÃ©e de RÃ©fÃ©rence",
-        "typePlaceholder": "SÃ©lectionner un type",
+        "createTitle": "Créer une Donnée de Référence",
+        "editTitle": "Modifier une Donnée de Référence",
+        "typePlaceholder": "Sélectionner un type",
         "codePlaceholder": "EX : IN_PROGRESS",
         "labelPlaceholder": "Ex : En cours",
         "saving": "Enregistrement...",
-        "update": "Mettre Ã  jour",
-        "create": "CrÃ©er"
+        "update": "Mettre à jour",
+        "create": "Créer"
       },
       "types": {
         "ticketStatus": "Statut du Ticket",
-        "priority": "PrioritÃ©",
+        "priority": "Priorité",
         "projectType": "Type de Projet",
-        "skill": "CompÃ©tence"
+        "skill": "Compétence"
       },
       "filters": {
-        "searchLabel": "Rechercher dans les donnÃ©es de rÃ©fÃ©rence",
+        "searchLabel": "Rechercher dans les données de référence",
         "typeLabel": "Filtrer par type",
         "allTypes": "Tous les Types"
       },
       "table": {
         "type": "Type",
         "code": "Code",
-        "label": "LibellÃ©",
+        "label": "Libellé",
         "order": "Ordre",
         "status": "Statut",
         "actions": "Actions",
-        "loading": "Chargement des donnÃ©es de rÃ©fÃ©rence...",
-        "empty": "Aucune entrÃ©e de rÃ©fÃ©rence trouvÃ©e",
+        "loading": "Chargement des données de référence...",
+        "empty": "Aucune entrée de référence trouvée",
         "toggleActive": "Basculer le statut actif pour {{label}}"
       },
       "status": {
@@ -763,47 +686,47 @@
         "inactive": "Inactif"
       },
       "toasts": {
-        "addSuccess": "DonnÃ©e de rÃ©fÃ©rence ajoutÃ©e",
-        "addFailed": "Ã‰chec de l'ajout de la donnÃ©e",
-        "updateSuccess": "DonnÃ©e de rÃ©fÃ©rence mise Ã  jour",
-        "updateFailed": "Ã‰chec de la mise Ã  jour",
-        "deleteSuccess": "DonnÃ©e de rÃ©fÃ©rence supprimÃ©e",
-        "deleteFailed": "Ã‰chec de la suppression",
-        "createSuccess": "DonnÃ©e de rÃ©fÃ©rence crÃ©Ã©e",
-        "saveFailed": "Ã‰chec de l'enregistrement de la donnÃ©e de rÃ©fÃ©rence",
-        "statusUpdateFailed": "Ã‰chec de la mise Ã  jour du statut",
-        "orderMin": "L'ordre doit Ãªtre au moins Ã©gal Ã  1",
-        "duplicateCode": "Une donnÃ©e de rÃ©fÃ©rence avec ce type et ce code existe dÃ©jÃ "
+        "addSuccess": "Donnée de référence ajoutée",
+        "addFailed": "Échec de l'ajout de la donnée",
+        "updateSuccess": "Donnée de référence mise à jour",
+        "updateFailed": "Échec de la mise à jour",
+        "deleteSuccess": "Donnée de référence supprimée",
+        "deleteFailed": "Échec de la suppression",
+        "createSuccess": "Donnée de référence créée",
+        "saveFailed": "Échec de l'enregistrement de la donnée de référence",
+        "statusUpdateFailed": "Échec de la mise à jour du statut",
+        "orderMin": "L'ordre doit être au moins égal à 1",
+        "duplicateCode": "Une donnée de référence avec ce type et ce code existe déjà"
       }
     }
   },
   "profile": {
     "title": "Mon Profil",
-    "subtitle": "GÃ©rez vos informations personnelles, vos compÃ©tences et votre disponibilitÃ©",
+    "subtitle": "Gérez vos informations personnelles, vos compétences et votre disponibilité",
     "editProfile": "Modifier le profil",
-    "editProfileDesc": "Les modifications sont enregistrÃ©es via l'API backend configurÃ©e.",
+    "editProfileDesc": "Les modifications sont enregistrées via l'API backend configurée.",
     "fullName": "Nom Complet",
     "email": "E-mail",
-    "skills": "CompÃ©tences (sÃ©parÃ©es par des virgules)",
+    "skills": "Compétences (séparées par des virgules)",
     "skillsPlaceholder": "SAP CAP, Fiori, ABAP",
-    "certifications": "Certifications (sÃ©parÃ©es par des virgules)",
-    "certificationsPlaceholder": "DÃ©veloppeur SAP, Architecte AWS",
-    "availability": "DisponibilitÃ©",
+    "certifications": "Certifications (séparées par des virgules)",
+    "certificationsPlaceholder": "Développeur SAP, Architecte AWS",
+    "availability": "Disponibilité",
     "saving": "Enregistrement...",
     "saveProfile": "Enregistrer le Profil",
-    "updated": "Profil mis Ã  jour",
-    "updateFailed": "Ã‰chec de la mise Ã  jour du profil"
+    "updated": "Profil mis à jour",
+    "updateFailed": "Échec de la mise à jour du profil"
   },
   "login": {
     "welcomeBack": "Bon retour",
-    "sessionStarted": "Session dÃ©marrÃ©e avec succÃ¨s.",
-    "authFailed": "Ã‰chec de l'authentification",
-    "authFailedDesc": "Veuillez vÃ©rifier vos identifiants et rÃ©essayer.",
+    "sessionStarted": "Session démarrée avec succès.",
+    "authFailed": "Échec de l'authentification",
+    "authFailedDesc": "Veuillez vérifier vos identifiants et réessayer.",
     "platformName": "Gestion de Performance SAP",
     "hubTitle": "Hub de Performance",
     "signInToContinue": "Connectez-vous pour continuer.",
-    "secureWorkspace": "Espace de travail sÃ©curisÃ© basÃ© sur les rÃ´les.",
-    "accountAccess": "AccÃ¨s au Compte",
+    "secureWorkspace": "Espace de travail sécurisé basé sur les rôles.",
+    "accountAccess": "Accès au Compte",
     "signIn": "Se connecter",
     "useWorkAccount": "Utilisez votre compte professionnel.",
     "email": "E-mail",
@@ -812,9 +735,23 @@
     "passwordPlaceholder": "Entrez votre mot de passe",
     "signingIn": "Connexion...",
     "enterPlatform": "Entrer sur la Plateforme",
-    "sapLoginRequired": "L'authentification est geree par SAP XSUAA. Continuez avec votre collection de roles SAP.",
-    "continueWithSap": "Continuer avec SAP",
-    "missingRoleCollection": "Aucune collection de roles Ticket-CAP valide n'a ete trouvee pour cet utilisateur SAP."
+    "quickAccess": "Accès Rapide",
+    "noActiveUsers": "Aucun utilisateur actif disponible pour l'accès rapide.",
+    "selectedRole": "{{role}} sélectionné. Entrez votre mot de passe pour continuer.",
+    "signingInAs": "Connexion en tant que {{role}}...",
+    "bypassValidation": "Contourner la Validation (Direct)",
+    "directLoginSuccess": "Connexion directe en tant que {{role}}"
+  },
+  "assignment": {
+    "manual": "Affectation Manuelle",
+    "manualAssign": "Affectation Manuelle",
+    "selectPlaceholder": "Sélectionner un consultant...",
+    "analyzing": "Analyse...",
+    "noRecommendations": "Aucune recommandation trouvée.",
+    "availability": "Disponibilité",
+    "skills": "Correspondance des Compétences",
+    "performance": "Performance",
+    "similar": "Tickets Similaires"
   },
   "roles": {
     "ADMIN": "Administrateur",
@@ -826,7 +763,7 @@
   },
   "documentation": {
     "title": "Objets de Documentation",
-    "subtitle": "Documentation projet centralisÃ©e, SFD, guides et notes d'architecture",
+    "subtitle": "Documentation projet centralisée, SFD, guides et notes d'architecture",
     "home": "Accueil",
     "objects": "Objets",
     "newObject": "Nouvel Objet",
@@ -835,125 +772,144 @@
     "allTypes": "Tous les types",
     "kbObjects": "Objets de la Base de Connaissances",
     "loading": "Chargement des objets...",
-    "noObjects": "Aucun objet trouvÃ© pour les filtres actuels.",
+    "noObjects": "Aucun objet trouvé pour les filtres actuels.",
     "manual": "Manuel",
     "open": "Ouvrir",
-    "createTitle": "CrÃ©er un Objet de Documentation",
-    "editTitle": "Modifier l'Objet de Documentation",
+    "createTitle": "Créer un Objet de Documentation",
     "titleLabel": "Titre *",
     "titlePlaceholder": "Titre de l'objet de documentation",
     "typeLabel": "Type",
     "projectLabel": "Projet *",
-    "selectProject": "SÃ©lectionner le projet",
-    "overviewLabel": "AperÃ§u",
-    "overviewPlaceholder": "RÃ©sumÃ© de haut niveau de cet objet",
+    "selectProject": "Sélectionner le projet",
+    "overviewLabel": "Aperçu",
+    "overviewPlaceholder": "Résumé de haut niveau de cet objet",
     "contentLabel": "Contenu *",
-    "contentPlaceholder": "RÃ©digez le contenu (Markdown supportÃ©) pour cet objet",
+    "contentPlaceholder": "Rédigez le contenu (Markdown supporté) pour cet objet",
     "attachedFilesLabel": "Fichiers Joints",
-    "relatedTicketsLabel": "Tickets LiÃ©s",
-    "selectProjectFirst": "SÃ©lectionnez d'abord un projet pour lier des tickets.",
-    "noTicketsFound": "Aucun ticket trouvÃ© pour ce projet.",
+    "relatedTicketsLabel": "Tickets Liés",
+    "selectProjectFirst": "Sélectionnez d'abord un projet pour lier des tickets.",
+    "noTicketsFound": "Aucun ticket trouvé pour ce projet.",
     "cancel": "Annuler",
-    "creating": "CrÃ©ation...",
-    "saving": "Enregistrement...",
-    "createObject": "CrÃ©er l'Objet",
+    "creating": "Création...",
+    "createObject": "Créer l'Objet",
     "defaultTitle": "Objet de documentation",
-    "deleteConfirm": {
-      "title": "Supprimer l'objet de documentation ?",
-      "description": "ÃŠtes-vous sÃ»r de vouloir supprimer Â« {{title}} Â» ? Cette action est irrÃ©versible."
-    },
     "source": {
       "wricef": "WRICEF"
     },
     "types": {
       "SFD": "SFD",
-      "GUIDE": "Guide",
+      "GUIDE": "Guide Utilisateur",
       "ARCHITECTURE_DOC": "Doc Architecture",
-      "GENERAL": "GÃ©nÃ©ral"
+      "GENERAL": "Général"
     },
     "table": {
       "title": "Titre",
       "type": "Type",
       "source": "Source",
       "project": "Projet",
-      "linkedTickets": "Tickets LiÃ©s",
+      "linkedTickets": "Tickets Liés",
       "files": "Fichiers",
       "view": "Voir",
       "by": "Par {{author}}",
       "attachments": "{{count}} fichier(s)",
-      "relatedTickets": "Tickets LiÃ©s",
+      "relatedTickets": "Tickets Liés",
       "author": "Auteur",
-      "updated": "Mis Ã  jour",
+      "updated": "Mis à jour",
       "action": "Action",
       "emptyTitle": "Aucun objet de documentation",
-      "emptyDesc": "CrÃ©ez un objet de documentation pour rendre la documentation du projet disponible ici."
+      "emptyDesc": "Créez un objet de documentation pour rendre la documentation du projet disponible ici."
     },
     "errors": {
-      "loadFailed": "Ã‰chec du chargement des objets de documentation.",
-      "filesSkipped": "{{count}} fichier(s) ignorÃ©(s). La taille max est de {{size}} par fichier.",
-      "attachFailed": "Ã‰chec de l'attachement d'un ou plusieurs fichiers",
+      "loadFailed": "Échec du chargement des objets de documentation.",
+      "filesSkipped": "{{count}} fichier(s) ignoré(s). La taille max est de {{size}} par fichier.",
+      "attachFailed": "Échec de l'attachement d'un ou plusieurs fichiers",
       "titleRequired": "Le titre est requis",
       "projectRequired": "Le projet est requis",
       "contentRequired": "Le contenu est requis",
-      "createFailed": "Ã‰chec de la crÃ©ation de l'objet",
-      "updateFailed": "Ã‰chec de la mise Ã  jour de l'objet",
-      "deleteFailed": "Ã‰chec de la suppression de l'objet",
-      "fileUnavailable": "Fichier indisponible"
+      "createFailed": "Échec de la création de l'objet"
     },
     "success": {
-      "created": "Objet crÃ©Ã©",
-      "updated": "Objet mis Ã  jour",
-      "deleted": "Objet supprimÃ©"
+      "created": "Objet créé"
     },
     "section": {
-      "title": "Documentation AssociÃ©e",
+      "title": "Documentation Associée",
       "attachExisting": "Joindre une Documentation Existante",
-      "createNew": "CrÃ©er une Nouvelle Documentation",
+      "createNew": "Créer une Nouvelle Documentation",
       "loading": "Chargement de la documentation...",
-      "noLinked": "Aucune documentation n'est liÃ©e Ã  ce ticket pour l'instant.",
+      "noLinked": "Aucune documentation n'est liée à ce ticket pour l'instant.",
       "attachDialog": "Joindre une Documentation Existante",
       "selectLabel": "Objet de Documentation",
-      "selectPlaceholder": "SÃ©lectionner la documentation Ã  joindre",
+      "selectPlaceholder": "Sélectionner la documentation à joindre",
       "cancel": "Annuler",
       "attach": "Joindre",
       "attaching": "Jointure en cours...",
       "open": "Ouvrir",
       "noAttachable": "Aucune documentation joignable pour ce projet",
-      "loadFailed": "Ã‰chec du chargement de la documentation"
+      "loadFailed": "Échec du chargement de la documentation"
     },
     "create": {
-      "title": "CrÃ©er un Objet de Documentation",
+      "title": "Créer un Objet de Documentation",
       "titleLabel": "Titre *",
       "typeLabel": "Type",
-      "overviewLabel": "AperÃ§u",
-      "overviewPlaceholder": "Vue d'ensemble gÃ©nÃ©rale de cet objet de documentation",
+      "overviewLabel": "Aperçu",
+      "overviewPlaceholder": "Vue d'ensemble générale de cet objet de documentation",
       "contentLabel": "Contenu *",
-      "contentPlaceholder": "Ã‰crire du contenu markdown ou texte enrichi...",
+      "contentPlaceholder": "Écrire du contenu markdown ou texte enrichi...",
       "attachFilesLabel": "Joindre des Fichiers",
-      "ticketLabel": "Ticket:",
-      "projectLabel": "Projet:",
-      "initNote": "Cette documentation sera initialisÃ©e et liÃ©e au ticket courant.",
-      "defaultDescription": "Documentation dÃ©taillÃ©e crÃ©Ã©e Ã  partir du ticket {{code}}.",
+      "ticketLabel": "Ticket :",
+      "projectLabel": "Projet :",
+      "initNote": "Cette documentation sera initialisée et liée au ticket courant.",
+      "defaultDescription": "Documentation détaillée créée à partir du ticket {{code}}.",
       "cancel": "Annuler",
-      "create": "CrÃ©er",
-      "creating": "CrÃ©ation en cours...",
+      "create": "Créer",
+      "creating": "Création en cours...",
       "toasts": {
-        "createSuccess": "Documentation crÃ©Ã©e",
-        "createFailed": "Ã‰chec de la crÃ©ation de la documentation",
+        "createSuccess": "Documentation créée",
+        "createFailed": "Échec de la création de la documentation",
         "missingAuthor": "Auteur manquant"
       }
+    },
+    "details": {
+      "title": "Détails de la Documentation",
+      "subtitle": "Consulter le contenu et les métadonnées de l'objet de documentation",
+      "back": "Retour",
+      "loading": "Chargement de la documentation...",
+      "notFound": "Documentation introuvable",
+      "notFoundDesc": "L'objet de documentation demandé est introuvable ou vous n'avez pas les droits pour le consulter.",
+      "ticket": "ticket",
+      "tickets": "tickets",
+      "file": "fichier",
+      "files": "fichiers",
+      "metadata": "Métadonnées",
+      "author": "Auteur",
+      "created": "Créé le",
+      "updated": "Mis à jour le",
+      "project": "Projet",
+      "attachedFiles": "Fichiers Joints",
+      "noFiles": "Aucun fichier joint",
+      "download": "Télécharger",
+      "unavailable": "Indisponible",
+      "linkedTickets": "Tickets Liés",
+      "table": {
+        "code": "Code",
+        "title": "Titre",
+        "status": "Statut",
+        "priority": "Priorité",
+        "project": "Projet"
+      },
+      "noLinkedTickets": "Aucun ticket n'est lié à cet objet de documentation."
     }
   },
   "tickets": {
     "status": {
       "PENDING_APPROVAL": "En attente d'approbation",
-      "APPROVED": "ApprouvÃ©",
+      "APPROVED": "Approuvé",
       "NEW": "Nouveau",
       "IN_PROGRESS": "En cours",
       "IN_TEST": "En test",
-      "BLOCKED": "BloquÃ©",
-      "DONE": "TerminÃ©",
-      "REJECTED": "RejetÃ©"
+      "BLOCKED": "Bloqué",
+      "DONE": "Terminé",
+      "REJECTED": "Rejeté"
     },
     "priority": {
       "LOW": "Basse",
@@ -963,56 +919,56 @@
     },
     "details": {
       "events": {
-        "created": "CrÃ©Ã©",
-        "changedStatus": "Statut changÃ© de {{from}} Ã  {{to}}",
-        "assigned": "AssignÃ© Ã  {{user}}",
-        "updatedEffort": "Effort mis Ã  jour de {{from}}h Ã  {{to}}h",
-        "changedPriority": "PrioritÃ© changÃ©e de {{from}} Ã  {{to}}",
-        "sentToTest": "EnvoyÃ© en test",
+        "created": "Créé",
+        "changedStatus": "Statut changé de {{from}} à {{to}}",
+        "assigned": "Assigné à {{user}}",
+        "updatedEffort": "Effort mis à jour de {{from}}h à {{to}}h",
+        "changedPriority": "Priorité changée de {{from}} à {{to}}",
+        "sentToTest": "Envoyé en test",
         "commented": "Commentaire : {{comment}}",
-        "addedComment": "Commentaire ajoutÃ©"
+        "addedComment": "Commentaire ajouté"
       },
-      "notFound": "Ticket non trouvÃ©",
-      "noAccess": "AccÃ¨s refusÃ© Ã  ce ticket",
-      "loading": "Chargement des dÃ©tails du ticket...",
-      "title": "DÃ©tails du Ticket",
+      "notFound": "Ticket non trouvé",
+      "noAccess": "Accès refusé à ce ticket",
+      "loading": "Chargement des détails du ticket...",
+      "title": "Détails du Ticket",
       "unableToLoad": "Impossible de charger le ticket",
-      "couldNotBeLoaded": "Le ticket demandÃ© n'a pas pu Ãªtre chargÃ©.",
+      "couldNotBeLoaded": "Le ticket demandé n'a pas pu être chargé.",
       "backToTickets": "Retour aux Tickets",
-      "detailedView": "Vue DÃ©taillÃ©e",
+      "detailedView": "Vue Détaillée",
       "project": "Projet",
       "wricef": "WRICEF",
       "ticketId": "ID du Ticket",
-      "createdBy": "CrÃ©Ã© par",
-      "assignedTo": "AssignÃ© Ã ",
-      "assignedRole": "RÃ´le assignÃ©",
-      "assignedBy": "AssignÃ© par",
+      "createdBy": "Créé par",
+      "assignedTo": "Assigné à",
+      "assignedRole": "Rôle assigné",
+      "assignedBy": "Assigné par",
       "estimation": "Estimation",
-      "effort": "Effort RÃ©el",
-      "dueDate": "Ã‰chÃ©ance",
-      "createdAt": "CrÃ©Ã© le",
-      "updatedAt": "Mis Ã  jour le",
-      "estimatedViaAbaque": "EstimÃ© via Abaque",
+      "effort": "Effort Réel",
+      "dueDate": "Échéance",
+      "createdAt": "Créé le",
+      "updatedAt": "Mis à jour le",
+      "estimatedViaAbaque": "Estimé via Abaque",
       "yes": "Oui",
       "no": "Non",
       "effortNote": "Note d'effort",
-      "estVsActual": "Est. vs RÃ©el",
-      "history": "Historique / Ã‰vÃ©nements",
-      "noHistory": "Aucun Ã©vÃ©nement enregistrÃ© pour ce ticket."
+      "estVsActual": "Est. vs Réel",
+      "history": "Historique / Événements",
+      "noHistory": "Aucun événement enregistré pour ce ticket."
     },
     "list": {
       "title": "Gestion des tickets",
-      "subtitle": "Afficher, crÃ©er et gÃ©rer tous les tickets des projets",
+      "subtitle": "Afficher, créer et gérer tous les tickets des projets",
       "filters": {
         "searchPlaceholder": "Rechercher tickets, WRICEF, code...",
         "status": "Statut",
         "allStatuses": "Tous les Statuts",
         "module": "Module",
         "allModules": "Tous les Modules",
-        "complexity": "ComplexitÃ©",
-        "allComplexity": "Toutes les ComplexitÃ©s",
-        "assigned": "AssignÃ©",
-        "allAssigned": "Tous les AssignÃ©s",
+        "complexity": "Complexité",
+        "allComplexity": "Toutes les Complexités",
+        "assigned": "Assigné",
+        "allAssigned": "Tous les Assignés",
         "more": "Plus",
         "hide": "Masquer",
         "newTicket": "Nouveau Ticket"
@@ -1022,96 +978,97 @@
         "title": "Titre",
         "wricef": "WRICEF",
         "module": "Module",
-        "complexity": "ComplexitÃ©",
+        "complexity": "Complexité",
         "nature": "Nature",
         "project": "Projet",
         "status": "Statut",
-        "priority": "PrioritÃ©",
+        "priority": "Priorité",
         "estimation": "Est.",
-        "actual": "RÃ©el",
-        "due": "Ã‰chÃ©ance",
-        "assigned": "AssignÃ©",
+        "actual": "Réel",
+        "due": "Échéance",
+        "assigned": "Assigné",
         "indicators": "Indicateurs",
         "actions": "Actions"
       },
       "empty": {
-        "title": "Aucun ticket trouvÃ©",
-        "description": "Aucun ticket ne correspond Ã  vos filtres actuels. Essayez d'ajuster votre recherche ou de crÃ©er un nouveau ticket.",
-        "createTicket": "CrÃ©er un Ticket"
+        "title": "Aucun ticket trouvé",
+        "description": "Aucun ticket ne correspond à vos filtres actuels. Essayez d'ajuster votre recherche ou de créer un nouveau ticket.",
+        "createTicket": "Créer un Ticket"
       }
     },
     "create": {
-      "title": "CrÃ©er un Ticket",
+      "title": "Créer un Ticket",
       "project": "Projet *",
-      "selectProject": "SÃ©lectionner un projet",
-      "assignTo": "Assigner Ã ",
-      "unassigned": "Non assignÃ©",
+      "selectProject": "Sélectionner un projet",
+      "assignTo": "Assigner à",
+      "unassigned": "Non assigné",
       "ticketTitle": "Titre *",
       "wricefId": "ID WRICEF",
       "existingObject": "Objet Existant",
-      "selectExisting": "SÃ©lectionner un objet existant",
+      "selectExisting": "Sélectionner un objet existant",
       "manualEntry": "Saisie Manuelle",
-      "selectImported": "SÃ©lectionner un objet importÃ©",
-      "noObjects": "Aucun objet importÃ© pour ce projet.",
+      "selectImported": "Sélectionner un objet importé",
+      "noObjects": "Aucun objet importé pour ce projet.",
       "module": "Module *",
       "nature": "Nature *",
-      "complexity": "ComplexitÃ© *",
+      "complexity": "Complexité *",
       "estimation": "Estimation (heures)",
       "useAbaque": "Utiliser l'Abaque",
-      "abaqueSuggest": "L'abaque suggÃ¨re {{hours}}h pour la nature et complexitÃ© sÃ©lectionnÃ©es.",
-      "abaqueApplied": "Abaque appliquÃ©",
-      "priority": "PrioritÃ©",
-      "dueDate": "Ã‰chÃ©ance",
+      "abaqueSuggest": "L'abaque suggère {{hours}}h pour la nature et complexité sélectionnées.",
+      "abaqueApplied": "Abaque appliqué",
+      "priority": "Priorité",
+      "dueDate": "Échéance",
       "description": "Description",
-      "submit": "CrÃ©er le Ticket",
-      "submitting": "CrÃ©ation..."
+      "submit": "Créer le Ticket",
+      "submitting": "Création..."
     }
   },
   "pendingApprovals": {
     "title": "Approbations en Attente",
     "subtitle": "{{count}} ticket(s) en attente de votre examen et affectation",
     "breadcrumbHome": "Accueil",
-    "allCaughtUp": "Tout est Ã  jour !",
+    "allCaughtUp": "Tout est à jour !",
     "noPending": "Aucun ticket en attente d'approbation pour le moment.",
     "ticketsWithCount": "Tickets ({{count}})",
-    "selectToReview": "SÃ©lectionnez un ticket dans la liste pour l'examiner",
-    "unassigned": "Non affectÃ©",
+    "selectToReview": "Sélectionnez un ticket dans la liste pour l'examiner",
+    "unassigned": "Non affecté",
     "project": "Projet",
     "module": "Module",
     "nature": "Nature",
-    "complexity": "ComplexitÃ©",
+    "complexity": "Complexité",
     "estimation": "Estimation",
     "abaque": "(abaque)",
-    "dueDate": "Ã‰chÃ©ance",
-    "createdBy": "CrÃ©Ã© par",
-    "createdAt": "CrÃ©Ã© le",
+    "dueDate": "Échéance",
+    "createdBy": "Créé par",
+    "createdAt": "Créé le",
     "wricefId": "ID WRICEF",
     "assignConsultant": "Assigner un Consultant Technique",
-    "assignConsultantDesc": "Choisissez un consultant manuellement ou choisissez le consultant selon les compÃ©tences, la disponibilitÃ© et la charge actuelle.",
-    "allocatedHoursBudget": "Budget d'heures allouÃ©es",
-    "estimatedHours": "EstimÃ© : {{hours}}h",
+    "assignConsultantDesc": "Choisissez un consultant manuellement selon les compétences, la disponibilité et la charge actuelle.",
+    "allocatedHoursBudget": "Budget d'heures allouées",
+    "hoursPlaceholder": "ex. 8",
+    "estimatedHours": "Estimé : {{hours}}h",
     "approving": "Approbation...",
     "approveAssign": "Approuver & Assigner",
     "reject": "Rejeter",
     "rejectTicket": "Rejeter le Ticket",
     "rejectTicketDesc": "Fournissez un motif pour le rejet de \"{{name}}\".",
     "reasonLabel": "Motif",
-    "reasonPlaceholder": "Expliquez pourquoi ce ticket est rejetÃ©...",
+    "reasonPlaceholder": "Expliquez pourquoi ce ticket est rejeté...",
     "cancel": "Annuler",
     "rejecting": "Rejet en cours...",
     "activeTickets_one": "{{count}} ticket actif",
     "activeTickets_other": "{{count}} tickets actifs",
     "currentWorkload": "Charge de travail actuelle",
     "toasts": {
-      "loadFailed": "Ã‰chec du chargement des donnÃ©es",
-      "selectConsultant": "Veuillez sÃ©lectionner un consultant technique avant d'approuver",
-      "invalidHours": "Les heures allouÃ©es doivent Ãªtre supÃ©rieures Ã  0",
-      "approved": "Ticket approuvÃ© et assignÃ©",
-      "approvedDesc": "\"{{title}}\" â†’ {{name}} ({{hours}}h)",
-      "approveFailed": "Ã‰chec de l'approbation du ticket",
+      "loadFailed": "Échec du chargement des données",
+      "selectConsultant": "Veuillez sélectionner un consultant technique avant d'approuver",
+      "invalidHours": "Les heures allouées doivent être supérieures à 0",
+      "approved": "Ticket approuvé et assigné",
+      "approvedDesc": "\"{{title}}\" → {{name}} ({{hours}}h)",
+      "approveFailed": "Échec de l'approbation du ticket",
       "reasonRequired": "Veuillez fournir un motif de rejet",
-      "rejected": "Ticket rejetÃ©",
-      "rejectFailed": "Ã‰chec du rejet du ticket"
+      "rejected": "Ticket rejeté",
+      "rejectFailed": "Échec du rejet du ticket"
     }
   },
   "projects": {
@@ -1122,13 +1079,13 @@
     "newProject": "Nouveau Projet",
     "searchPlaceholder": "Rechercher par nom ou description",
     "allStatuses": "Tous les statuts",
-    "allPriorities": "Toutes les prioritÃ©s",
-    "reset": "RÃ©initialiser",
+    "allPriorities": "Toutes les priorités",
+    "reset": "Réinitialiser",
     "table": {
       "project": "Projet",
       "type": "Type",
       "status": "Statut",
-      "priority": "PrioritÃ©",
+      "priority": "Priorité",
       "timeline": "Chronologie",
       "progress": "Progression",
       "actions": "Actions",
@@ -1137,153 +1094,96 @@
     },
     "loading": "Chargement des projets...",
     "noProjects": "Aucun projet ne correspond aux filtres actuels.",
-    "createProject": "CrÃ©er un projet",
+    "createProject": "Créer un projet",
     "dialog": {
-      "createTitle": "CrÃ©er un Projet",
+      "createTitle": "Créer un Projet",
       "editTitle": "Modifier le Projet",
-      "description": "Saisissez les mÃ©tadonnÃ©es de planification du projet et les champs de suivi du portefeuille.",
+      "description": "Saisissez les métadonnées de planification du projet et les champs de suivi du portefeuille.",
       "nameLabel": "Nom du Projet",
       "namePlaceholder": "Programme de Migration S/4HANA",
       "descLabel": "Description",
-      "descPlaceholder": "DÃ©crivez le pÃ©rimÃ¨tre, les rÃ©sultats et le contexte d'exÃ©cution du projet",
+      "descPlaceholder": "Décrivez le périmètre, les résultats et le contexte d'exécution du projet",
       "typeLabel": "Type de Projet",
       "statusLabel": "Statut",
-      "priorityLabel": "PrioritÃ©",
-      "startDateLabel": "Date de DÃ©but",
+      "priorityLabel": "Priorité",
+      "startDateLabel": "Date de Début",
       "endDateLabel": "Date de Fin",
       "progressLabel": "Progression (%)",
       "wricefImport": "Import WRICEF (Optionnel)",
-      "wricefImportDesc": "TÃ©lÃ©chargez un fichier Excel contenant des objets WRICEF et des tickets",
+      "wricefImportDesc": "Téléchargez un fichier Excel contenant des objets WRICEF et des tickets",
       "parsing": "Analyse...",
-      "uploadExcel": "TÃ©lÃ©charger Excel",
+      "uploadExcel": "Télécharger Excel",
       "objects": "{{count}} Objets",
       "tickets": "{{count}} Tickets",
       "ticketCount": "{{count}} tickets",
-      "moreObjects": "... et {{count}} objets supplÃ©mentaires",
-      "noWricef": "Aucun fichier WRICEF tÃ©lÃ©chargÃ©. Vous pouvez en ajouter un maintenant ou plus tard depuis la page de dÃ©tails du projet.",
+      "moreObjects": "... et {{count}} objets supplémentaires",
+      "noWricef": "Aucun fichier WRICEF téléchargé. Vous pouvez en ajouter un maintenant ou plus tard depuis la page de détails du projet.",
       "cancel": "Annuler",
-      "creating": "CrÃ©ation...",
+      "creating": "Création...",
       "saving": "Enregistrement...",
-      "createButton": "CrÃ©er le projet",
-      "updateButton": "Mettre Ã  jour le projet"
+      "createButton": "Créer le projet",
+      "updateButton": "Mettre à jour le projet",
+      "saveChanges": "Enregistrer les modifications"
     },
     "deleteDialog": {
       "title": "Supprimer le projet",
       "description": "Cela supprimera \"{{name}}\" du portefeuille.",
-      "fallbackDescription": "Cette action est irrÃ©versible.",
+      "fallbackDescription": "Cette action est irréversible.",
       "delete": "Supprimer"
     },
     "toasts": {
-      "loadFailed": "Ã‰chec du chargement des projets",
-      "invalidFile": "Veuillez tÃ©lÃ©charger un fichier Excel (.xlsx ou .xls)",
-      "wricefImported": "WRICEF importÃ© : {{count}} objets trouvÃ©s",
-      "parseFailed": "Ã‰chec de l'analyse du fichier WRICEF",
+      "loadFailed": "Échec du chargement des projets",
+      "invalidFile": "Veuillez télécharger un fichier Excel (.xlsx ou .xls)",
+      "wricefImported": "WRICEF importé : {{count}} objets trouvés",
+      "parseFailed": "Échec de l'analyse du fichier WRICEF",
       "nameRequired": "Le nom du projet est requis",
-      "datesRequired": "Les dates de dÃ©but et de fin sont requises",
-      "invalidDates": "La date de fin ne peut pas Ãªtre antÃ©rieure Ã  la date de dÃ©but",
-      "created": "Projet crÃ©Ã© avec succÃ¨s",
-      "updated": "Projet mis Ã  jour avec succÃ¨s",
-      "saveFailed": "Ã‰chec de l'enregistrement du projet",
-      "deleted": "Projet supprimÃ©",
-      "deleteFailed": "Ã‰chec de la suppression du projet"
+      "datesRequired": "Les dates de début et de fin sont requises",
+      "invalidDates": "La date de fin ne peut pas être antérieure à la date de début",
+      "created": "Projet créé avec succès",
+      "updated": "Projet mis à jour avec succès",
+      "saveFailed": "Échec de l'enregistrement du projet",
+      "deleted": "Projet supprimé",
+      "deleteFailed": "Échec de la suppression du projet"
     },
     "abaques": {
-      "title": "DÃ©finir la Matrice",
-      "description": "DÃ©finir les heures estimÃ©es mappÃ©es Ã  la Nature de TÃ¢che et la ComplexitÃ©. Ceci agit comme une rÃ©fÃ©rence de base manuelle.",
-      "noEntries": "Aucune entrÃ©e dans la matrice pour l'instant. Cliquez sur \"Ajouter une EntrÃ©e\" pour commencer.",
-      "taskNature": "Nature de TÃ¢che",
-      "complexity": "ComplexitÃ©",
-      "estimatedHours": "Heures EstimÃ©es",
-      "addEntry": "Ajouter une EntrÃ©e",
+      "title": "Définir la Matrice",
+      "description": "Définir les heures estimées mappées à la Nature de Tâche et la Complexité. Ceci agit comme une référence de base manuelle.",
+      "noEntries": "Aucune entrée dans la matrice pour l'instant. Cliquez sur \"Ajouter une Entrée\" pour commencer.",
+      "taskNature": "Nature de Tâche",
+      "complexity": "Complexité",
+      "estimatedHours": "Heures Estimées",
+      "addEntry": "Ajouter une Entrée",
       "cancel": "Annuler",
       "submit": "Soumettre"
     },
     "ticketDialog": {
-      "title": "CrÃ©er un nouveau ticket en mappant manuellement l'estimation, la prioritÃ© et la complexitÃ©.",
+      "title": "Créer un nouveau ticket en mappant manuellement l'estimation, la priorité et la complexité.",
       "cancel": "Annuler"
     },
     "details": {
-      "loading": "Chargement des dÃ©tails du projet...",
+      "loading": "Chargement des détails du projet...",
       "unavailable": "Projet indisponible",
-      "couldNotLoad": "Le projet demandÃ© n'a pas pu Ãªtre chargÃ©.",
-      "subtitle": "Suivez les KPI, la couverture WRICEF et la documentation du projet au mÃªme endroit.",
+      "couldNotLoad": "Le projet demandé n'a pas pu être chargé.",
+      "overview": {
+        "snapshot": "Aperçu du Projet",
+        "manager": "Manager",
+        "startDate": "Date de Début",
+        "endDate": "Date de Fin",
+        "projectType": "Type de Projet",
+        "objects": "{{count}} objets",
+        "notImported": "Non importé",
+        "globalProgress": "Progression Globale",
+        "liveMetrics": "Métriques en Direct",
+        "openTickets": "Tickets Ouverts",
+        "criticalTickets": "Tickets Critiques",
+        "smartEstimation": "Estimation Intelligente des Tickets",
+        "smartEstimationDesc": "Créez des tickets de projet et enregistrez les heures directement pour suivre la progression du projet."
+      },
       "tables": {
         "wricef": {
           "objectId": "ID Objet",
-          "documents": "Documents",
-          "addTicket": "CrÃ©er un ticket",
-          "addDocument": "CrÃ©er un document",
-          "ticketsFor": "Tickets pour {{id}}",
-          "documentsFor": "Documents pour {{id}}",
-          "noTickets": "Aucun ticket liÃ©",
-          "noDocuments": "Aucun document liÃ©"
-        },
-        "wricefTickets": {
-          "ticketId": "ID Ticket",
-          "name": "Nom",
-          "status": "Statut",
-          "priority": "PrioritÃ©",
-          "liveTicket": "Ticket actif",
-          "estimation": "Estimation",
-          "actualEffort": "Effort rÃ©el",
-          "view": "Voir"
+          "documents": "Documents"
         }
-      },
-      "kpis": {
-        "onTrack": "Sur la bonne voie",
-        "late": "En retard",
-        "blocked": "BloquÃ©s",
-        "completed": "TerminÃ©s",
-        "critical": "Critiques",
-        "productivity": "ProductivitÃ©",
-        "actualHours": "Heures rÃ©elles",
-        "estimatedHours": "Heures estimÃ©es",
-        "variance": "Ã‰cart"
-      },
-      "documentation": {
-        "stats": {
-          "total": "Total des documents"
-        },
-        "keywords": "Mots-clÃ©s du projet",
-        "objects": "Objets de documentation",
-        "create": "CrÃ©er une documentation",
-        "notes": "Notes du projet",
-        "notesPlaceholder": "Consignez les dÃ©cisions, contraintes et notes d'implÃ©mentation...",
-        "saveNotes": "Enregistrer les notes",
-        "savingNotes": "Enregistrement des notes..."
-      },
-      "abaques": {
-        "title": "Matrice Abaque",
-        "subtitle": "Consultez la matrice actuelle utilisÃ©e pour estimer l'effort des tickets.",
-        "nature": "Nature",
-        "complexity": "ComplexitÃ©",
-        "hours": "Heures",
-        "edit": "Modifier"
-      },
-      "wricef": {
-        "stats": {
-          "totalObjects": "Nombre total d'objets",
-          "totalTickets": "Total des tickets",
-          "totalDocuments": "Total des documents"
-        },
-        "filters": {
-          "search": "Rechercher des objets...",
-          "type": "Type",
-          "allTypes": "Tous les types",
-          "complexity": "ComplexitÃ©",
-          "allComplexity": "Toutes les complexitÃ©s",
-          "module": "Module",
-          "allModules": "Tous les modules",
-          "clear": "Effacer les filtres",
-          "createTicket": "CrÃ©er un ticket",
-          "import": "Importer"
-        },
-        "pagination": {
-          "summary_one": "Affichage {{start}}-{{end}} sur {{total}} objet",
-          "summary_other": "Affichage {{start}}-{{end}} sur {{total}} objets",
-          "pageSize": "par page"
-        },
-        "noDocuments": "Aucun document liÃ©"
       }
     }
   },
@@ -1291,14 +1191,14 @@
     "title": "Validation WRICEF",
     "subtitle": "{{count}} WRICEF(s) en attente de votre approbation",
     "breadcrumbHome": "Accueil",
-    "allReviewed": "Tous les WRICEFs ont Ã©tÃ© examinÃ©s. Rien en attente.",
-    "selectFromList": "SÃ©lectionnez un WRICEF dans la liste",
+    "allReviewed": "Tous les WRICEFs ont été examinés. Rien en attente.",
+    "selectFromList": "Sélectionnez un WRICEF dans la liste",
     "untitled": "Sans titre",
     "objCount": "{{count}} obj",
     "untitledWricef": "WRICEF sans titre",
     "projectLabel": "Projet :",
-    "autoCreated": "Auto-crÃ©Ã©",
-    "imported": "ImportÃ©",
+    "autoCreated": "Auto-créé",
+    "imported": "Importé",
     "submittedBy": "Soumis par",
     "submittedAt": "Soumis le",
     "objects": "Objets",
@@ -1308,9 +1208,9 @@
     "rejectWricef": "Rejeter le WRICEF",
     "noObjects": "Aucun objet dans ce WRICEF.",
     "moduleLabel": "Module :",
-    "complexityLabel": "ComplexitÃ© :",
+    "complexityLabel": "Complexité :",
     "ticketsLabel": "Tickets :",
-    "linkedTickets": "Tickets LiÃ©s",
+    "linkedTickets": "Tickets Liés",
     "approve": "Approuver",
     "reject": "Rejeter",
     "rejectReasonTitle": "Rejeter le WRICEF",
@@ -1318,83 +1218,81 @@
     "rejectObjectTitle": "Rejeter l'Objet",
     "rejectObjectDesc": "Fournissez un motif pour le rejet de \"{{name}}\".",
     "reasonLabel": "Motif *",
-    "reasonPlaceholder": "Expliquez pourquoi ce WRICEF est rejetÃ©...",
-    "objReasonPlaceholder": "Expliquez pourquoi cet objet est rejetÃ©...",
+    "reasonPlaceholder": "Expliquez pourquoi ce WRICEF est rejeté...",
+    "objReasonPlaceholder": "Expliquez pourquoi cet objet est rejeté...",
     "cancel": "Annuler",
     "rejecting": "Rejet en cours...",
     "toasts": {
-      "loadFailed": "Ã‰chec du chargement des WRICEFs",
-      "validated": "WRICEF validÃ©",
-      "validatedDesc": "\"{{name}}\" approuvÃ© avec succÃ¨s.",
-      "validateFailed": "Ã‰chec de la validation du WRICEF",
+      "loadFailed": "Échec du chargement des WRICEFs",
+      "validated": "WRICEF validé",
+      "validatedDesc": "\"{{name}}\" approuvé avec succès.",
+      "validateFailed": "Échec de la validation du WRICEF",
       "reasonRequired": "Veuillez fournir un motif de rejet",
-      "rejected": "WRICEF rejetÃ©",
-      "rejectFailed": "Ã‰chec du rejet du WRICEF",
-      "objectApproved": "Objet \"{{title}}\" approuvÃ©",
-      "objectApproveFailed": "Ã‰chec de l'approbation de l'objet",
-      "objectRejected": "Objet \"{{title}}\" rejetÃ©",
-      "objectRejectFailed": "Ã‰chec du rejet de l'objet"
+      "rejected": "WRICEF rejeté",
+      "rejectFailed": "Échec du rejet du WRICEF",
+      "objectApproved": "Objet \"{{title}}\" approuvé",
+      "objectApproveFailed": "Échec de l'approbation de l'objet",
+      "objectRejected": "Objet \"{{title}}\" rejeté",
+      "objectRejectFailed": "Échec du rejet de l'objet"
     }
   },
   "settings": {
-    "subtitle": "Personnalisez votre espace de travail et vos prÃ©fÃ©rences d'interface",
+    "subtitle": "Personnalisez votre espace de travail et vos préférences d'interface",
     "appearance": "Apparence",
     "appearanceDesc": "Choisissez votre environnement visuel.",
-    "theme": "ThÃ¨me",
+    "theme": "Thème",
     "currentMode": "Mode actuel",
     "light": "Clair",
     "dark": "Sombre",
     "notifications": "Notifications",
-    "notificationsDesc": "ContrÃ´lez la maniÃ¨re dont les mises Ã  jour vous parviennent.",
-    "emailNotifications": "Notifications par e-mail",
-    "emailNotificationsDesc": "Recevez des alertes de projet directement par e-mail.",
-    "desktopNotifications": "Notifications de bureau",
-    "desktopNotificationsDesc": "Recevez des mises Ã  jour en temps rÃ©el lorsque vous Ãªtes actif.",
-    "weeklyDigest": "RÃ©sumÃ© KPI hebdomadaire",
-    "weeklyDigestDesc": "RÃ©sumÃ© des indicateurs de performance chaque semaine.",
-    "locale": "Langue et RÃ©gion",
-    "localeDesc": "SÃ©lectionnez votre format de langue prÃ©fÃ©rÃ©.",
+    "notificationsDesc": "Choisissez les événements pour lesquels vous souhaitez être notifié.",
+    "leaveRequestNotif": "Demandes de congé",
+    "leaveRequestNotifDesc": "Recevez une notification quand un consultant soumet une demande de congé.",
+    "certificationNotif": "Nouvelles certifications",
+    "certificationNotifDesc": "Recevez une notification quand un consultant ajoute une certification.",
+    "locale": "Langue et Région",
+    "localeDesc": "Sélectionnez votre format de langue préféré.",
     "displayLanguage": "Langue d'affichage",
-    "selectLocale": "SÃ©lectionner la langue",
-    "storageNote": "Les paramÃ¨tres sont stockÃ©s localement dans votre navigateur.",
-    "saveButton": "Enregistrer les ParamÃ¨tres",
-    "saved": "ParamÃ¨tres enregistrÃ©s",
-    "savedDesc": "Les prÃ©fÃ©rences sont dÃ©jÃ  appliquÃ©es et stockÃ©es localement."
+    "selectLocale": "Sélectionner la langue",
+    "storageNote": "Les paramètres sont stockés localement dans votre navigateur.",
+    "saveButton": "Enregistrer les Paramètres",
+    "saved": "Paramètres enregistrés",
+    "savedDesc": "Les préférences sont déjà appliquées et stockées localement."
   },
   "dashboard": {
     "manager": {
       "title": "Tableau de Bord Manager",
       "subtitle": "Progression des livraisons, charge de travail et affectations en une seule vue",
-      "errorLoading": "Impossible de charger les donnÃ©es du tableau de bord. Certaines mÃ©triques peuvent Ãªtre obsolÃ¨tes.",
-      "retry": "RÃ©essayer",
+      "errorLoading": "Impossible de charger les données du tableau de bord. Certaines métriques peuvent être obsolètes.",
+      "retry": "Réessayer",
       "kpi": {
         "tace": {
           "title": "TACE",
-          "subtitle": "Taux d'activitÃ© (hors congÃ©s)"
+          "subtitle": "Taux d'activité (hors congés)"
         },
         "sla": {
           "title": "Respect SLA",
-          "subtitle": "{{onTime}}/{{total}} livrÃ©s Ã  temps"
+          "subtitle": "{{onTime}}/{{total}} livrés à temps"
         },
         "throughput": {
-          "title": "DÃ©bit",
-          "subtitle": "Ratio de tickets terminÃ©s"
+          "title": "Débit",
+          "subtitle": "Ratio de tickets terminés"
         },
         "risks": {
           "title": "Points de Risque",
-          "subtitle": "Tickets critiques ou bloquÃ©s"
+          "subtitle": "Tickets critiques ou bloqués"
         }
       },
       "deliverySnapshot": {
-        "title": "AperÃ§u des Livraisons",
-        "noData": "Aucune donnÃ©e de ticket disponible."
+        "title": "Aperçu des Livraisons",
+        "noData": "Aucune donnée de ticket disponible."
       },
       "criticalAlerts": {
         "title": "Alertes Critiques",
         "noAlerts": "Aucune alerte critique pour le moment.",
         "labels": {
-          "blocked": "Ticket BloquÃ©",
-          "deadline": "Risque d'Ã‰chÃ©ance"
+          "blocked": "Ticket Bloqué",
+          "deadline": "Risque d'Échéance"
         },
         "messages": {
           "overdue": "en retard depuis le {{date}}"
@@ -1405,21 +1303,16 @@
         "pendingApprovals": "Approbations en Attente ({{count}})",
         "viewAllocations": "Voir les Affectations",
         "openRisks": "Voir les Risques & Tickets Critiques"
-      },
-      "risks": {
-        "stats": {
-          "blocked": "Tickets BloquÃ©s"
-        }
       }
     },
     "leaves": {
-      "title": "Gestion des CongÃ©s",
-      "subtitle": "Approuver ou rejeter les demandes de congÃ©s de l'Ã©quipe",
+      "title": "Gestion des Congés",
+      "subtitle": "Approuver ou rejeter les demandes de congés de l'équipe",
       "stats": {
         "total": "Total des Demandes",
         "pending": "En attente",
-        "approved": "ApprouvÃ©es",
-        "rejected": "RefusÃ©es"
+        "approved": "Approuvées",
+        "rejected": "Refusées"
       },
       "filters": {
         "status": "Statut",
@@ -1427,33 +1320,33 @@
       },
       "table": {
         "consultant": "Consultant",
-        "start": "DÃ©but",
+        "start": "Début",
         "end": "Fin",
         "days": "Jours",
         "reason": "Motif",
         "actions": "Actions",
-        "noRequests": "Aucune demande de congÃ© trouvÃ©e."
+        "noRequests": "Aucune demande de congé trouvée."
       },
       "availability": {
-        "title": "DisponibilitÃ© de l'Ã‰quipe (CongÃ©s ApprouvÃ©s)",
+        "title": "Disponibilité de l'Équipe (Congés Approuvés)",
         "unknown": "Inconnu"
       },
       "notifications": {
-        "decisionTitle": "CongÃ© {{decision}}",
-        "decisionMessage": "Votre demande de congÃ© ({{start}} â†’ {{end}}) a Ã©tÃ© {{decision}}."
+        "decisionTitle": "Congé {{decision}}",
+        "decisionMessage": "Votre demande de congé ({{start}} → {{end}}) a été {{decision}}."
       },
       "toasts": {
         "success": "Demande {{decision}}",
-        "error": "Ã‰chec du traitement de la demande"
+        "error": "Échec du traitement de la demande"
       }
     },
     "certifications": {
-      "title": "Consultants CertifiÃ©s",
-      "subtitle": "Parcourir les certifications de l'Ã©quipe et leur statut",
+      "title": "Consultants Certifiés",
+      "subtitle": "Parcourir les certifications de l'équipe et leur statut",
       "stats": {
         "total": "Total des Certifications",
         "valid": "Valides",
-        "expiring": "Expire BientÃ´t"
+        "expiring": "Expire Bientôt"
       },
       "filters": {
         "searchPlaceholder": "Rechercher par nom, certif ou organisme...",
@@ -1462,85 +1355,85 @@
       "table": {
         "consultant": "Consultant",
         "certification": "Certification",
-        "issuingBody": "Organisme Ã‰metteur",
+        "issuingBody": "Organisme Émetteur",
         "obtained": "Obtenue le",
         "expires": "Expire le",
-        "noCerts": "Aucune certification trouvÃ©e."
+        "noCerts": "Aucune certification trouvée."
       }
     },
     "risks": {
       "title": "Risques & Tickets Critiques",
-      "subtitle": "Suivi du travail bloquÃ©, niveau de risque et actions d'attÃ©nuation",
+      "subtitle": "Suivi du travail bloqué, niveau de risque et actions d'atténuation",
       "stats": {
-        "blocked": "Tickets BloquÃ©s",
-        "highRisk": "Risque Ã‰levÃ©",
+        "blocked": "Tickets Bloqués",
+        "highRisk": "Risque Élevé",
         "criticalRisk": "Risque Critique",
         "criticalTickets": "Tickets Critiques"
       },
       "filters": {
-        "showCritical": "Afficher uniquement les tickets critiques ou Ã  risque",
-        "count": "{{count}} tickets affichÃ©s"
+        "showCritical": "Afficher uniquement les tickets critiques ou à risque",
+        "count": "{{count}} tickets affichés"
       },
       "table": {
         "ticket": "Ticket",
         "project": "Projet",
-        "assignee": "AssignÃ©",
+        "assignee": "Assigné",
         "status": "Statut",
         "risk": "Risque",
-        "deadline": "Ã‰chÃ©ance",
-        "mitigation": "AttÃ©nuation",
+        "deadline": "Échéance",
+        "mitigation": "Atténuation",
         "loading": "Chargement du registre des risques...",
         "noTickets": "Aucun ticket correspondant."
       },
       "labels": {
         "critical": "Critique",
-        "due": "Ã‰chÃ©ance : {{date}}",
-        "unassigned": "Non affectÃ©"
+        "due": "Échéance : {{date}}",
+        "unassigned": "Non affecté"
       },
       "placeholders": {
-        "mitigation": "Action d'attÃ©nuation / dÃ©tails du blocage"
+        "mitigation": "Action d'atténuation / détails du blocage"
       },
       "notifications": {
-        "mitigationTitle": "AttÃ©nuation Mise Ã  Jour",
-        "mitigationMessage": "{{title}} : les notes d'attÃ©nuation ont Ã©tÃ© mises Ã  jour par le manager.",
-        "statusTitle": "Statut du Ticket Mis Ã  Jour",
-        "statusMessage": "{{title}} : le statut est passÃ© Ã  {{status}}.",
-        "riskTitle": "Niveau de Risque Mis Ã  Jour",
-        "riskMessage": "{{title}} : le niveau de risque est passÃ© Ã  {{risk}}.",
-        "reassignedTitle": "Ticket RÃ©assignÃ©",
-        "reassignedMessage": "{{title}} : vous avez Ã©tÃ© assignÃ© comme responsable de l'attÃ©nuation.",
-        "deadlineTitle": "Ã‰chÃ©ance Mise Ã  Jour",
-        "deadlineMessage": "{{title}} : l'Ã©chÃ©ance est passÃ©e au {{date}}."
+        "mitigationTitle": "Atténuation Mise à Jour",
+        "mitigationMessage": "{{title}} : les notes d'atténuation ont été mises à jour par le manager.",
+        "statusTitle": "Statut du Ticket Mis à Jour",
+        "statusMessage": "{{title}} : le statut est passé à {{status}}.",
+        "riskTitle": "Niveau de Risque Mis à Jour",
+        "riskMessage": "{{title}} : le niveau de risque est passé à {{risk}}.",
+        "reassignedTitle": "Ticket Réassigné",
+        "reassignedMessage": "{{title}} : vous avez été assigné comme responsable de l'atténuation.",
+        "deadlineTitle": "Échéance Mise à Jour",
+        "deadlineMessage": "{{title}} : l'échéance est passée au {{date}}."
       },
       "toasts": {
         "invalidTransition": "Transition de statut invalide : {{from}} -> {{to}}",
         "ticketNotFound": "Le ticket n'existe plus"
       },
       "errors": {
-        "updateFailed": "Ã‰chec de la mise Ã  jour du ticket"
+        "updateFailed": "Échec de la mise à jour du ticket"
       }
     },
     "wricef": {
       "title": "Gestion WRICEF",
-      "subtitle": "CrÃ©er, gÃ©rer et soumettre des WRICEFs pour approbation par le chef de projet",
+      "subtitle": "Créer, gérer et soumettre des WRICEFs pour approbation par le chef de projet",
       "actions": {
         "newWricef": "Nouveau WRICEF"
       },
       "stats": {
         "draft": "Brouillon",
         "pending": "En attente",
-        "validated": "ValidÃ©",
-        "rejected": "RejetÃ©"
+        "validated": "Validé",
+        "rejected": "Rejeté"
       },
       "list": {
         "empty": "Aucun WRICEF pour le moment",
-        "emptyDescription": "Cliquez sur \"Nouveau WRICEF\" pour crÃ©er votre premier.",
+        "emptyDescription": "Cliquez sur \"Nouveau WRICEF\" pour créer votre premier.",
         "untitled": "WRICEF sans titre",
         "project": "Projet : {{name}}",
         "objects": "{{count}} objet(s)",
         "tickets": "{{count}} ticket(s)",
-        "created": "CrÃ©Ã© le {{date}}",
-        "rejected": "RejetÃ© : {{reason}}"
+        "created": "Créé le {{date}}",
+        "rejected": "Rejeté : {{reason}}"
       },
       "buttons": {
         "submit": "Soumettre",
@@ -1550,44 +1443,44 @@
         "cancel": "Annuler"
       },
       "form": {
-        "addObjectTitle": "Ajouter un Objet Ã  {{name}}",
+        "addObjectTitle": "Ajouter un Objet à {{name}}",
         "type": "Type *",
         "title": "Titre *",
         "module": "Module",
-        "complexity": "ComplexitÃ©",
+        "complexity": "Complexité",
         "description": "Description",
-        "descriptionPlaceholder": "DÃ©crivez l'objet..."
+        "descriptionPlaceholder": "Décrivez l'objet..."
       },
       "dialog": {
-        "title": "CrÃ©er un WRICEF",
-        "description": "CrÃ©er un nouveau document WRICEF. Vous pourrez y ajouter des objets aprÃ¨s la crÃ©ation.",
+        "title": "Créer un WRICEF",
+        "description": "Créer un nouveau document WRICEF. Vous pourrez y ajouter des objets après la création.",
         "project": "Projet *",
-        "projectPlaceholder": "SÃ©lectionnez un projet",
+        "projectPlaceholder": "Sélectionnez un projet",
         "sourceFile": "Fichier source *",
         "sourceFilePlaceholder": "ex : S4HANA_Migration_WRICEF.xlsx",
         "chooseFile": "Choisir un fichier",
-        "noFileSelected": "Aucun fichier sÃ©lectionnÃ©",
-        "creating": "CrÃ©ation...",
-        "create": "CrÃ©er"
+        "noFileSelected": "Aucun fichier sélectionné",
+        "creating": "Création...",
+        "create": "Créer"
       },
       "toasts": {
-        "loadError": "Ã‰chec du chargement des donnÃ©es",
-        "createSuccess": "WRICEF crÃ©Ã©",
-        "createError": "Ã‰chec de la crÃ©ation du WRICEF",
-        "objectAdded": "Objet ajoutÃ©",
-        "objectAddError": "Ã‰chec de l'ajout de l'objet",
-        "objectDeleted": "Objet supprimÃ©",
-        "objectDeleteError": "Ã‰chec de la suppression de l'objet",
+        "loadError": "Échec du chargement des données",
+        "createSuccess": "WRICEF créé",
+        "createError": "Échec de la création du WRICEF",
+        "objectAdded": "Objet ajouté",
+        "objectAddError": "Échec de l'ajout de l'objet",
+        "objectDeleted": "Objet supprimé",
+        "objectDeleteError": "Échec de la suppression de l'objet",
         "submitSuccess": "WRICEF soumis pour validation",
         "submitDescription": "\"{{name}}\" est maintenant en attente d'approbation.",
-        "submitError": "Ã‰chec de la soumission du WRICEF",
-        "deleteSuccess": "WRICEF supprimÃ©",
-        "deleteError": "Ã‰chec de la suppression du WRICEF",
+        "submitError": "Échec de la soumission du WRICEF",
+        "deleteSuccess": "WRICEF supprimé",
+        "deleteError": "Échec de la suppression du WRICEF",
         "validation": {
-          "selectProject": "SÃ©lectionnez un projet",
+          "selectProject": "Sélectionnez un projet",
           "enterSourceFile": "Choisissez un fichier source",
           "enterObjectTitle": "Le titre de l'objet est requis",
-          "minOneObject": "Add at least one object before submitting"
+          "minOneObject": "Ajoutez au moins un objet avant de soumettre"
         }
       }
     }
@@ -1604,7 +1497,7 @@
     "items": {
       "Dashboard": "Tableau de Bord",
       "Users": "Utilisateurs",
-      "Reference Data": "DonnÃ©es de RÃ©fÃ©rence",
+      "Reference Data": "Données de Référence",
       "Performance": "Performance",
       "Projects": "Projets",
       "Allocations": "Affectations",
@@ -1612,149 +1505,84 @@
       "Tickets": "Tickets",
       "Objects": "Objets",
       "Certifications": "Certifications",
-      "Leave": "CongÃ©s",
+      "Leave": "Congés",
       "Imputations": "Imputations",
       "Approvals": "Approbations",
       "WRICEF": "WRICEF",
       "WRICEF Review": "Revue WRICEF",
       "Deliverables": "Livrables",
       "Affectation manuelle": "Affectation manuelle",
-      "Workload": "Charge de travail",
-      "Evaluations": "Ã‰valuations"
-    }
-  },
-  "evaluations": {
-    "title": "Ã‰valuations",
-    "subtitleTickets": "Noter la performance d'un consultant Ã  partir de ses tickets (Ã  temps, en retard, difficultÃ©)",
-    "form": {
-      "title": "Nouvelle Ã©valuation",
-      "intro": "Choisissez un consultant et une pÃ©riode â€” la note est calculÃ©e automatiquement Ã  partir de ses tickets. Vous pouvez l'ajuster avant d'enregistrer.",
-      "consultant": "Consultant",
-      "selectConsultant": "SÃ©lectionner un consultant",
-      "period": "PÃ©riode",
-      "periodPlaceholder": "ex. 2026-S1",
-      "periodCustom": "PÃ©riode personnalisÃ©e...",
-      "scoreTitle": "Note",
-      "scorePlaceholder": "SÃ©lectionnez un consultant pour calculer sa note.",
-      "scoreBasis": "sur la base de {{count}} ticket(s)",
-      "manualOverride": "Ajuster la note manuellement",
-      "manualScore": "Note manuelle",
-      "resetScore": "RÃ©initialiser",
-      "computedScore": "Note (auto)",
-      "feedback": "Commentaire",
-      "feedbackOptional": "Commentaire (optionnel)",
-      "feedbackPlaceholder": "Points forts, axes d'amÃ©lioration, contexte de la note...",
-      "duplicateWarning": "{{name}} a dÃ©jÃ  une Ã©valuation pour {{period}}. Enregistrer en ajoutera une seconde pour la mÃªme pÃ©riode.",
-      "missing": "Pour enregistrer, renseignez : {{fields}}",
-      "add": "Enregistrer l'Ã©valuation",
-      "saving": "Enregistrement..."
-    },
-    "summary": {
-      "onTime": "Ã€ temps : {{count}}",
-      "late": "En retard : {{count}}",
-      "overdueOpen": "En souffrance : {{count}}",
-      "pending": "En cours : {{count}}",
-      "computedTotal": "Note calculÃ©e : {{total}}"
-    },
-    "categories": {
-      "ON_TIME": "Ã€ temps",
-      "LATE": "En retard",
-      "OVERDUE_OPEN": "En souffrance",
-      "PENDING": "En cours",
-      "NO_DUE_DATE": "Sans Ã©chÃ©ance",
-      "EXCLUDED": "Exclu"
-    },
-    "breakdown": {
-      "title": "DÃ©tail par ticket",
-      "titleFor": "DÃ©tail par ticket â€” {{name}}",
-      "rules": "BarÃ¨me : Ã  temps {{onTime}}, en retard {{late}}, ouvert aprÃ¨s Ã©chÃ©ance {{overdue}} ; les tickets terminÃ©s gagnent un bonus de complexitÃ© et de nature.",
-      "ticket": "Ticket",
-      "complexity": "ComplexitÃ©",
-      "nature": "Nature",
-      "status": "Statut",
-      "points": "Points",
-      "bonus": "bonus +{{bonus}}",
-      "selectPrompt": "SÃ©lectionnez un consultant pour voir ses tickets.",
-      "empty": "Ce consultant n'a aucun ticket."
-    },
-    "list": {
-      "title": "Ã‰valuations enregistrÃ©es",
-      "consultant": "Consultant",
-      "period": "PÃ©riode",
-      "score": "Note",
-      "evaluator": "Ã‰valuÃ© par",
-      "date": "Date",
-      "feedback": "Commentaire",
-      "empty": "Aucune Ã©valuation pour le moment."
-    },
-    "toasts": {
-      "loadFailed": "Ã‰chec du chargement des Ã©valuations",
-      "ticketsFailed": "Ã‰chec du chargement des tickets du consultant",
-      "requiredFields": "Consultant et pÃ©riode sont obligatoires",
-      "invalidScore": "La note doit Ãªtre un nombre",
-      "created": "Ã‰valuation enregistrÃ©e",
-      "createFailed": "Ã‰chec de l'enregistrement de l'Ã©valuation"
+      "Manual Assignment": "Affectation manuelle",
+      "Workload": "Charge de travail"
     }
   },
   "imputations": {
     "title": "Mes Imputations",
-    "subtitle": "Enregistrer le temps passÃ© sur les tickets assignÃ©s",
+    "subtitle": "Enregistrer le temps passé sur les tickets assignés",
     "addTitle": "Ajouter une Imputation - {{date}}",
-    "alreadyLogged": "DÃ©jÃ  enregistrÃ© :",
-    "selectTicket": "SÃ©lectionner un ticket",
+    "alreadyLogged": "Déjà enregistré :",
+    "selectTicket": "Sélectionner un ticket",
     "ticketLabel": "Ticket *",
     "hoursLabel": "Heures *",
     "descriptionLabel": "Description",
-    "descriptionPlaceholder": "Sur quoi avez-vous travaillÃ© ?",
+    "descriptionPlaceholder": "Sur quoi avez-vous travaillé ?",
     "total": "Total",
     "cancel": "Annuler",
     "add": "Ajouter",
     "next": "Suivant '>'",
-    "noImputations": "Aucune imputation enregistrÃ©e.",
+    "noImputations": "Aucune imputation enregistrée.",
     "toasts": {
-      "addSuccess": "Imputation ajoutÃ©e",
-      "addFailed": "Ã‰chec de l'ajout d'imputation",
-      "deleteSuccess": "Imputation supprimÃ©e",
-      "deleteFailed": "Ã‰chec de la suppression d'imputation"
+      "addSuccess": "Imputation ajoutée",
+      "addFailed": "Échec de l'ajout d'imputation",
+      "deleteSuccess": "Imputation supprimée",
+      "deleteFailed": "Échec de la suppression d'imputation"
     }
   },
   "comments": {
-    "replyingTo": "RÃ©ponse au commentaire",
+    "loading": "Chargement des commentaires...",
+    "title": "Commentaires ({{count}})",
+    "blockers_one": "{{count}} bloquant",
+    "blockers_other": "{{count}} bloquants",
+    "unanswered_one": "{{count}} question sans réponse",
+    "unanswered_other": "{{count}} questions sans réponse",
+    "empty": "Aucun commentaire pour l'instant. Lancez la conversation !",
+    "replyingTo": "Réponse au commentaire",
     "internalNote": "Note interne",
-    "messagePlaceholder": "Tapez un messageâ€¦ (Ctrl+EntrÃ©e pour envoyer)",
+    "messagePlaceholder": "Tapez un message… (Ctrl+Entrée pour envoyer)",
     "internal": "Interne",
-    "reply": "RÃ©pondre",
-    "resolved": "RÃ©solu",
-    "markResolved": "Marquer comme rÃ©solu",
+    "reply": "Répondre",
+    "resolved": "Résolu",
+    "markResolved": "Marquer comme résolu",
     "toasts": {
-      "addSuccess": "Commentaire ajoutÃ©",
-      "addFailed": "Ã‰chec de l'ajout du commentaire",
-      "deleteSuccess": "Commentaire supprimÃ©",
-      "deleteFailed": "Ã‰chec de la suppression du commentaire"
+      "addSuccess": "Commentaire ajouté",
+      "addFailed": "Échec de l'ajout du commentaire",
+      "resolved": "Marqué comme résolu",
+      "reopened": "Rouvert",
+      "updateFailed": "Échec de la mise à jour du commentaire"
     }
   },
   "consultantTech": {
     "leaves": {
-      "title": "Mes CongÃ©s",
-      "subtitle": "Afficher et gÃ©rer vos demandes de congÃ©",
+      "title": "Mes Congés",
+      "subtitle": "Afficher et gérer vos demandes de congé",
       "requestLeave": "Nouvelle demande",
-      "startDate": "Date de dÃ©but *",
+      "startDate": "Date de début *",
       "endDate": "Date de fin *",
       "reason": "Raison",
-      "reasonPlaceholder": "DÃ©crivez la raison de votre congÃ©...",
+      "reasonPlaceholder": "Décrivez la raison de votre congé...",
       "submitted": "Soumis",
       "submit": "Soumettre",
       "cancel": "Annuler",
       "stats": {
         "total": "Demandes totales",
         "pending": "En attente",
-        "approved": "ApprouvÃ©es",
-        "rejected": "RejetÃ©",
+        "approved": "Approuvées",
+        "rejected": "Rejeté",
         "daysTaken": "Jours Pris",
-        "daysApproved": "Jours approuvÃ©s"
+        "daysApproved": "Jours approuvés"
       },
       "table": {
-        "startDate": "DÃ©but",
+        "startDate": "Début",
         "endDate": "Fin",
         "days": "Jours",
         "reason": "Motif",
@@ -1762,127 +1590,67 @@
         "submitted": "Soumise"
       },
       "errors": {
-        "dateRequired": "La date de dÃ©but et de fin sont requises",
-        "endAfterStart": "La date de fin doit Ãªtre aprÃ¨s la date de dÃ©but",
-        "managerRequired": "Veuillez sÃ©lectionner un manager",
-        "createFailed": "Ã‰chec de la soumission de la demande"
+        "dateRequired": "La date de début et de fin sont requises",
+        "endAfterStart": "La date de fin doit être après la date de début",
+        "createFailed": "Échec de la soumission de la demande"
       },
       "toasts": {
-        "requestSuccess": "Demande de congÃ© soumise",
-        "requestFailed": "Ã‰chec de la soumission de la demande",
-        "updateSuccess": "Demande de congÃ© mise Ã  jour",
-        "updateFailed": "Ã‰chec de la mise Ã  jour de la demande",
-        "deleteSuccess": "Demande de congÃ© supprimÃ©e",
-        "deleteFailed": "Ã‰chec de la suppression de la demande"
+        "requestSuccess": "Demande de congé soumise",
+        "requestFailed": "Échec de la soumission de la demande"
       },
       "status": {
         "PENDING": "En attente",
-        "APPROVED": "ApprouvÃ©e",
-        "REJECTED": "RejetÃ©e"
+        "APPROVED": "Approuvée",
+        "REJECTED": "Rejetée"
       },
-      "empty": "Aucune demande de congÃ© pour le moment.",
+      "empty": "Aucune demande de congé pour le moment.",
       "dialog": {
-        "title": "Nouvelle demande de congÃ©",
-        "editTitle": "Modifier la demande de congÃ©",
-        "startDate": "Date de dÃ©but *",
+        "title": "Nouvelle demande de congé",
+        "startDate": "Date de début *",
         "endDate": "Date de fin *",
-        "manager": "Manager *",
-        "managerPlaceholder": "SÃ©lectionnez un manager",
         "reason": "Motif",
         "reasonPlaceholder": "Motif facultatif..."
-      },
-      "deleteConfirm": {
-        "title": "Supprimer la demande de congÃ© ?",
-        "description": "ÃŠtes-vous sÃ»r de vouloir supprimer cette demande de congÃ© ? Cette action est irrÃ©versible."
       }
     },
     "certifications": {
-      "addCta": "Ajouter une certification",
+      "title": "Mes Certifications",
+      "subtitle": "Gérez vos certifications et réalisations professionnelles",
       "stats": {
-        "total": "Total",
+        "total": "Total des Certifications",
         "valid": "Valides",
-        "expired": "ExpirÃ©es"
+        "expired": "Expirées"
       },
+      "addCta": "Ajouter une certification",
       "table": {
-        "name": "Nom",
+        "name": "Nom de la Certification",
         "issuingBody": "Organisme",
         "obtained": "Obtenue",
         "expires": "Expire",
-        "status": "Statut",
-        "document": "Document",
-        "viewDocument": "Visualiser le document"
+        "status": "Statut"
       },
       "status": {
         "VALID": "Valide",
-        "EXPIRING_SOON": "Expire bientÃ´t",
-        "EXPIRED": "ExpirÃ©e"
+        "EXPIRING_SOON": "Expire bientôt",
+        "EXPIRED": "Expirée"
       },
-      "empty": "Aucune certification pour le moment. Cliquez sur \"Ajouter une certification\" pour commencer.",
+      "empty": "Aucune certification enregistrée.",
       "dialog": {
         "title": "Ajouter une certification",
-        "certificateName": "Nom de la certification *",
-        "certificateNamePlaceholder": "ex. SAP Certified Application Associate",
-        "issuingBody": "Organisme Ã©metteur *",
-        "issuingBodyPlaceholder": "ex. SAP",
-        "dateObtained": "Date d'obtention *",
+        "certificateName": "Nom de la certification",
+        "certificateNamePlaceholder": "ex. AWS Certified Solutions Architect",
+        "issuingBody": "Organisme émetteur",
+        "issuingBodyPlaceholder": "ex. Amazon Web Services",
+        "dateObtained": "Date d'obtention",
         "expiryDate": "Date d'expiration",
-        "status": "Statut",
-        "document": "Document (PDF, image)"
+        "status": "Statut"
       },
-      "deleteConfirm": {
-        "title": "Supprimer la certification ?",
-        "description": "ÃŠtes-vous sÃ»r de vouloir supprimer la certification Â« {{name}} Â» ? Cette action est irrÃ©versible."
+      "add": "Ajouter",
+      "toasts": {
+        "addFailed": "Échec de l'ajout de la certification",
+        "addSuccess": "Certification ajoutée avec succès",
+        "deleteSuccess": "Certification supprimée",
+        "deleteFailed": "Échec de la suppression de la certification"
       }
-    }
-  },
-  "filters": {
-    "project": "Projet",
-    "projectPlaceholder": "Projet",
-    "wricefPlaceholder": "ID WRICEF...",
-    "ticketsPlaceholder": "Rechercher des tickets..."
-  },
-  "calendar": {
-    "prev": "PrÃ©c",
-    "next": "Suivant",
-    "dayNames": {
-      "Mon": "Lun",
-      "Tue": "Mar",
-      "Wed": "Mer",
-      "Thu": "Jeu",
-      "Fri": "Ven",
-      "Sat": "Sam",
-      "Sun": "Dim"
-    }
-  },
-  "projectPanels": {
-    "ticketsActivity": "Fil d'actualitÃ©",
-    "selectTicket": "SÃ©lectionner un ticket pour voir l'activitÃ©.",
-    "noActivity": "Aucune activitÃ© trouvÃ©e pour ce ticket.",
-    "toolbar": {
-      "searchPlaceholder": "Rechercher des tickets...",
-      "status": "Statut"
-    }
-  },
-  "asyncError": {
-    "title": "Erreur de l'application",
-    "description": "Une erreur critique est survenue. Cela peut Ãªtre liÃ© Ã  un problÃ¨me rÃ©seau ou Ã  un incident technique."
-  },
-  "imputationsPages": {
-    "consultantTech": {
-      "title": "Mes saisies de temps",
-      "subtitle": "Enregistrez vos heures de travail avec le calendrier bi-hebdomadaire"
-    },
-    "manager": {
-      "title": "Saisies d'Ã©quipe",
-      "subtitle": "Consultez et suivez les saisies de temps de l'Ã©quipe"
-    },
-    "devCoordinator": {
-      "title": "Saisies de temps et allocation",
-      "subtitle": "Suivez les saisies de temps de l'Ã©quipe et la rÃ©partition de charge"
-    },
-    "projectManager": {
-      "title": "Hub de validation Stratime",
-      "subtitle": "Validez les saisies d'Ã©quipe soumises et envoyez les pÃ©riodes validÃ©es vers Stratime"
     }
   },
   "resourceAllocation": {
@@ -1892,17 +1660,17 @@
       "project": "projet"
     },
     "notification": {
-      "title": "Nouvelle allocation attribuÃ©e",
-      "message": "Vous avez Ã©tÃ© allouÃ© Ã  {{percent}}% sur {{project}}."
+      "title": "Nouvelle allocation attribuée",
+      "message": "Vous avez été alloué à {{percent}}% sur {{project}}."
     },
     "form": {
       "title": "Nouvelle allocation",
       "consultant": "Consultant",
-      "selectUser": "SÃ©lectionner un utilisateur",
+      "selectUser": "Sélectionner un utilisateur",
       "project": "Projet",
-      "selectProject": "SÃ©lectionner un projet",
+      "selectProject": "Sélectionner un projet",
       "allocationPercent": "Allocation %",
-      "start": "DÃ©but",
+      "start": "Début",
       "end": "Fin",
       "saving": "Enregistrement...",
       "add": "Ajouter l'allocation"
@@ -1915,30 +1683,101 @@
       "project": "Projet",
       "allocation": "Allocation",
       "totalPerUser": "Total/Utilisateur",
-      "period": "PÃ©riode",
-      "periodValue": "{{start}} Ã  {{end}}",
+      "period": "Période",
+      "periodValue": "{{start}} à {{end}}",
       "loading": "Chargement des allocations...",
-      "empty": "Aucune allocation trouvÃ©e."
+      "empty": "Aucune allocation trouvée."
     },
     "delete": {
       "title": "Supprimer l'allocation",
-      "description": "Cette ligne d'allocation sera supprimÃ©e du jeu de donnÃ©es actuel.",
-      "fallbackDescription": "Cette action est irrÃ©versible.",
+      "description": "Cette ligne d'allocation sera supprimée du jeu de données actuel.",
+      "fallbackDescription": "Cette action est irréversible.",
       "remove": "Supprimer"
     },
     "toasts": {
       "requiredFields": "L'utilisateur et le projet sont requis",
-      "invalidDateRange": "La date de fin ne peut pas Ãªtre antÃ©rieure Ã  la date de dÃ©but",
-      "invalidPercent": "Le pourcentage d'allocation doit Ãªtre compris entre 0 et 100",
-      "overlappingAllocation": "Ce consultant a dÃ©jÃ  une allocation qui chevauche cette pÃ©riode pour ce projet",
-      "exceedsCapacity": "L'allocation dÃ©passe 100% pour cet utilisateur ({{total}}%)",
-      "created": "Allocation crÃ©Ã©e",
-      "createFailed": "Ã‰chec de la crÃ©ation de l'allocation",
-      "updateFailed": "Ã‰chec de la mise Ã  jour de l'allocation",
-      "deleted": "Allocation supprimÃ©e",
-      "deleteFailed": "Ã‰chec de la suppression de l'allocation"
+      "invalidDateRange": "La date de fin ne peut pas être antérieure à la date de début",
+      "invalidPercent": "Le pourcentage d'allocation doit être compris entre 0 et 100",
+      "overlappingAllocation": "Ce consultant a déjà une allocation qui chevauche cette période pour ce projet",
+      "exceedsCapacity": "L'allocation dépasse 100% pour cet utilisateur ({{total}}%)",
+      "created": "Allocation créée",
+      "createFailed": "Échec de la création de l'allocation",
+      "updateFailed": "Échec de la mise à jour de l'allocation",
+      "deleted": "Allocation supprimée",
+      "deleteFailed": "Échec de la suppression de l'allocation"
+    }
+  },
+  "notifications": {
+    "projectFeedback": {
+      "title": "Nouveau Retour Fonctionnel sur le Projet",
+      "message": "{{author}} a soumis un retour sur le projet {{project}} : \"{{content}}\""
+    },
+    "deliverableReviewed": {
+      "title": "Livrable Examiné",
+      "message": "\"{{name}}\" est passé au statut {{status}}."
+    },
+    "deliverableSubmitted": {
+      "title": "Nouvelle Spécification Fonctionnelle",
+      "message": "{{author}} a soumis \"{{name}}\" pour examen."
+    }
+  },
+  "filters": {
+    "project": "Projet",
+    "projectPlaceholder": "Projet",
+    "wricefPlaceholder": "ID WRICEF...",
+    "ticketsPlaceholder": "Rechercher des tickets..."
+  },
+  "calendar": {
+    "prev": "Préc",
+    "next": "Suivant",
+    "dayNames": {
+      "Mon": "Lun",
+      "Tue": "Mar",
+      "Wed": "Mer",
+      "Thu": "Jeu",
+      "Fri": "Ven",
+      "Sat": "Sam",
+      "Sun": "Dim"
+    }
+  },
+  "projectPanels": {
+    "ticketsActivity": "Fil d'actualité",
+    "selectTicket": "Sélectionner un ticket pour voir l'activité.",
+    "noActivity": "Aucune activité trouvée pour ce ticket.",
+    "toolbar": {
+      "searchPlaceholder": "Rechercher des tickets...",
+      "status": "Statut",
+      "allStatuses": "Tous les Statuts",
+      "clear": "Effacer les filtres",
+      "createTicket": "Créer un Ticket"
+    },
+    "table": {
+      "emptyProject": "Aucun ticket pour ce projet.",
+      "emptyFilters": "Aucun ticket ne correspond aux filtres actuels.",
+      "showing": "Affichage de {{start}}-{{end}} sur {{count}} tickets",
+      "pageSize": "{{size}} / page"
+    }
+  },
+  "asyncError": {
+    "title": "Erreur de l'application",
+    "description": "Une erreur critique est survenue. Cela peut être lié à un problème réseau ou à un incident technique."
+  },
+  "imputationsPages": {
+    "consultantTech": {
+      "title": "Mes saisies de temps",
+      "subtitle": "Enregistrez vos heures de travail avec le calendrier bi-hebdomadaire"
+    },
+    "manager": {
+      "title": "Saisies d'équipe",
+      "subtitle": "Consultez et suivez les saisies de temps de l'équipe"
+    },
+    "devCoordinator": {
+      "title": "Saisies de temps et allocation",
+      "subtitle": "Suivez les saisies de temps de l'équipe et la répartition de charge"
+    },
+    "projectManager": {
+      "title": "Hub de validation Stratime",
+      "subtitle": "Validez les saisies d'équipe soumises et envoyez les périodes validées vers Stratime"
     }
   }
 }
-
-

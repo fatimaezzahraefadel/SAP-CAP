@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageHeader } from '../../components/common/PageHeader';import { LeaveRequestsAPI } from '../../services/odata/leaveRequestsApi';
+import { NotificationsAPI } from '../../services/odata/notificationsApi';
+import { UsersAPI } from '../../services/odata/usersApi';
 import { LeaveRequest, LeaveStatus } from '../../types/entities';
 import { useAuth } from '../../context/AuthContext';
 import { Plus } from 'lucide-react';
@@ -85,6 +87,28 @@ export const MesConges: React.FC = () => {
       setForm(EMPTY_FORM);
       setShowCreate(false);
       toast.success(t('consultantTech.leaves.toasts.requestSuccess'));
+
+      // Notify the manager if setting is enabled
+      try {
+        const appSettings = JSON.parse(localStorage.getItem('appSettings') ?? '{}') as Record<string, unknown>;
+        const notifEnabled = appSettings.leaveRequestNotif !== false; // enabled by default
+        if (notifEnabled) {
+          const allUsers = await UsersAPI.getAll();
+          const manager = allUsers.find((u) => u.role === 'MANAGER' && u.active);
+          if (manager) {
+            await NotificationsAPI.create({
+              userId: manager.id,
+              type: 'LEAVE_REQUEST',
+              title: 'Nouvelle demande de congé',
+              message: `${currentUser.name} a soumis une demande de congé du ${new Date(form.startDate).toLocaleDateString('fr-FR')} au ${new Date(form.endDate).toLocaleDateString('fr-FR')}.`,
+              targetPath: '/manager/leave',
+              read: false,
+            });
+          }
+        }
+      } catch {
+        // Notification failure should not block the main action
+      }
     } catch {
       toast.error(t('consultantTech.leaves.toasts.requestFailed'));
     }

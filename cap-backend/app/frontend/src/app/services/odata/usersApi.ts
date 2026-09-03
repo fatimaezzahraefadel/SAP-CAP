@@ -77,8 +77,9 @@ const normalizeCertifications = (
           name,
           issuingBody: String(candidate.issuingBody ?? 'N/A'),
           dateObtained,
-          expiryDate: typeof candidate.expiryDate === 'string' ? candidate.expiryDate : undefined,
+          expiryDate: typeof candidate.expiryDate === 'string' && candidate.expiryDate ? candidate.expiryDate : undefined,
           status,
+          documentUrl: typeof candidate.documentUrl === 'string' && candidate.documentUrl ? candidate.documentUrl : undefined,
         };
       }
       return null;
@@ -130,10 +131,12 @@ const toUserPayload = (user: Partial<User>): Record<string, unknown> => {
     payload.certifications = Array.isArray(user.certifications)
       ? user.certifications.map((cert) => ({
           name: typeof cert === 'string' ? cert : cert.name,
-          date:
-            typeof cert === 'string'
-              ? undefined
-              : cert.dateObtained || cert.expiryDate,
+          issuingBody: typeof cert === 'string' ? 'N/A' : (cert.issuingBody ?? 'N/A'),
+          dateObtained: typeof cert === 'string' ? undefined : cert.dateObtained,
+          expiryDate: typeof cert === 'string' ? undefined : cert.expiryDate,
+          status: typeof cert === 'string' ? 'VALID' : cert.status,
+          documentUrl: typeof cert === 'string' ? undefined : cert.documentUrl,
+          date: typeof cert === 'string' ? undefined : (cert.dateObtained || cert.expiryDate),
         }))
       : [];
   }

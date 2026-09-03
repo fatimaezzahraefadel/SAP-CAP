@@ -12,16 +12,16 @@ import { UsersAPI } from '../../services/odata/usersApi';
 import { Allocation, Ticket, TicketStatus, User } from '../../types/entities';
 import { computeProductivityMetrics, computeTace } from '../../features/dashboard/model';
 
-/** A distinct accent colour for each ticket status used in the delivery snapshot. */
+/** Couleur de point par statut ticket — palette Inetum brand */
 const STATUS_DOT: Record<TicketStatus, string> = {
-  PENDING_APPROVAL: 'bg-amber-500',
-  APPROVED: 'bg-sky-500',
-  NEW: 'bg-blue-500',
-  IN_PROGRESS: 'bg-indigo-500',
-  IN_TEST: 'bg-purple-500',
-  BLOCKED: 'bg-rose-500',
-  DONE: 'bg-emerald-500',
-  REJECTED: 'bg-slate-400',
+  PENDING_APPROVAL: 'bg-muted-foreground',
+  APPROVED:         'bg-primary',
+  NEW:              'bg-primary/60',
+  IN_PROGRESS:      'bg-primary',
+  IN_TEST:          'bg-accent-foreground',
+  BLOCKED:          'bg-destructive',
+  DONE:             'bg-primary',
+  REJECTED:         'bg-muted-foreground',
 };
 
 export const ManagerDashboard: React.FC = () => {

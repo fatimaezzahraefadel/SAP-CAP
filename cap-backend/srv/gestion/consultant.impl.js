@@ -6,15 +6,40 @@ const { countWorkingDays, isoDate, todayIso } = require('./gestion.util');
 const getEmployeeForRequest = async (req, tx) => {
   const email = req.user?.attr?.email || req.headers['x-test-user-email'];
   const userId = req.user?.id || req.headers['x-test-user-id'];
-  const requestedRole = req.headers['x-test-user-role'];
   const { Employes } = cds.entities('sap.performance.dashboard.db');
 
   let employe = email && await tx.run(SELECT.one.from(Employes).where({ email }));
+  if (!employe && userId) employe = await tx.run(SELECT.one.from(Employes).where({ matricule: userId }));
   if (!employe && userId) employe = await tx.run(SELECT.one.from(Employes).where({ ID: userId }));
   if (!employe) employe = await tx.run(SELECT.one.from(Employes).where({ role: 'CONSULTANT' }));
+
+  // Si pas trouvé dans Employes, créer un employé virtuel depuis Users
+  if (!employe && userId) {
+    const { Users } = cds.entities('sap.performance.dashboard.db');
+    const user = await tx.run(SELECT.one.from(Users).where({ ID: userId }));
+    if (user && user.role === 'CONSULTANT_TECHNIQUE') {
+      // Insérer l'employé manquant
+      const newEmploye = {
+        ID: userId,
+        matricule: userId.toUpperCase(),
+        nom: user.name?.split(' ').slice(1).join(' ') || user.name,
+        prenom: user.name?.split(' ')[0] || user.name,
+        email: user.email,
+        poste: 'Consultant Technique SAP',
+        role: 'CONSULTANT',
+        dateEmbauche: '2024-01-01',
+        soldeConges: 18,
+        manager_ID: 'mgr-001',
+      };
+      await tx.run(INSERT.into(Employes).entries(newEmploye));
+      employe = newEmploye;
+    }
+  }
+
   if (!employe) req.reject(403, 'Aucun consultant de test ne correspond a cet utilisateur.');
-  if (requestedRole && requestedRole !== 'CONSULTANT') req.reject(403, 'Acces reserve au role consultant.');
-  if (employe.role !== 'CONSULTANT') req.reject(403, 'Acces reserve au role consultant.');
+  if (!['CONSULTANT', 'CONSULTANT_TECHNIQUE'].includes(employe.role)) {
+    req.reject(403, 'Acces reserve au role consultant.');
+  }
   return employe;
 };
 

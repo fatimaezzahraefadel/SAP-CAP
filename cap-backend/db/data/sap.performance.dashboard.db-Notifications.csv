@@ -1,4 +1,1 @@
-ID,userId,type,title,message,targetPath,read,createdAt
-notif-1,u-manager,TICKET_ASSIGNED,New ticket assigned,Ticket TK-2026-0001 has been assigned to Theo Technique.,/manager/tickets,false,2026-02-10T14:00:00Z
-notif-2,u-tech,TICKET_STATUS,Ticket in test,TK-2026-0003 has moved to IN_TEST status.,/consultant-tech/tickets,true,2026-02-12T09:00:00Z
-notif-3,u-admin,SYSTEM,System updated,Performance Hub updated to version 2.1.0.,/admin/dashboard,false,2026-02-20T08:00:00Z
+ID;userId;type;title;message;targetPath;read;createdAt

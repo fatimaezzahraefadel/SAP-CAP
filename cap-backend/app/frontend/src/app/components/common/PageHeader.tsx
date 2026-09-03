@@ -8,7 +8,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '../ui/breadcrumb';
-import { cn } from '../ui/utils';
 
 interface BreadcrumbEntry {
   label: string;
@@ -31,13 +30,10 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   const navigate = useNavigate();
 
   return (
-    <header className="relative overflow-hidden border-b border-border/80 bg-surface-1 px-4 py-5 sm:px-6 lg:px-8">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent" />
-      <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-primary/10 blur-2xl" />
-
-      <div className="relative space-y-4">
+    <header className="border-b border-border bg-surface-1 px-4 py-5 sm:px-6 lg:px-8">
+      <div className="space-y-4">
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <Breadcrumb className="w-fit rounded-full border border-border/70 bg-background/75 px-3 py-1.5 backdrop-blur-sm">
+          <Breadcrumb className="w-fit">
             <BreadcrumbList>
               {breadcrumbs.map((crumb, index) => {
                 const isLast = index === breadcrumbs.length - 1;
@@ -48,14 +44,8 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                       {isLast || !crumb.path ? (
                         <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
                       ) : (
-                        <BreadcrumbLink
-                          asChild
-                          className="cursor-pointer"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => navigate(crumb.path as string)}
-                          >
+                        <BreadcrumbLink asChild className="cursor-pointer">
+                          <button type="button" onClick={() => navigate(crumb.path as string)}>
                             {crumb.label}
                           </button>
                         </BreadcrumbLink>
@@ -71,12 +61,11 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="max-w-3xl">
-            <div className="mb-3 h-1.5 w-14 rounded-full bg-primary/85" />
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl lg:text-[2.1rem]">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
               {title}
             </h1>
             {subtitle && (
-              <p className={cn('mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base')}>
+              <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
                 {subtitle}
               </p>
             )}

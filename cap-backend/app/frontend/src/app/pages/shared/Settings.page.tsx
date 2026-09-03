@@ -15,17 +15,15 @@ import {
 import { Switch } from '../../components/ui/switch';
 
 interface LocalSettings {
-  emailNotifications: boolean;
-  desktopNotifications: boolean;
-  weeklyDigest: boolean;
+  leaveRequestNotif: boolean;
+  certificationNotif: boolean;
 }
 
 const STORAGE_KEY = 'appSettings';
 
 const DEFAULT_SETTINGS: LocalSettings = {
-  emailNotifications: true,
-  desktopNotifications: true,
-  weeklyDigest: true,
+  leaveRequestNotif: true,
+  certificationNotif: true,
 };
 
 const getInitialSettings = (): LocalSettings => {
@@ -33,7 +31,11 @@ const getInitialSettings = (): LocalSettings => {
   if (!raw) return DEFAULT_SETTINGS;
 
   try {
-    return JSON.parse(raw) as LocalSettings;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return {
+      leaveRequestNotif: typeof parsed.leaveRequestNotif === 'boolean' ? parsed.leaveRequestNotif : DEFAULT_SETTINGS.leaveRequestNotif,
+      certificationNotif: typeof parsed.certificationNotif === 'boolean' ? parsed.certificationNotif : DEFAULT_SETTINGS.certificationNotif,
+    };
   } catch {
     localStorage.removeItem(STORAGE_KEY);
     return DEFAULT_SETTINGS;
@@ -98,58 +100,44 @@ export const SettingsPage: React.FC = () => {
             <CardDescription>{t('settings.notificationsDesc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Leave request notification toggle */}
             <div className="flex items-center justify-between rounded-xl border border-border/70 bg-surface-2 p-4">
               <div>
-                <p id="settings-email-label" className="font-semibold text-foreground">
-                  {t('settings.emailNotifications')}
+                <p id="settings-leave-notif-label" className="font-semibold text-foreground">
+                  {t('settings.leaveRequestNotif')}
                 </p>
-                <p className="text-sm text-muted-foreground">{t('settings.emailNotificationsDesc')}</p>
+                <p className="text-sm text-muted-foreground">{t('settings.leaveRequestNotifDesc')}</p>
               </div>
               <Switch
-                id="settings-email-toggle"
-                aria-labelledby="settings-email-label"
-                checked={settings.emailNotifications}
+                id="settings-leave-notif-toggle"
+                aria-labelledby="settings-leave-notif-label"
+                checked={settings.leaveRequestNotif}
                 onCheckedChange={(checked) =>
-                  setSettings((prev) => ({ ...prev, emailNotifications: Boolean(checked) }))
+                  setSettings((prev) => ({ ...prev, leaveRequestNotif: Boolean(checked) }))
                 }
               />
             </div>
 
+            {/* Certification notification toggle */}
             <div className="flex items-center justify-between rounded-xl border border-border/70 bg-surface-2 p-4">
               <div>
-                <p id="settings-desktop-label" className="font-semibold text-foreground">
-                  {t('settings.desktopNotifications')}
+                <p id="settings-cert-notif-label" className="font-semibold text-foreground">
+                  {t('settings.certificationNotif')}
                 </p>
-                <p className="text-sm text-muted-foreground">{t('settings.desktopNotificationsDesc')}</p>
+                <p className="text-sm text-muted-foreground">{t('settings.certificationNotifDesc')}</p>
               </div>
               <Switch
-                id="settings-desktop-toggle"
-                aria-labelledby="settings-desktop-label"
-                checked={settings.desktopNotifications}
+                id="settings-cert-notif-toggle"
+                aria-labelledby="settings-cert-notif-label"
+                checked={settings.certificationNotif}
                 onCheckedChange={(checked) =>
-                  setSettings((prev) => ({ ...prev, desktopNotifications: Boolean(checked) }))
-                }
-              />
-            </div>
-
-            <div className="flex items-center justify-between rounded-xl border border-border/70 bg-surface-2 p-4">
-              <div>
-                <p id="settings-weekly-label" className="font-semibold text-foreground">
-                  {t('settings.weeklyDigest')}
-                </p>
-                <p className="text-sm text-muted-foreground">{t('settings.weeklyDigestDesc')}</p>
-              </div>
-              <Switch
-                id="settings-weekly-toggle"
-                aria-labelledby="settings-weekly-label"
-                checked={settings.weeklyDigest}
-                onCheckedChange={(checked) =>
-                  setSettings((prev) => ({ ...prev, weeklyDigest: Boolean(checked) }))
+                  setSettings((prev) => ({ ...prev, certificationNotif: Boolean(checked) }))
                 }
               />
             </div>
           </CardContent>
         </Card>
+
 
         <Card className="bg-card/92">
           <CardHeader>

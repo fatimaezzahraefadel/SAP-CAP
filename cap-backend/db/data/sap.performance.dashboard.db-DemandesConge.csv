@@ -1,4 +1,1 @@
 ID,consultant_ID,typeConge_ID,dateDebut,dateFin,nbJours,motif,statut,commentaireManager,dateDecision
-dc-001,cons-001,tc-annuel,2026-08-10,2026-08-14,5,Vacances ete,SOUMISE,,
-dc-002,cons-002,tc-exceptionnel,2026-07-20,2026-07-21,2,Evenement familial,APPROUVEE,Accorde,2026-07-15T09:00:00Z
-dc-003,cons-001,tc-maladie,2026-06-03,2026-06-04,2,Repos medical,REJETEE,Justificatif manquant,2026-06-02T16:30:00Z

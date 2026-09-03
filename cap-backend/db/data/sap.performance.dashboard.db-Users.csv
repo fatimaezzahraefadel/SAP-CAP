@@ -1,7 +1,4 @@
 ID;createdAt;createdBy;modifiedAt;modifiedBy;name;email;role;active;availabilityPercent;teamId;avatarUrl;identityProvider
 "u-admin";"2026-01-01T00:00:00Z";"system";"2026-01-01T00:00:00Z";"system";"Alice Admin";"alice.admin@inetum.com";"ADMIN";true;100;"TEAM_ADMIN";"";"LOCAL"
-"u-manager";"2026-01-01T00:00:00Z";"system";"2026-01-01T00:00:00Z";"system";"Marc Manager";"marc.manager@inetum.com";"MANAGER";true;100;"TEAM_MGMT";"";"LOCAL"
-"u-tech";"2026-01-01T00:00:00Z";"system";"2026-01-01T00:00:00Z";"system";"Theo Technique";"theo.tech@inetum.com";"CONSULTANT_TECHNIQUE";true;80;"TEAM_TECH";"";"LOCAL"
-"u-fonc";"2026-01-01T00:00:00Z";"system";"2026-01-01T00:00:00Z";"system";"Fatima Fonctionnel";"fatima.fonc@inetum.com";"CONSULTANT_FONCTIONNEL";true;85;"TEAM_FUNC";"";"LOCAL"
-"u-pm";"2026-01-01T00:00:00Z";"system";"2026-01-01T00:00:00Z";"system";"Pierre PM";"pierre.pm@inetum.com";"PROJECT_MANAGER";true;90;"TEAM_PM";"";"LOCAL"
-"u-devco";"2026-01-01T00:00:00Z";"system";"2026-01-01T00:00:00Z";"system";"Diana DevCo";"diana.devco@inetum.com";"DEV_COORDINATOR";true;90;"TEAM_DEV";"";"LOCAL"
+"u-manager";"2026-01-01T00:00:00Z";"system";"2026-01-01T00:00:00Z";"system";"Zakaria EZ-ZAYTTE";"zakaria.ezzaytte@inetum.com";"MANAGER";true;100;"TEAM_MGMT";"";"LOCAL"
+"u-tech";"2026-01-01T00:00:00Z";"system";"2026-01-01T00:00:00Z";"system";"Fatima-Ezzahrae FADEL";"fatima.fadel@inetum.com";"CONSULTANT_TECHNIQUE";true;80;"TEAM_TECH";"";"LOCAL"

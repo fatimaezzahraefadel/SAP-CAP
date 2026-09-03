@@ -91,16 +91,8 @@ const DOCS = [
   { ID: 'demo-doc-cutover', title: 'S/4HANA Cutover Checklist', description: 'Go-live cutover runbook for the Acme migration.', type: 'GENERAL', content: 'Step-by-step cutover activities, owners and rollback points.', projectId: 'proj-1', authorId: 'u-manager', sourceSystem: 'MANUAL', createdAt: T('2026-05-10') },
 ];
 
-// --- Notifications (7 — at least one unread per persona) ---------------------
-const NOTIFICATIONS = [
-  { ID: 'demo-notif-mgr-1', userId: 'u-manager', type: 'LEAVE_REQUEST', title: 'Leave request to review', message: 'Karim Technique requested leave from 2026-07-20 to 2026-07-24.', targetPath: '/manager/leave', read: false, createdAt: T('2026-06-28') },
-  { ID: 'demo-notif-mgr-2', userId: 'u-manager', type: 'TICKET_APPROVAL', title: 'Ticket awaiting approval', message: 'A new ticket is pending your approval on Central Finance.', targetPath: '/manager/tickets', read: false, createdAt: T('2026-06-29') },
-  { ID: 'demo-notif-tech-1', userId: 'u-tech', type: 'TICKET_ASSIGNED', title: 'New ticket assigned', message: 'You have been assigned "Enhancement export comptable".', targetPath: '/consultant-tech/tickets', read: false, createdAt: T('2026-06-27') },
-  { ID: 'demo-notif-t2-1', userId: 'u-tech-2', type: 'TICKET_ASSIGNED', title: 'New ticket assigned', message: 'You have been assigned "Programme de reprise des données MM".', targetPath: '/consultant-tech/tickets', read: false, createdAt: T('2026-06-26') },
-  { ID: 'demo-notif-t3-1', userId: 'u-tech-3', type: 'EVALUATION', title: 'New evaluation available', message: 'Your S1 2026 evaluation has been published.', targetPath: '/consultant-tech/dashboard', read: false, createdAt: T('2026-06-30') },
-  { ID: 'demo-notif-fonc-1', userId: 'u-fonc', type: 'WRICEF_VALIDATION', title: 'WRICEF to validate', message: 'The HR WRICEF package is pending functional validation.', targetPath: '/consultant-func/objects', read: false, createdAt: T('2026-06-25') },
-  { ID: 'demo-notif-pm-1', userId: 'u-pm', type: 'IMPUTATION', title: 'Timesheet to validate', message: 'Karim Technique submitted his 2026-06-H2 imputations.', targetPath: '/project-manager/imputations', read: false, createdAt: T('2026-06-30') },
-];
+// --- Notifications (vides — pas de notifications demo) -----------------------
+const NOTIFICATIONS = [];
 
 // --- Leave requests (3 — one per status) -------------------------------------
 const LEAVES = [
@@ -258,14 +250,8 @@ async function ensureRows(entity, rows) {
  * Returns the total number of rows inserted across all entities.
  */
 async function ensureDemoData() {
-  const db = cds.db;
-  if (!db) return 0;
-
-  let total = 0;
-  for (const [entity, rows] of DATASET) {
-    total += await ensureRows(entity, rows);
-  }
-  return total;
+  // Données de demo désactivées — la plateforme démarre vide pour les tests réels
+  return 0;
 }
 
 module.exports = { ensureDemoData };

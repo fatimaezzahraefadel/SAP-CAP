@@ -67,6 +67,7 @@ export interface CreateCertificatInput {
   dateObtention: string;
   dateExpiration?: string;
   score?: string;
+  documentUrl?: string;
 }
 
 export interface KPIConge {

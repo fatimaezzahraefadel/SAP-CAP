@@ -31,7 +31,7 @@ module.exports = cds.service.impl(function () {
   this.on('approuverDemande', async (req) => {
     const tx = cds.transaction(req);
     await ensureManager(req, tx);
-    const { DemandesConge, Employes, TypesConge } = cds.entities('sap.performance.dashboard.db');
+    const { DemandesConge, Employes, TypesConge, Notifications, Users } = cds.entities('sap.performance.dashboard.db');
     const demande = await tx.run(SELECT.one.from(DemandesConge).where({ ID: req.data.demandeId }));
     if (!demande) req.reject(404, 'Demande de conge introuvable.');
     if (demande.statut !== 'SOUMISE') req.reject(400, 'Seules les demandes soumises peuvent etre approuvees.');
@@ -49,6 +49,31 @@ module.exports = cds.service.impl(function () {
       dateDecision: new Date().toISOString(),
     }).where({ ID: demande.ID }));
 
+    // Notifier le consultant
+    const employe = await tx.run(SELECT.one.from(Employes).where({ ID: demande.consultant_ID }));
+    let notificationUserId = demande.consultant_ID;
+    if (employe) {
+      const user = await tx.run(SELECT.one.from(Users).where({ email: employe.email }))
+        || await tx.run(SELECT.one.from(Users).where({ ID: employe.ID }))
+        || await tx.run(SELECT.one.from(Users).where({ ID: demande.consultant_ID }));
+      if (user) notificationUserId = user.ID;
+    }
+
+    try {
+      const dateDebutStr = demande.dateDebut ? new Date(demande.dateDebut).toLocaleDateString('fr-FR') : demande.dateDebut;
+      const dateFinStr = demande.dateFin ? new Date(demande.dateFin).toLocaleDateString('fr-FR') : demande.dateFin;
+      await tx.run(INSERT.into(Notifications).entries({
+        userId: notificationUserId,
+        type: 'LEAVE_DECISION',
+        title: '✅ Demande de congé approuvée',
+        message: `Votre demande de congé du ${dateDebutStr} au ${dateFinStr} a été approuvée.${req.data.commentaire ? ` Commentaire : ${req.data.commentaire}` : ''}`,
+        targetPath: '/consultant-tech/leave',
+        read: false,
+      }));
+    } catch (e) {
+      console.warn('Could not create notification for leave approval:', e.message);
+    }
+
     return tx.run(SELECT.one.from(DemandesConge).where({ ID: demande.ID }));
   });
 
@@ -58,7 +83,7 @@ module.exports = cds.service.impl(function () {
 
     const tx = cds.transaction(req);
     await ensureManager(req, tx);
-    const { DemandesConge } = cds.entities('sap.performance.dashboard.db');
+    const { DemandesConge, Employes, Notifications, Users } = cds.entities('sap.performance.dashboard.db');
     const demande = await tx.run(SELECT.one.from(DemandesConge).where({ ID: req.data.demandeId }));
     if (!demande) req.reject(404, 'Demande de conge introuvable.');
     if (demande.statut !== 'SOUMISE') req.reject(400, 'Seules les demandes soumises peuvent etre rejetees.');
@@ -68,6 +93,31 @@ module.exports = cds.service.impl(function () {
       commentaireManager: commentaire,
       dateDecision: new Date().toISOString(),
     }).where({ ID: demande.ID }));
+
+    // Notifier le consultant
+    const employe = await tx.run(SELECT.one.from(Employes).where({ ID: demande.consultant_ID }));
+    let notificationUserId = demande.consultant_ID;
+    if (employe) {
+      const user = await tx.run(SELECT.one.from(Users).where({ email: employe.email }))
+        || await tx.run(SELECT.one.from(Users).where({ ID: employe.ID }))
+        || await tx.run(SELECT.one.from(Users).where({ ID: demande.consultant_ID }));
+      if (user) notificationUserId = user.ID;
+    }
+
+    try {
+      const dateDebutStr = demande.dateDebut ? new Date(demande.dateDebut).toLocaleDateString('fr-FR') : demande.dateDebut;
+      const dateFinStr = demande.dateFin ? new Date(demande.dateFin).toLocaleDateString('fr-FR') : demande.dateFin;
+      await tx.run(INSERT.into(Notifications).entries({
+        userId: notificationUserId,
+        type: 'LEAVE_DECISION',
+        title: '❌ Demande de congé rejetée',
+        message: `Votre demande de congé du ${dateDebutStr} au ${dateFinStr} a été rejetée. Motif : ${commentaire}`,
+        targetPath: '/consultant-tech/leave',
+        read: false,
+      }));
+    } catch (e) {
+      console.warn('Could not create notification for leave rejection:', e.message);
+    }
 
     return tx.run(SELECT.one.from(DemandesConge).where({ ID: demande.ID }));
   });

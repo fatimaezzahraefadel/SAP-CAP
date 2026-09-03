@@ -2,106 +2,142 @@
 
 :root {
   --font-size: 16px;
-  --font-display: "Sora", "Avenir Next", "Segoe UI", sans-serif;
-  --font-body: "Source Sans 3", "Segoe UI", sans-serif;
+  --font-display: "Inter", "Sora", "Avenir Next", "Segoe UI", sans-serif;
+  --font-body: "Inter", "Source Sans 3", "Segoe UI", sans-serif;
 
-  --background: #f7f8f8;
-  --foreground: #1a1a1a;
+  --background: #f8fafc;
+  --foreground: #1e2a3a;
   --card: #ffffff;
-  --card-foreground: #1a1a1a;
+  --card-foreground: #1e2a3a;
   --popover: #ffffff;
-  --popover-foreground: #1a1a1a;
+  --popover-foreground: #1e2a3a;
 
-  --primary: #00aa9b;
+  /* Identité Inetum — Bleu marine #1e2a3a + Teal #3eb8a0 */
+  --primary: #3eb8a0;
   --primary-foreground: #ffffff;
-  --secondary: #f1f3f3;
-  --secondary-foreground: #1a1a1a;
-  --muted: #f1f3f3;
-  --muted-foreground: #666d6d;
-  --accent: #d8efe9;
-  --accent-foreground: #0d5850;
+  --secondary: #f0f4f8;
+  --secondary-foreground: #1e2a3a;
+  --muted: #f0f4f8;
+  --muted-foreground: #64748b;
+  --accent: #d4f0eb;
+  --accent-foreground: #1e2a3a;
 
-  --destructive: #d13b4f;
+  /* Couleurs sémantiques fonctionnelles */
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
+  --success: #3eb8a0;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --info: #1e2a3a;
+  --info-foreground: #ffffff;
 
-  --border: #dde2e2;
+  --border: #e2e8f0;
   --input: #ffffff;
   --input-background: #ffffff;
-  --switch-background: #ccd4d4;
-  --ring: #00aa9b;
+  --switch-background: #cbd5e1;
+  --ring: #3eb8a0;
 
-  --chart-1: #00aa9b;
-  --chart-2: #0d8d80;
-  --chart-3: #66cfc5;
-  --chart-4: #1a1a1a;
-  --chart-5: #848b8b;
+  /* Palette charts — couleurs Inetum */
+  --chart-1: #3eb8a0;
+  --chart-2: #1e2a3a;
+  --chart-3: #6dcfc5;
+  --chart-4: #2d4a6a;
+  --chart-5: #94a3b8;
 
-  --radius: 1rem;
+  --radius: 0.5rem;
 
-  --sidebar: #ffffff;
-  --sidebar-foreground: #1a1a1a;
-  --sidebar-primary: #00aa9b;
+  --sidebar: #1e2a3a;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #3eb8a0;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(0, 170, 155, 0.14);
-  --sidebar-accent-foreground: #0d5850;
-  --sidebar-border: #dde2e2;
-  --sidebar-ring: #00aa9b;
+  --sidebar-accent: rgba(62, 184, 160, 0.15);
+  --sidebar-accent-foreground: #3eb8a0;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: #3eb8a0;
 
   --surface-1: #ffffff;
-  --surface-2: #f5f7f7;
-  --surface-3: #edf0f0;
-  --border-subtle: rgba(26, 26, 26, 0.06);
-  --border-default: #dde2e2;
-  --border-strong: #cfd6d6;
+  --surface-2: #f8fafc;
+  --surface-3: #f1f5f9;
+  --border-subtle: rgba(15, 23, 42, 0.06);
+  --border-default: #e2e8f0;
+  --border-strong: #cbd5e1;
+
+  /* Statut sémantiques — couleurs fonctionnelles */
+  --status-pending-bg: #fffbeb;
+  --status-pending-text: #92400e;
+  --status-pending-border: #fde68a;
+  --status-approved-bg: #f0fdf4;
+  --status-approved-text: #166534;
+  --status-approved-border: #bbf7d0;
+  --status-rejected-bg: #fef2f2;
+  --status-rejected-text: #991b1b;
+  --status-rejected-border: #fecaca;
 }
 
 .dark {
-  --background: #111111;
-  --foreground: #f5f5f5;
-  --card: #171717;
-  --card-foreground: #f5f5f5;
-  --popover: #171717;
-  --popover-foreground: #f5f5f5;
+  --background: #0b1220;
+  --foreground: #f1f5f9;
+  --card: #162032;
+  --card-foreground: #f1f5f9;
+  --popover: #162032;
+  --popover-foreground: #f1f5f9;
 
-  --primary: #00aa9b;
+  --primary: #3eb8a0;
   --primary-foreground: #ffffff;
-  --secondary: #222222;
-  --secondary-foreground: #f0f0f0;
-  --muted: #222222;
-  --muted-foreground: #a0a7a7;
-  --accent: #112f2b;
-  --accent-foreground: #88d4cc;
+  --secondary: #1e2a3a;
+  --secondary-foreground: #f1f5f9;
+  --muted: #1e2a3a;
+  --muted-foreground: #94a3b8;
+  --accent: #1a3d35;
+  --accent-foreground: #6dcfc5;
 
-  --destructive: #ef5a70;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
+  --success: #3eb8a0;
+  --success-foreground: #ffffff;
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+  --info: #3eb8a0;
+  --info-foreground: #ffffff;
 
-  --border: rgba(255, 255, 255, 0.14);
-  --input: #1a1a1a;
-  --input-background: #1a1a1a;
-  --switch-background: #3b3f3f;
-  --ring: #00aa9b;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: #1e2a3a;
+  --input-background: #1e2a3a;
+  --switch-background: #2d4a6a;
+  --ring: #3eb8a0;
 
-  --chart-1: #00aa9b;
-  --chart-2: #21c9b9;
-  --chart-3: #6cd9cf;
-  --chart-4: #e7e7e7;
-  --chart-5: #9ca3a3;
+  --chart-1: #3eb8a0;
+  --chart-2: #6dcfc5;
+  --chart-3: #9ee0d8;
+  --chart-4: #94a3b8;
+  --chart-5: #64748b;
 
-  --sidebar: #141414;
-  --sidebar-foreground: #f5f5f5;
-  --sidebar-primary: #00aa9b;
+  --sidebar: #131e2b;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-primary: #3eb8a0;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(0, 170, 155, 0.24);
-  --sidebar-accent-foreground: #b1e9e3;
-  --sidebar-border: rgba(255, 255, 255, 0.14);
-  --sidebar-ring: #00aa9b;
+  --sidebar-accent: rgba(62, 184, 160, 0.18);
+  --sidebar-accent-foreground: #6dcfc5;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #3eb8a0;
 
-  --surface-1: #171717;
-  --surface-2: #1e1e1e;
-  --surface-3: #252525;
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-default: rgba(255, 255, 255, 0.14);
-  --border-strong: rgba(255, 255, 255, 0.2);
+  --surface-1: #162032;
+  --surface-2: #1e2a3a;
+  --surface-3: #243347;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.18);
+
+  --status-pending-bg: #292524;
+  --status-pending-text: #fcd34d;
+  --status-pending-border: #422006;
+  --status-approved-bg: #0d2b26;
+  --status-approved-text: #6dcfc5;
+  --status-approved-border: #1a5048;
+  --status-rejected-bg: #1f0a0a;
+  --status-rejected-text: #fca5a5;
+  --status-rejected-border: #450a0a;
 }
 
 @theme inline {
@@ -121,6 +157,12 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-input-background: var(--input-background);

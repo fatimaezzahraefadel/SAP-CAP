@@ -11,12 +11,8 @@ import inetumLogoLight from '@/assets/inetum-logo.svg';
 import { TestUser } from '../services/odata/core';
 
 const testUsers: TestUser[] = [
-  { id: 'u-admin', email: 'alice.admin@inetum.com', name: 'Alice Admin', role: 'ADMIN' },
-  { id: 'u-manager', email: 'marc.manager@inetum.com', name: 'Marc Manager', role: 'MANAGER' },
-  { id: 'u-tech', email: 'theo.tech@inetum.com', name: 'Theo Technique', role: 'CONSULTANT_TECHNIQUE' },
-  { id: 'u-func', email: 'fatima.fonc@inetum.com', name: 'Fatima Fonctionnel', role: 'CONSULTANT_FONCTIONNEL' },
-  { id: 'u-pm', email: 'pierre.pm@inetum.com', name: 'Pierre PM', role: 'PROJECT_MANAGER' },
-  { id: 'u-devco', email: 'diana.devco@inetum.com', name: 'Diana DevCo', role: 'DEV_COORDINATOR' },
+  { id: 'u-manager', email: 'zakaria.ezzaytte@inetum.com', name: 'Zakaria EZ-ZAYTTE',    role: 'MANAGER' },
+  { id: 'u-tech',    email: 'fatima.fadel@inetum.com',    name: 'Fatima-Ezzahrae FADEL', role: 'CONSULTANT_TECHNIQUE' },
 ];
 
 export const Login: React.FC = () => {

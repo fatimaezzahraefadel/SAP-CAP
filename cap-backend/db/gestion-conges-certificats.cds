@@ -60,7 +60,7 @@ entity Certificats : cuid, managed {
   intitule              : String(200) not null;
   organisme             : String(150);
   identifiantCertificat : String(120);
-  documentUrl           : String(500);
+  documentUrl           : LargeString;
   dateObtention         : Date not null;
   dateExpiration        : Date;
   score                 : String(50);

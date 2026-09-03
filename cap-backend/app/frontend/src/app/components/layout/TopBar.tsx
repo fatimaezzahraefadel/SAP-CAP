@@ -115,7 +115,18 @@ export const TopBar: React.FC<TopBarProps> = ({
   }, [currentUser]);
 
   const visibleNotifications = useMemo(
-    () => (currentUser ? notifications : []),
+    () =>
+      currentUser
+        ? notifications.filter((n) => {
+            if (currentUser.role === 'MANAGER') {
+              return n.type === 'LEAVE_REQUEST' || n.type === 'LEAVE_DECISION' ||
+                     n.type === 'CERTIFICATE' || n.type === 'CERTIFICATION_ADDED';
+            }
+            // Consultant : seulement décision congé et vue certificat
+            return n.type === 'LEAVE_DECISION' || n.type === 'CERTIFICATE_VIEWED' ||
+                   n.type === 'CERTIFICATION_ADDED';
+          })
+        : [],
     [currentUser, notifications]
   );
 
@@ -196,15 +207,20 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   const resolveNotificationTarget = (notification: Notification): string | null => {
     const rawTarget = notification.targetPath?.trim();
-    if (!currentUser) {
-      return null;
+    if (!currentUser) return null;
+    if (!rawTarget) return getLegacyNotificationTarget(notification);
+
+    // Remplace le basepath du rôle si présent
+    let target = rawTarget.replace('{roleBasePath}', getBaseRouteForRole(currentUser.role));
+
+    // Si le manager reçoit une notif qui pointe vers une route consultant, redirige vers la route manager équivalente
+    if (currentUser.role === 'MANAGER') {
+      if (target.startsWith('/consultant-tech/certificates')) return '/manager/certificates';
+      if (target.startsWith('/consultant-tech/leave')) return '/manager/leave';
+      if (target.startsWith('/consultant-tech/')) return '/manager/leave';
     }
 
-    if (!rawTarget) {
-      return getLegacyNotificationTarget(notification);
-    }
-
-    return rawTarget.replace('{roleBasePath}', getBaseRouteForRole(currentUser.role));
+    return target;
   };
 
   const markNotificationAsRead = async (notificationId: string) => {
@@ -289,71 +305,9 @@ export const TopBar: React.FC<TopBarProps> = ({
           </div>
         </div>
 
-        <div className="ml-auto hidden min-w-0 items-center gap-2 rounded-full border border-border/70 bg-background/75 px-3 py-2 text-sm text-muted-foreground backdrop-blur lg:flex">
-          <BookMarked className="h-4 w-4 text-primary" />
-          <span className="truncate font-medium text-foreground">{currentWorkspaceLabel}</span>
-          <span className="h-1.5 w-1.5 rounded-full bg-border" />
-          <span>{currentLocale}</span>
-        </div>
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2 rounded-full px-3 text-muted-foreground"
-              title={t('common.switchLanguage')}
-            >
-              <Globe className="h-4 w-4" />
-              <span className="hidden text-xs font-semibold sm:inline">{currentLocale}</span>
-              <span className="sr-only">{t('common.switchLanguage')}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => changeLanguage('en')}>
-              {t('common.english')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => changeLanguage('fr')}>
-              {t('common.french')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-muted-foreground"
-          onClick={toggleDensity}
-          aria-pressed={density === 'compact'}
-          title={density === 'compact' ? t('common.comfortableDensity') : t('common.compactDensity')}
-        >
-          {density === 'compact' ? (
-            <AlignJustify className="h-4 w-4" />
-          ) : (
-            <AlignVerticalSpaceAround className="h-4 w-4" />
-          )}
-          <span className="sr-only">
-            {density === 'compact' ? t('common.comfortableDensity') : t('common.compactDensity')}
-          </span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-muted-foreground"
-          onClick={toggleTheme}
-          aria-pressed={theme === 'dark'}
-          title={theme === 'dark' ? t('common.lightMode') : t('common.darkMode')}
-        >
-          {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          <span className="sr-only">
-            {theme === 'dark' ? t('common.lightMode') : t('common.darkMode')}
-          </span>
-        </Button>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative text-muted-foreground">
+            <Button variant="ghost" size="icon" className="relative ml-auto text-muted-foreground">
               <Bell className="h-4 w-4" />
               {unreadCount > 0 && (
                 <Badge className="absolute -right-1.5 -top-1.5 h-5 min-w-5 rounded-full px-1.5 text-[10px]">

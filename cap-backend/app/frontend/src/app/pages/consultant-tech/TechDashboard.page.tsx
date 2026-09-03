@@ -14,27 +14,27 @@ import { Button } from '../../components/ui/button';
 import { Progress } from '../../components/ui/progress';
 import { getFridayOfWeek, getMondayOfWeek, toLocalDateKey } from '../../utils/date';
 
-// Per-KPI colour styling (local to this dashboard).
+// Per-KPI colour styling — palette alignée sur les couleurs Inetum (#00aa9b)
 const accentStyles = {
-  blue: { value: 'text-blue-600', chip: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300', bar: 'bg-blue-500' },
-  red: { value: 'text-red-600', chip: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300', bar: 'bg-red-500' },
-  green: { value: 'text-emerald-600', chip: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300', bar: 'bg-emerald-500' },
-  amber: { value: 'text-amber-600', chip: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300', bar: 'bg-amber-500' },
+  blue:  { value: 'text-primary',          chip: 'bg-primary/10 text-primary',               bar: 'bg-primary' },
+  red:   { value: 'text-destructive',       chip: 'bg-destructive/10 text-destructive',        bar: 'bg-destructive' },
+  green: { value: 'text-primary',           chip: 'bg-accent text-accent-foreground',          bar: 'bg-primary' },
+  amber: { value: 'text-muted-foreground',  chip: 'bg-secondary text-secondary-foreground',    bar: 'bg-muted-foreground' },
 } as const;
 
 const priorityColor: Record<Priority, string> = {
-  LOW: 'bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300',
-  MEDIUM: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  HIGH: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  CRITICAL: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  LOW:      'bg-secondary text-secondary-foreground',
+  MEDIUM:   'bg-primary/10 text-primary',
+  HIGH:     'bg-accent text-accent-foreground',
+  CRITICAL: 'bg-destructive/10 text-destructive',
 };
 
 const projectStatusColor: Record<ProjectStatus, string> = {
-  PLANNED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  ACTIVE: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-  ON_HOLD: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  COMPLETED: 'bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300',
-  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  PLANNED:   'bg-primary/10 text-primary',
+  ACTIVE:    'bg-accent text-accent-foreground',
+  ON_HOLD:   'bg-secondary text-secondary-foreground',
+  COMPLETED: 'bg-muted text-muted-foreground',
+  CANCELLED: 'bg-destructive/10 text-destructive',
 };
 
 export const TechDashboard: React.FC = () => {
@@ -249,24 +249,24 @@ export const TechDashboard: React.FC = () => {
             <CardTitle className="text-lg">{t('consultant.techDashboard.productivity.title')}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="relative overflow-hidden rounded-xl border border-blue-500/25 bg-gradient-to-br from-blue-500/10 to-transparent p-4 transition-transform duration-300 hover:-translate-y-0.5">
-              <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-400" />
+            <div className="relative overflow-hidden rounded-xl border border-primary/25 bg-primary/5 p-4 transition-transform duration-300 hover:-translate-y-0.5">
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-primary" />
               <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">{t('consultant.techDashboard.productivity.thisWeek')}</p>
               <p className="mt-2 inline-flex items-center gap-2 text-2xl font-semibold text-foreground">
-                <Clock3 className="h-5 w-5 text-blue-500" />
+                <Clock3 className="h-5 w-5 text-primary" />
                 {hoursThisWeek}h
               </p>
             </div>
-            <div className="relative overflow-hidden rounded-xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/10 to-transparent p-4 transition-transform duration-300 hover:-translate-y-0.5">
-              <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-emerald-500 to-teal-400" />
+            <div className="relative overflow-hidden rounded-xl border border-primary/25 bg-accent/40 p-4 transition-transform duration-300 hover:-translate-y-0.5">
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-primary" />
               <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">{t('consultant.techDashboard.productivity.ticketsCompleted')}</p>
               <p className="mt-2 inline-flex items-center gap-2 text-2xl font-semibold text-foreground">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                <CheckCircle2 className="h-5 w-5 text-primary" />
                 {doneTickets}
               </p>
             </div>
-            <div className="relative overflow-hidden rounded-xl border border-purple-500/25 bg-gradient-to-br from-purple-500/10 to-transparent p-4 transition-transform duration-300 hover:-translate-y-0.5">
-              <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-purple-500 to-fuchsia-400" />
+            <div className="relative overflow-hidden rounded-xl border border-primary/25 bg-primary/5 p-4 transition-transform duration-300 hover:-translate-y-0.5">
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-primary" />
               <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">{t('consultant.techDashboard.productivity.completionRate')}</p>
               <p className="mt-2 text-2xl font-semibold text-primary">{completionRate.toFixed(0)}%</p>
             </div>

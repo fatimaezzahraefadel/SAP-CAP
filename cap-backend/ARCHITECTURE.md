@@ -1,177 +1,144 @@
-# Architecture globale — Ticket-CAP
-
-Plateforme de gestion de tickets / performance basée sur **SAP CAP (OData v4)** + **React SPA**,
-déployable sur **SAP BTP / Cloud Foundry** via un **Application Router** sécurisé par XSUAA.
+# Architecture — PFA-GCC-CAP
+## Plateforme de Gestion des Congés et Certificats — Inetum Morocco
 
 ---
 
-## 1. Schéma global (Mermaid)
+## 1. Vue globale
 
-```mermaid
-flowchart TB
-    subgraph Client["🖥️ Navigateur"]
-        SPA["React SPA (Vite + TS)<br/>TanStack Query · React Router · Radix/Tailwind · i18next"]
-    end
-
-    subgraph CF["☁️ SAP BTP / Cloud Foundry"]
-        AR["Application Router<br/>(xs-app.json)<br/>Reverse-proxy + session XSUAA"]
-
-        subgraph SRV["Service CAP — Node.js (@sap/cds v8)"]
-            BASE["base-service.js<br/>• auto-chargement des domaines<br/>• auth globale (before *)<br/>• pagination forcée<br/>• audit log"]
-            SVC["Services OData v4<br/>TicketService · TimeService · UserService · CoreService"]
-
-            subgraph DOM["Domaines (srv/&lt;domaine&gt;/)"]
-                D1["handlers → domain → repo<br/>policy · validation · mapper"]
-            end
-        end
-
-        XSUAA["XSUAA<br/>(auth & rôles)"]
-    end
-
-    subgraph DB["🗄️ Persistance"]
-        HANA["HANA Cloud (prod)<br/>SQLite (dev)<br/>schema.cds"]
-    end
-
-    SPA -- "HTTPS / OData v4" --> AR
-    AR -- "/odata/v4/*  /attachments/*" --> SRV
-    AR -- "/assets /locales /index.html<br/>(statique, cache)" --> AR
-    AR <--> XSUAA
-    SRV <--> XSUAA
-    BASE --> SVC --> DOM --> D1
-    D1 -- "CQL" --> HANA
+```
+                    ┌──────────────────────────────────────────┐
+                    │              NAVIGATEUR                    │
+                    │  React SPA (Vite + TypeScript)             │
+                    │  TanStack Query · React Router 7           │
+                    │  Radix UI + Tailwind · FullCalendar        │
+                    │  i18next (FR/EN) · Couleurs Inetum         │
+                    └─────────────────────┬────────────────────┘
+                                          │ HTTPS / OData v4
+                                          ▼
+    ┌────────────────────────────────────────────────────────────────┐
+    │              APPLICATION ROUTER (xs-app.json)                   │
+    │  • /odata/v4/*  → srv-api (auth XSUAA)                         │
+    │  • /assets /locales → statique (cache, no auth)                │
+    │  • /index.html  /*  → SPA fallback (auth XSUAA)                │
+    └───────────────┬──────────────────────────────┬────────────────┘
+                    │                               │ session
+                    ▼                               ▼
+   ┌──────────────────────────────────┐    ┌──────────────────┐
+   │      SERVICE CAP — Node.js        │◄──►│      XSUAA       │
+   │         (@sap/cds v8)             │    │  auth & rôles    │
+   │                                   │    └──────────────────┘
+   │  Services OData v4                │
+   │   ConsultantService               │
+   │   ManagerService                  │
+   │   UserService                     │
+   │   CoreService                     │
+   │                                   │
+   │  Domaines srv/<domaine>/          │
+   │  ┌────────────────────────────┐   │
+   │  │ gestion/consultant.impl.js  │   │
+   │  │ gestion/manager.impl.js     │   │
+   │  │ gestion/gestion.util.js     │   │
+   │  │ user/user.domain.service.js │   │
+   │  │ auth/auth.domain.service.js │   │
+   │  └────────────────────────────┘   │
+   └──────────────────┬────────────────┘
+                      │ CQL
+                      ▼
+    ┌────────────────────────────────────────────┐
+    │              PERSISTANCE                    │
+    │  db/schema.cds                              │
+    │  db/gestion-conges-certificats.cds          │
+    │  ┌──────────────────────────────────────┐   │
+    │  │ HANA Cloud (prod BTP)                 │   │
+    │  │ SQLite      (développement local)     │   │
+    │  └──────────────────────────────────────┘   │
+    │  Entités :                                   │
+    │  Employes · DemandesConge · TypesConge       │
+    │  Certificats · DomainesCertificat            │
+    │  Users · Notifications                       │
+    └──────────────────────────────────────────────┘
 ```
 
 ---
 
-## 1bis. Architecture en couches (Frontend / Backend / BD / Déploiement BTP)
+## 2. Rôles et fonctionnalités
 
-```mermaid
-flowchart TB
-    %% ===== BACKEND (en haut) =====
-    subgraph BE["BACKEND — SAP CAP"]
-        direction LR
-        ODATA["OData v4<br/>CRUD + FILTERS<br/>(services .cds)"]
-        CAP["CAP runtime<br/>Node.js (@sap/cds)<br/>handlers · domain · repo"]
-        DB[("HANA Cloud (prod)<br/>SQLite (dev)")]
-        ODATA <--> CAP
-        CAP <--> DB
-    end
-
-    %% ===== FRONTEND (en bas) =====
-    subgraph FE["FRONTEND — React SPA"]
-        direction LR
-        REACT["React 18 + Vite<br/>(TypeScript)"]
-        FILES["Fichiers source :<br/>.tsx · .ts · .css<br/>features · pages · components"]
-        REACT --- FILES
-    end
-
-    %% ===== VERSION CONTROL (côté) =====
-    subgraph VC["Version control"]
-        GIT["git + GitHub"]
-    end
-
-    FE <== "HTTPS / OData v4" ==> BE
-    FE <==> VC
-```
+| Rôle | Sections | Fonctionnalités |
+|---|---|---|
+| **MANAGER** | Congés, Calendrier équipe, Certificats, Consultants, Administration | Approuver/rejeter congés, voir calendrier, gérer consultants |
+| **CONSULTANT_TECHNIQUE** | Mes congés, Mes certificats | Soumettre congés, calendrier personnel, gérer certifications PDF |
 
 ---
 
-## 2. Schéma global (ASCII)
-
-```
-                          ┌──────────────────────────────────────────┐
-                          │              NAVIGATEUR                    │
-                          │  React SPA (Vite + TypeScript)             │
-                          │  TanStack Query · React Router 7           │
-                          │  Radix UI + Tailwind · react-hook-form     │
-                          │  i18next (FR/EN) · recharts                │
-                          └─────────────────────┬────────────────────┘
-                                                │ HTTPS / OData v4
-                                                ▼
-        ┌────────────────────────────────────────────────────────────────────┐
-        │                  APPLICATION ROUTER (xs-app.json)                    │
-        │  • /odata/v4/*  /attachments/*  → srv-api (auth XSUAA)               │
-        │  • /assets /locales /*.png...   → statique local (cache, no auth)    │
-        │  • /index.html  /*              → SPA fallback (auth XSUAA)          │
-        └───────────────┬───────────────────────────────────┬────────────────┘
-                        │                                    │ session
-                        ▼                                    ▼
-   ┌─────────────────────────────────────────┐      ┌──────────────────┐
-   │        SERVICE CAP — Node.js             │◄────►│      XSUAA       │
-   │           (@sap/cds v8)                  │      │  auth & rôles    │
-   │                                          │      └──────────────────┘
-   │  base-service.js  (socle transversal)    │
-   │   ├─ auto-chargement des *.impl.js        │
-   │   ├─ auth globale     srv.before('*')     │
-   │   ├─ pagination ($top ≤ 500, défaut 100)  │
-   │   └─ audit log                            │
-   │                                          │
-   │  Services OData v4                        │
-   │   TicketService · TimeService            │
-   │   UserService   · CoreService            │
-   │                                          │
-   │  Domaines  srv/<domaine>/  (par couche)  │
-   │  ┌────────────────────────────────────┐  │
-   │  │ *.service.cds   définition OData    │  │
-   │  │ *.handlers.js   hooks before/on/after│ │
-   │  │ *.domain.js     logique métier      │  │
-   │  │ *.repo.js       accès données (CQL) │  │
-   │  │ *.policy.js     autorisations       │  │
-   │  │ *.validation.js validation entrées  │  │
-   │  │ *.mapper.js     DTO ↔ entités       │  │
-   │  └────────────────────────────────────┘  │
-   └─────────────────────┬────────────────────┘
-                         │ CQL
-                         ▼
-        ┌────────────────────────────────────────────┐
-        │              PERSISTANCE                     │
-        │  db/schema.cds  (sap.performance.dashboard)  │
-        │  ┌────────────────────────────────────────┐  │
-        │  │ HANA Cloud   → production               │  │
-        │  │ SQLite       → développement local      │  │
-        │  └────────────────────────────────────────┘  │
-        │  Entités : Users · Tickets · Projects ·      │
-        │  Wricef · Imputations · LeaveRequests · ...  │
-        └──────────────────────────────────────────────┘
-```
-
----
-
-## 3. Détail Frontend (organisation interne)
+## 3. Organisation Frontend
 
 ```
 app/frontend/src/app/
-├── App.tsx · routes.tsx              Bootstrap + définition des routes
-├── context/                          AuthContext · ThemeContext · DensityContext · roleRouting
-├── services/odata/                   1 client API typé par entité (ticketsApi, usersApi, ...)
-├── features/                         Modules métier (feature-first)
-│   └── tickets/  ── api · hooks · model · components/ · pages/
-├── pages/                            Pages segmentées PAR RÔLE
-│   ├── admin/ · manager/ · project-manager/
-│   ├── consultant-tech/ · consultant-func/ · dev-coordinator/
-│   └── shared/ · Login.page.tsx
-├── components/                       business · charts · common · layout · ui
-├── routing/routeRegistry.ts          Registre central des routes
-├── locales/ (fr, en) · styles/ · types/ · utils/
+├── pages/
+│   ├── gestion/
+│   │   ├── GestionConsultantFiori.page.tsx   ← Espace consultant (congés + calendrier)
+│   │   └── GestionManagerFiori.page.tsx      ← Espace manager (congés + certificats)
+│   ├── consultant-tech/
+│   │   └── MyCertifications.page.tsx         ← Certifications + upload PDF
+│   ├── manager/
+│   │   └── ManagerAdmin.page.tsx             ← Administration des comptes
+│   └── Login.page.tsx
+├── services/odata/
+│   ├── gestionCongesCertificatsApi.ts        ← API congés & certificats
+│   └── usersApi.ts
+├── locales/fr/ · locales/en/                 ← Traductions FR/EN
+└── styles/theme.css                          ← Couleurs Inetum (#1e2a3a + #3eb8a0)
 ```
 
 ---
 
-## 4. Pipeline de build
+## 4. Modèle de données principal
 
 ```
-npm run build
-  └─ build:web        → Vite build du frontend
-  └─ sync:approuter   → copie des assets vers approuter/resources
-  └─ cds build --production
+Employes ──────────────────┐
+  ID, nom, prenom, email    │
+  poste, role, soldeConges  │
+  manager (→ Employes)      │
+         │                  │
+         ▼                  ▼
+DemandesConge          Certificats
+  typeConge_ID           domaine_ID
+  dateDebut/Fin          intitule
+  nbJours                organisme
+  statut                 documentUrl (PDF base64)
+  commentaireManager     dateObtention/Expiration
 ```
 
 ---
 
-## 5. Rôles applicatifs
+## 5. Déploiement BTP
 
-`ADMIN` · `MANAGER` · `PROJECT_MANAGER` · `DEV_COORDINATOR` ·
-`CONSULTANT_TECHNIQUE` · `CONSULTANT_FONCTIONNEL`
+```
+mbt build
+    ↓
+pfa-gcc-cap_1.0.0.mtar
+    ↓
+cf deploy
+    ↓
+BTP Cloud Foundry (us10-001)
+    ├── pfa-gcc-cap-approuter   (public, OAuth2 via XSUAA)
+    ├── pfa-gcc-cap-srv         (backend CAP, Node.js)
+    ├── pfa-gcc-cap-db-deployer (déploiement schéma HANA)
+    ├── pfa-gcc-cap-uaa         (service XSUAA)
+    └── pfa-gcc-cap-db          (HDI container HANA)
+```
 
-Le routage des pages (frontend) et les `*.policy.js` (backend) appliquent les autorisations selon ces rôles.
+---
+
+## 6. Commandes utiles
+
+```powershell
+# Développement local
+npm run watch                    # backend
+cd app/frontend && npm run dev   # frontend → http://localhost:5174
+
+# Déploiement BTP
+mbt build
+cf login -a https://api.cf.us10-001.hana.ondemand.com
+cf deploy mta_archives/pfa-gcc-cap_1.0.0.mtar
 ```

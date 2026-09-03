@@ -1,4 +1,4 @@
-﻿{
+{
   "common": {
     "search": "Search projects, users, tickets...",
     "notifications": "Notifications",
@@ -1565,13 +1565,11 @@
     "light": "Light",
     "dark": "Dark",
     "notifications": "Notifications",
-    "notificationsDesc": "Control the way updates reach you.",
-    "emailNotifications": "Email notifications",
-    "emailNotificationsDesc": "Receive direct project alerts by email.",
-    "desktopNotifications": "Desktop notifications",
-    "desktopNotificationsDesc": "Get real-time updates while active in the app.",
-    "weeklyDigest": "Weekly KPI digest",
-    "weeklyDigestDesc": "Summary of performance indicators each week.",
+    "notificationsDesc": "Choose the events for which you want to be notified.",
+    "leaveRequestNotif": "Leave requests",
+    "leaveRequestNotifDesc": "Receive a notification when a consultant submits a leave request.",
+    "certificationNotif": "New certifications",
+    "certificationNotifDesc": "Receive a notification when a consultant adds a certification.",
     "locale": "Locale",
     "localeDesc": "Select your preferred language format.",
     "displayLanguage": "Display language",
@@ -1848,7 +1846,7 @@
     "subtitleTickets": "Score consultant performance from their tickets (on time, late, difficulty)",
     "form": {
       "title": "New evaluation",
-      "intro": "Pick a consultant and a period â€” the score is computed automatically from their tickets. You can adjust it before saving.",
+      "intro": "Pick a consultant and a period – the score is computed automatically from their tickets. You can adjust it before saving.",
       "consultant": "Consultant",
       "selectConsultant": "Select a consultant",
       "period": "Period",
@@ -1886,7 +1884,7 @@
     },
     "breakdown": {
       "title": "Ticket breakdown",
-      "titleFor": "Ticket breakdown â€” {{name}}",
+      "titleFor": "Ticket breakdown – {{name}}",
       "rules": "Scoring: on time {{onTime}}, late {{late}}, open past due {{overdue}}; completed tickets earn a complexity and nature bonus.",
       "ticket": "Ticket",
       "complexity": "Complexity",

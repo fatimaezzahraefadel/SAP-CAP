@@ -17,14 +17,9 @@ const USERS_ENTITY = 'sap.performance.dashboard.db.Users';
 // only missing IDs are inserted.
 // ---------------------------------------------------------------------------
 const REFERENCE_USERS = [
-  { ID: 'u-admin', name: 'Alice Admin', email: 'alice.admin@inetum.com', role: 'ADMIN', active: true, availabilityPercent: 100, teamId: 'team-1' },
-  { ID: 'u-manager', name: 'Marc Manager', email: 'marc.manager@inetum.com', role: 'MANAGER', active: true, availabilityPercent: 80, teamId: 'team-1' },
-  { ID: 'u-tech', name: 'Théo Technique', email: 'theo.tech@inetum.com', role: 'CONSULTANT_TECHNIQUE', active: true, availabilityPercent: 90, teamId: 'team-1' },
-  { ID: 'u-tech-2', name: 'Karim Technique', email: 'karim.tech@inetum.com', role: 'CONSULTANT_TECHNIQUE', active: true, availabilityPercent: 70, teamId: 'team-1' },
-  { ID: 'u-tech-3', name: 'Léa Technique', email: 'lea.tech@inetum.com', role: 'CONSULTANT_TECHNIQUE', active: true, availabilityPercent: 100, teamId: 'team-1' },
-  { ID: 'u-fonc', name: 'Fatima Fonctionnel', email: 'fatima.fonc@inetum.com', role: 'CONSULTANT_FONCTIONNEL', active: true, availabilityPercent: 75, teamId: 'team-1' },
-  { ID: 'u-pm', name: 'Pierre Projet', email: 'pierre.pm@inetum.com', role: 'PROJECT_MANAGER', active: true, availabilityPercent: 60, teamId: 'team-1' },
-  { ID: 'u-devco', name: 'Diana DevCo', email: 'diana.devco@inetum.com', role: 'DEV_COORDINATOR', active: true, availabilityPercent: 85, teamId: 'team-1' },
+  { ID: 'u-admin',  name: 'Alice Admin',           email: 'alice.admin@inetum.com',      role: 'ADMIN',                active: true, availabilityPercent: 100, teamId: 'team-1' },
+  { ID: 'u-manager',name: 'Zakaria EZ-ZAYTTE',     email: 'zakaria.ezzaytte@inetum.com', role: 'MANAGER',              active: true, availabilityPercent: 80,  teamId: 'team-1' },
+  { ID: 'u-tech',   name: 'Fatima-Ezzahrae FADEL', email: 'fatima.fadel@inetum.com',     role: 'CONSULTANT_TECHNIQUE', active: true, availabilityPercent: 90,  teamId: 'team-1' },
 ];
 
 /**
@@ -44,12 +39,15 @@ async function ensureReferenceUsers() {
 
   // Heal reference users that were inserted by an earlier seed without the
   // XSUAA marker — otherwise the UserService read filter hides them on BTP.
-  const toHeal = referenceIds.filter(
-    (id) => existingById.has(id) && existingById.get(id).identityProvider !== 'XSUAA'
-  );
+  // Also update name and email in case they changed.
+  const toHeal = referenceIds.filter((id) => existingById.has(id));
   for (const id of toHeal) {
+    const ref = REFERENCE_USERS.find((u) => u.ID === id);
+    if (!ref) continue;
     await db.run(
-      UPDATE(USERS_ENTITY).set({ identityProvider: 'XSUAA', externalId: id }).where({ ID: id })
+      UPDATE(USERS_ENTITY)
+        .set({ identityProvider: 'XSUAA', externalId: id, name: ref.name, email: ref.email })
+        .where({ ID: id })
     );
   }
 
